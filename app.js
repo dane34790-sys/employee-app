@@ -64,9 +64,13 @@ function formatNumber(n){
   n = String(n || "0");
   return n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
 let employees = [];
 let currentUser = null;
+let currentChatEmpId = null; // 👈 این خط را اضافه کن
+
 let otpCode = "";
+
 let chats = JSON.parse(
   localStorage.getItem("chats") || "{}"
 );
@@ -78,9 +82,9 @@ const ADMIN = {
 };
 
 /* ================= INIT ================= */
-
 function init() {
   loadEmployees();
+  listenChats();
 }
 /* ================= STORAGE ================= */
 function loadEmployees() {
@@ -220,6 +224,144 @@ function loadEmployees() {
     });
 
 }
+function listenChats() {
+
+  db.ref("chats").on("value", (snapshot) => {
+
+    const data = snapshot.val();
+
+    if (!data) return;
+
+    chats = data;
+
+    localStorage.setItem(
+      "chats",
+      JSON.stringify(chats)
+    );
+
+    // اگر صفحه چت باز نیست
+    if (!currentChatEmpId) return;
+
+    const chatBox =
+      document.getElementById("chatBox");
+
+    if (!chatBox) return;
+
+    const messages =
+      chats[currentChatEmpId] || [];
+
+    chatBox.innerHTML =
+      messages.map((m, i) => `
+
+      <div style="
+        margin-bottom:10px;
+        padding:10px;
+        border-radius:12px;
+        background:${
+          m.from === "admin"
+          ? "linear-gradient(135deg, rgba(34,197,94,.25), rgba(22,163,74,.15))"
+          : "rgba(255,255,255,.08)"
+        };
+        border:1px solid rgba(255,255,255,.12);
+        color:white;
+      ">
+
+        <div style="font-weight:bold;margin-bottom:4px;">
+          ${m.from}
+        </div>
+
+        <div style="
+          font-size:11px;
+          color:rgba(255,255,255,.6)
+        ">
+          ${new Date(m.date).toLocaleString()}
+        </div>
+
+        <div style="margin-top:6px;">
+          ${m.text || ""}
+        </div>
+
+        ${m.file ? `
+          <div style="margin-top:8px;">
+
+            ${
+              (m.file.type || "").startsWith("image/")
+
+              ? `
+
+              <img
+                src="${m.file.data}"
+                onclick="openImageFull('${m.file.data}')"
+                style="
+                  max-width:220px;
+                  width:100%;
+                  border-radius:12px;
+                  cursor:pointer;
+                  border:1px solid rgba(255,255,255,.2);
+                "
+              >
+
+              `
+
+              :
+
+              `
+
+              <a
+                href="${m.file.data}"
+                download="${m.file.name}"
+                style="color:white;"
+              >
+                📎 ${m.file.name}
+              </a>
+
+              `
+
+            }
+
+          </div>
+        ` : ""}
+
+        <div style="
+          margin-top:6px;
+          font-size:12px;
+          color:rgba(255,255,255,.6)
+        ">
+
+          ${
+            m.from === "admin"
+            ? (m.seen ? "✓✓" : "✓")
+            : (m.seenByAdmin ? "✓✓" : "✓")
+          }
+
+        </div>
+
+        <button
+          onclick="deleteMessage('${currentChatEmpId}',${i})"
+          style="
+            margin-top:6px;
+            background:red;
+            color:white;
+            border:none;
+            padding:4px 8px;
+            border-radius:6px;
+            cursor:pointer;
+          "
+        >
+          🗑 حذف
+        </button>
+
+      </div>
+
+    `).join("");
+
+    // اسکرول آخر چت
+    chatBox.scrollTop =
+      chatBox.scrollHeight;
+
+  });
+
+}
 function showLogin() {
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -266,7 +408,7 @@ function showOTP() {
   document.getElementById("app").innerHTML = `
   <div class="screen">
 
-    <img src="images/login-bg.png" class="bg-full">
+    <img src="login-bg.png" class="bg-full">
 
     <div class="overlay">
       <input id="otp" placeholder="OTP">
@@ -307,7 +449,7 @@ function showUI() {
   document.getElementById("app").innerHTML = `
   <div class="screen">
 
-    <img src="images/employee-bg.png" class="bg-full">
+    <img src="employee-bg.png" class="bg-full">
 
     <!-- فقط همینجا تغییر کرد: sidebar شیشه‌ای -->
     <div id="sidebar" class="sidebar active" style="
@@ -609,7 +751,7 @@ function openWalletPage() {
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
-      <img src="images/employee-bg.png" class="bg-full">
+      <img src="openDocumentsPage" class="bg-full">
 
       <div class="overlay">
 
@@ -652,7 +794,7 @@ function openLinePage(empId){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="images/employee-bg.png" class="bg-full">
+      <img src="employee-bg.png" class="bg-full">
 
       <div class="overlay">
 
@@ -822,7 +964,7 @@ function openTransactions(empId){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="images/employee-bg.png" class="bg-full">
+      <img src="employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1251,17 +1393,26 @@ function openDocumentsPage(){
       : employees.find(e => e.id === currentUser?.emp?.id);
 
   if(!emp){
-    alert("Employee not found");
+    document.getElementById("app").innerHTML = `
+      <div class="screen">
+        <div class="panel">
+          <div style="color:red;text-align:center;padding:20px">
+            Employee not found
+          </div>
+          <button onclick="showUI()" class="logout">⬅ Back</button>
+        </div>
+      </div>
+    `;
     return;
   }
 
-  const docs = getDocs(emp);
+  const docs = getDocs(emp) || [];
   const sidebar = emp.sidebarMedia?.images || [];
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="images/employee-bg.png" class="bg-full">
+      <img src="employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1271,29 +1422,33 @@ function openDocumentsPage(){
 
         <!-- MAIN DOCUMENTS -->
         ${docs.map(img => `
-          <div class="card">
-            <img
-              src="${img}"
-              style="width:100%;border-radius:12px;display:block;"
-              onclick="window.open('${img}','_blank')"
-              onerror="
-                this.parentElement.innerHTML =
-                '<div style=&quot;color:red;padding:20px;text-align:center&quot;>Image Not Found<br>${img}</div>';
-              "
-            >
-          </div>
-        `).join("")}
+  <div class="card" style="overflow:hidden;max-height:250px;">
 
-        <!-- SIDEBAR MEDIA (NEW - INDEPENDENT) -->
+    <img
+      src="${img}"
+      style="
+        width:100%;
+        height:200px;
+        object-fit:cover;
+        display:block;
+        border-radius:12px;
+      "
+      onclick="showImageViewer('${img}')"
+      onerror="this.parentElement.innerHTML='<div style=color:red;padding:20px;text-align:center>Image Not Found</div>'"
+    >
+
+  </div>
+`).join("")}
+        <!-- SIDEBAR MEDIA -->
         <h3 style="text-align:center;color:white;margin-top:25px;">
           📁 Sidebar Media
         </h3>
 
         ${sidebar.length > 0 ? sidebar.map(img => `
-          <div class="card">
+          <div class="card" style="overflow:hidden;max-height:200px;">
             <img
               src="${img}"
-              style="width:100%;border-radius:12px;display:block;"
+              style="width:100%;height:180px;object-fit:cover;display:block;border-radius:12px;"
               onclick="window.open('${img}','_blank')"
             >
           </div>
@@ -1303,16 +1458,11 @@ function openDocumentsPage(){
           </div>
         `}
 
-        <button
-          onclick="showUI()"
-          class="logout"
-          style="margin-top:15px;"
-        >
+        <button onclick="showUI()" class="logout" style="margin-top:15px;">
           ⬅ Back
         </button>
 
       </div>
-
     </div>
   `;
 }
@@ -1323,7 +1473,16 @@ function openSidebarMediaPage(empId){
   const emp = employees.find(e => e.id === empId);
 
   if(!emp){
-    alert("Employee not found");
+    document.getElementById("app").innerHTML = `
+      <div class="screen">
+        <div class="panel">
+          <div style="color:red;text-align:center;padding:20px">
+            Employee not found
+          </div>
+          <button onclick="showUI()" class="logout">⬅ Back</button>
+        </div>
+      </div>
+    `;
     return;
   }
 
@@ -1331,12 +1490,16 @@ function openSidebarMediaPage(empId){
     emp.sidebarMedia = { images: [] };
   }
 
-  const images = emp.sidebarMedia.images || [];
+  if(!Array.isArray(emp.sidebarMedia.images)){
+    emp.sidebarMedia.images = [];
+  }
+
+  const images = emp.sidebarMedia.images;
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="images/employee-bg.png" class="bg-full">
+      <img src="employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1344,6 +1507,7 @@ function openSidebarMediaPage(empId){
           📁 Sidebar Media Manager
         </h2>
 
+        <!-- INPUT -->
         <div class="card">
 
           <input
@@ -1368,10 +1532,14 @@ function openSidebarMediaPage(empId){
 
         </div>
 
-        ${images.map((img, i) => `
-          <div class="card">
+        <!-- IMAGES -->
+        ${images.length > 0 ? images.map((img, i) => `
+          <div class="card" style="overflow:hidden;max-height:220px;">
 
-            <img src="${img}" style="width:100%;border-radius:12px;">
+            <img
+              src="${img}"
+              style="width:100%;height:180px;object-fit:cover;border-radius:12px;"
+            >
 
             <button
               onclick="deleteSidebarImage('${emp.id}', ${i})"
@@ -1388,7 +1556,11 @@ function openSidebarMediaPage(empId){
             </button>
 
           </div>
-        `).join("")}
+        `).join("") : `
+          <div style="text-align:center;color:white;opacity:0.7;margin-top:10px;">
+            No Sidebar Media
+          </div>
+        `}
 
         <button onclick="showUI()" class="logout">
           ⬅ Back
@@ -1421,6 +1593,9 @@ function addSidebarImage(empId){
   emp.sidebarMedia.images.push(url);
 
   saveEmployees();
+
+  input.value = ""; // پاک کردن input
+
   openSidebarMediaPage(empId);
 }
 function deleteSidebarImage(empId, index){
@@ -1679,13 +1854,25 @@ function saveEmployees(){
     });
 
 }
-function saveChats(){
+function saveChats() {
+
+  // بکاپ داخل گوشی
   localStorage.setItem(
     "chats",
     JSON.stringify(chats)
   );
+
+  // ذخیره روی Firebase
+  db.ref("chats")
+    .set(chats)
+    .catch(err => {
+      console.error(err);
+    });
+
 }
 function openChat(empId){
+
+currentChatEmpId = empId;
 
   pushPage(() => showUI()); // ✅ فقط اضافه شد (Back stack)
 
@@ -1713,14 +1900,16 @@ function openChat(empId){
 
   }
 
+  if (!window.isRefreshingChat) {
   saveChats();
+}
 
-  setTimeout(() => {
-    const chatBox = document.getElementById("chatBox");
-    if(chatBox){
-      chatBox.scrollTop = chatBox.scrollHeight;
-    }
-  }, 50);
+setTimeout(() => {
+  const chatBox = document.getElementById("chatBox");
+  if(chatBox){
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+}, 50);
 
   app.innerHTML = `
     <div style="
@@ -2101,9 +2290,11 @@ async function sendChat(empId){
     fileName.innerHTML = "";
   }
 
-  setTimeout(() => {
-    openChat(empId);
-  }, 50);
+  const chatBox = document.getElementById("chatBox");
+
+if (chatBox) {
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
 
 }
 function deleteMessage(empId,index){
@@ -2184,3 +2375,41 @@ function fixKeyboard() {
   window.visualViewport.addEventListener("scroll", update);
 }
 
+// تمام توابع قبلی...
+
+function showImageViewer(url){
+
+  document.getElementById("app").innerHTML = `
+    <div class="screen">
+
+      <div class="panel" style="padding:0">
+
+        <img
+          src="${url}"
+          style="
+            width:100%;
+            height:auto;
+            max-height:100vh;
+            object-fit:contain;
+            display:block;
+          "
+        >
+
+        <button
+          onclick="history.back()"
+          style="
+            width:100%;
+            padding:12px;
+            border:none;
+            background:red;
+            color:white;
+          "
+        >
+          ⬅ Back
+        </button>
+
+      </div>
+
+    </div>
+  `;
+}
