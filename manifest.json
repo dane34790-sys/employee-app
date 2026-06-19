@@ -1,12 +1,11 @@
 {
-  "name": "Employee App",
-  "short_name": "Employees",
+  "name": "CommerzBank Employee",
+  "short_name": "Employee",
   "start_url": "./index.html",
-  "scope": "./",
   "display": "standalone",
   "background_color": "#000000",
   "theme_color": "#000000",
-
+  "orientation": "portrait",
   "icons": [
     {
       "src": "images/app-icon.png",
