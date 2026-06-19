@@ -1,47 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
   <meta charset="UTF-8">
-
-  <!-- 👇 مهم برای اپ واقعی‌تر روی موبایل -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employee App</title>
 
   <link rel="stylesheet" href="style.css">
-
-  <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
-
-  <!-- 👇 تم اپ (حل سیاهی و UI بهتر) -->
   <meta name="theme-color" content="#000000">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-
-  <!-- 👇 fullscreen واقعی‌تر -->
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
 </head>
 
 <body>
 
-  <!-- 👇 کمک به fullscreen واقعی -->
-  <div id="app" style="height:100vh; width:100vw; overflow:hidden;"></div>
+  <div id="app">Loading...</div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- App -->
-  <script src="app.js"></script>
+  <!-- SAFE ERROR HANDLER (جلوگیری از صفحه سفید) -->
+  <script>
+    window.onerror = function (msg, url, line) {
+      document.getElementById("app").innerHTML =
+        "<div style='color:white;background:black;padding:20px'>" +
+        "❌ Error: " + msg + "<br>Line: " + line +
+        "</div>";
+    };
+  </script>
 
-  <!-- Service Worker -->
+  <!-- App (نسخه‌بندی برای جلوگیری از cache) -->
+  <script src="app.js?v=1.0.1"></script>
+
+  <!-- PWA Service Worker (ایمن شده) -->
   <script>
     if ("serviceWorker" in navigator) {
+
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("sw.js")
-          .then(() => console.log("SW registered"))
+
+        navigator.serviceWorker.getRegistrations()
+          .then(function(registrations) {
+            for(let reg of registrations) {
+              reg.unregister(); // 🔥 جلوگیری از گیر کردن نسخه قدیمی
+            }
+          });
+
+        navigator.serviceWorker.register("sw.js?v=1.0.1")
+          .then(reg => console.log("SW registered"))
           .catch(err => console.log("SW error:", err));
+
       });
     }
   </script>
