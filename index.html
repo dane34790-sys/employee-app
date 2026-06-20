@@ -16,7 +16,6 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black">
   <meta name="apple-mobile-web-app-title" content="Employees">
-
 </head>
 
 <body>
@@ -65,29 +64,26 @@ ${error && error.stack ? error.stack : ""}
 
     };
 
-    window.addEventListener(
-      "unhandledrejection",
-      e => {
+    window.addEventListener("unhandledrejection", e => {
 
-        document.getElementById("app").innerHTML = `
-          <div style="
-            padding:20px;
-            color:#ff5252;
-            background:#111;
-            min-height:100vh;
-            white-space:pre-wrap;
-            font-family:monospace;
-          ">
+      document.getElementById("app").innerHTML = `
+        <div style="
+          padding:20px;
+          color:#ff5252;
+          background:#111;
+          min-height:100vh;
+          white-space:pre-wrap;
+          font-family:monospace;
+        ">
 ❌ Promise Error
 
 ${e.reason && e.reason.stack
   ? e.reason.stack
   : JSON.stringify(e.reason, null, 2)}
-          </div>
-        `;
+        </div>
+      `;
 
-      }
-    );
+    });
 
   </script>
 
@@ -103,24 +99,17 @@ ${e.reason && e.reason.stack
 
         try {
 
-          const regs =
-            await navigator.serviceWorker.getRegistrations();
+          // فقط ثبت کن، حذف نکن
+          const registration =
+            await navigator.serviceWorker.register("./sw.js");
 
-          for (const reg of regs) {
+          await navigator.serviceWorker.ready;
 
-            await reg.unregister();
+          console.log("✅ Service Worker Registered", registration);
 
-          }
+        } catch (err) {
 
-          await navigator.serviceWorker.register("./sw.js");
-
-          console.log("✅ Service Worker Registered");
-
-        }
-
-        catch (err) {
-
-          console.error(err);
+          console.error("❌ Service Worker Error", err);
 
         }
 
