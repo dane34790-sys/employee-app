@@ -25,40 +25,34 @@ console.log("Firebase Ready");
 const pageStack = [];
 
 function pushPage(fn) {
-  pageStack.push(fn);
-  history.pushState({}, "", "");
+pageStack.push(fn);
+history.pushState({}, "", "");
 }
 
 /* 👇 BACK SAFE HANDLER */
 window.addEventListener("popstate", () => {
 
-  if (pageStack.length <= 1) {
-    pageStack.length = 0;
-    history.back(); // خروج طبیعی
-    return;
-  }
+if (pageStack.length <= 1) {
+pageStack.length = 0;
+history.back(); // خروج طبیعی
+return;
+}
 
-  pageStack.pop();
+pageStack.pop();
 
-  const prev = pageStack[pageStack.length - 1];
+const prev = pageStack[pageStack.length - 1];
 
-  if (typeof prev === "function") {
-    prev();
-  }
+if (typeof prev === "function") {
+prev();
+}
 });
 
 /* 👇 SAFE INIT (خیلی مهم برای جلوگیری از crash) */
-document.addEventListener("DOMContentLoaded", () => {
-  try {
-    if (typeof init === "function") {
-      init();
-    } else {
-      console.log("init not found, skipping");
-    }
-  } catch (e) {
-    console.log("INIT ERROR:", e);
-  }
-});
+try {
+init();
+} catch (e) {
+console.error("INIT ERROR:", e);
+}
 
 function formatNumber(n){
   n = String(n || "0");
@@ -228,9 +222,14 @@ function listenChats() {
 
   db.ref("chats").on("value", (snapshot) => {
 
+    window.isRefreshingChat = true;
+
     const data = snapshot.val();
 
-    if (!data) return;
+    if (!data) {
+      window.isRefreshingChat = false;
+      return;
+    }
 
     chats = data;
 
@@ -240,18 +239,21 @@ function listenChats() {
     );
 
     // اگر صفحه چت باز نیست
-    if (!currentChatEmpId) return;
+    if (!currentChatEmpId) {
+      window.isRefreshingChat = false;
+      return;
+    }
 
-    const chatBox =
-      document.getElementById("chatBox");
+    const chatBox = document.getElementById("chatBox");
 
-    if (!chatBox) return;
+    if (!chatBox) {
+      window.isRefreshingChat = false;
+      return;
+    }
 
-    const messages =
-      chats[currentChatEmpId] || [];
+    const messages = chats[currentChatEmpId] || [];
 
-    chatBox.innerHTML =
-      messages.map((m, i) => `
+    chatBox.innerHTML = messages.map((m, i) => `
 
       <div style="
         margin-bottom:10px;
@@ -259,8 +261,8 @@ function listenChats() {
         border-radius:12px;
         background:${
           m.from === "admin"
-          ? "linear-gradient(135deg, rgba(34,197,94,.25), rgba(22,163,74,.15))"
-          : "rgba(255,255,255,.08)"
+            ? "linear-gradient(135deg, rgba(34,197,94,.25), rgba(22,163,74,.15))"
+            : "rgba(255,255,255,.08)"
         };
         border:1px solid rgba(255,255,255,.12);
         color:white;
@@ -286,37 +288,28 @@ function listenChats() {
 
             ${
               (m.file.type || "").startsWith("image/")
-
-              ? `
-
-              <img
-                src="${m.file.data}"
-                onclick="openImageFull('${m.file.data}')"
-                style="
-                  max-width:220px;
-                  width:100%;
-                  border-radius:12px;
-                  cursor:pointer;
-                  border:1px solid rgba(255,255,255,.2);
-                "
-              >
-
-              `
-
-              :
-
-              `
-
-              <a
-                href="${m.file.data}"
-                download="${m.file.name}"
-                style="color:white;"
-              >
-                📎 ${m.file.name}
-              </a>
-
-              `
-
+                ? `
+                  <img
+                    src="${m.file.data}"
+                    onclick="openImageFull('${m.file.data}')"
+                    style="
+                      max-width:220px;
+                      width:100%;
+                      border-radius:12px;
+                      cursor:pointer;
+                      border:1px solid rgba(255,255,255,.2);
+                    "
+                  >
+                `
+                : `
+                  <a
+                    href="${m.file.data}"
+                    download="${m.file.name}"
+                    style="color:white;"
+                  >
+                    📎 ${m.file.name}
+                  </a>
+                `
             }
 
           </div>
@@ -327,13 +320,11 @@ function listenChats() {
           font-size:12px;
           color:rgba(255,255,255,.6)
         ">
-
           ${
             m.from === "admin"
-            ? (m.seen ? "✓✓" : "✓")
-            : (m.seenByAdmin ? "✓✓" : "✓")
+              ? (m.seen ? "✓✓" : "✓")
+              : (m.seenByAdmin ? "✓✓" : "✓")
           }
-
         </div>
 
         <button
@@ -355,9 +346,10 @@ function listenChats() {
 
     `).join("");
 
-    // اسکرول آخر چت
-    chatBox.scrollTop =
-      chatBox.scrollHeight;
+    requestAnimationFrame(() => {
+      chatBox.scrollTop = chatBox.scrollHeight;
+      window.isRefreshingChat = false;
+    });
 
   });
 
@@ -408,7 +400,7 @@ function showOTP() {
   document.getElementById("app").innerHTML = `
   <div class="screen">
 
-    <img src="login-bg.png" class="bg-full">
+    <img src="images/login-bg.png" class="bg-full">
 
     <div class="overlay">
       <input id="otp" placeholder="OTP">
@@ -439,7 +431,7 @@ function showUI() {
   const list = isAdmin ? employees : [currentUser.emp];
 
   // 🔥 مهم: ثبت در history stack برای بک گوشی
-  pushPage(() => showUI());
+  
 
   // 👇 برای employee مستقیم همون خودش انتخاب میشه
   if (!isAdmin) {
@@ -449,7 +441,7 @@ function showUI() {
   document.getElementById("app").innerHTML = `
   <div class="screen">
 
-    <img src="employee-bg.png" class="bg-full">
+    <img src="images/employee-bg.png" class="bg-full">
 
     <!-- فقط همینجا تغییر کرد: sidebar شیشه‌ای -->
     <div id="sidebar" class="sidebar active" style="
@@ -794,7 +786,7 @@ function openLinePage(empId){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="employee-bg.png" class="bg-full">
+      <img src="images/employee-bg.png" class="bg-full">
 
       <div class="overlay">
 
@@ -964,7 +956,7 @@ function openTransactions(empId){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="employee-bg.png" class="bg-full">
+      <img src="images/employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1412,7 +1404,7 @@ function openDocumentsPage(){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="employee-bg.png" class="bg-full">
+      <img src="images/employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1499,7 +1491,7 @@ function openSidebarMediaPage(empId){
   document.getElementById("app").innerHTML = `
     <div class="screen">
 
-      <img src="employee-bg.png" class="bg-full">
+      <img src="images/employee-bg.png" class="bg-full">
 
       <div class="panel">
 
@@ -1872,16 +1864,31 @@ function saveChats() {
 }
 function openChat(empId){
 
-currentChatEmpId = empId;
+  currentChatEmpId = empId;
 
   pushPage(() => showUI()); // ✅ فقط اضافه شد (Back stack)
 
-  const emp = employees.find(e => e.id === empId);
+  const emp = employees.find(
+  e => String(e.id) === String(empId)
+);
+console.log("empId =", empId);
+console.log("employees =", employees);
+console.log("emp =", emp);
+  // ✅ جلوگیری از کرش اگر کارمند پیدا نشد
+  if (!emp) {
+    alert("Employee not found");
+    return;
+  }
 
   if(!chats[empId]){
     chats[empId] = [];
   }
+console.log("currentUser =", currentUser);
 
+if (!currentUser) {
+  alert("currentUser is NULL");
+  return;
+}
   if(currentUser.type === "admin"){
 
     chats[empId].forEach(m => {
@@ -1900,6 +1907,8 @@ currentChatEmpId = empId;
 
   }
 
+  // بقیه کد تابع بدون تغییر...
+
   if (!window.isRefreshingChat) {
   saveChats();
 }
@@ -1911,15 +1920,15 @@ setTimeout(() => {
   }
 }, 50);
 
-  app.innerHTML = `
-    <div style="
-  padding:20px;
-  height:100dvh;
-  display:flex;
-  flex-direction:column;
-  box-sizing:border-box;
-  background:rgba(15,23,42,0.95);
-">
+  document.getElementById("app").innerHTML = `
+  <div style="
+    padding:20px;
+    height:100dvh;
+    display:flex;
+    flex-direction:column;
+    box-sizing:border-box;
+    background:rgba(15,23,42,0.95);
+  ">
 
       <button
         onclick="showUI()"
@@ -2318,19 +2327,6 @@ function openImageFull(src){
 
   img.src = src;
   modal.style.display = "flex";
-}
-
-function closeImageFull(){
-  const modal = document.getElementById("imageModal");
-  const img = document.getElementById("imageModalImg");
-
-  if(!modal) return;
-
-  modal.style.display = "none";
-
-  if(img){
-    img.src = "";
-  }
 }
 
 function closeImageFull(){
