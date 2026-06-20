@@ -1,4 +1,4 @@
-const CACHE_NAME = "employee-app-v7";
+const CACHE_NAME = "employee-app-v8";
 
 const FILES_TO_CACHE = [
   "./",
@@ -17,9 +17,20 @@ self.addEventListener("install", event => {
   self.skipWaiting();
 
   event.waitUntil(
-    caches
-      .open(CACHE_NAME)
-      .then(cache => cache.addAll(FILES_TO_CACHE))
+    (async () => {
+
+      const cache = await caches.open(CACHE_NAME);
+
+      for (const file of FILES_TO_CACHE) {
+        try {
+          await cache.add(file);
+          console.log("Cached:", file);
+        } catch (e) {
+          console.error("Cache failed:", file, e);
+        }
+      }
+
+    })()
   );
 
 });
@@ -28,19 +39,19 @@ self.addEventListener("install", event => {
 self.addEventListener("activate", event => {
 
   event.waitUntil(
+    (async () => {
 
-    caches.keys().then(keys =>
+      const keys = await caches.keys();
 
-      Promise.all(
-
+      await Promise.all(
         keys
           .filter(key => key !== CACHE_NAME)
           .map(key => caches.delete(key))
+      );
 
-      )
+      await self.clients.claim();
 
-    ).then(() => self.clients.claim())
-
+    })()
   );
 
 });
@@ -51,37 +62,42 @@ self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
   event.respondWith(
+    (async () => {
 
-    caches.match(event.request).then(cached => {
+      const cached = await caches.match(event.request);
 
       if (cached) {
         return cached;
       }
 
-      return fetch(event.request)
-        .then(response => {
+      try {
 
-          if (
-            !response ||
-            response.status !== 200 ||
-            response.type !== "basic"
-          ) {
-            return response;
-          }
+        const response = await fetch(event.request);
 
-          const responseClone = response.clone();
+        if (
+          response &&
+          response.status === 200 &&
+          response.type === "basic"
+        ) {
 
-          caches.open(CACHE_NAME).then(cache => {
-            cache.put(event.request, responseClone);
-          });
+          const cache = await caches.open(CACHE_NAME);
+          cache.put(event.request, response.clone());
 
-          return response;
+        }
 
-        })
-        .catch(() => caches.match("./index.html"));
+        return response;
 
-    })
+      } catch (e) {
 
+        const offline = await caches.match("./index.html");
+
+        if (offline) return offline;
+
+        throw e;
+
+      }
+
+    })()
   );
 
 });
