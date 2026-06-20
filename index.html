@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,7 +8,6 @@
   <link rel="stylesheet" href="style.css">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#000000">
-
 </head>
 
 <body>
@@ -19,32 +18,112 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- SAFE ERROR HANDLER -->
+  <!-- GLOBAL ERROR HANDLER -->
   <script>
-    window.onerror = function (msg, url, line) {
-      document.getElementById("app").innerHTML =
-        "<div style='color:white;background:black;padding:20px'>" +
-        "❌ Error: " + msg + "<br>Line: " + line +
-        "</div>";
+    window.onerror = function(message, source, lineno, colno, error) {
+
+      console.error("JS ERROR:", {
+        message,
+        source,
+        lineno,
+        colno,
+        error
+      });
+
+      const html = `
+      <div style="
+        background:#111;
+        color:#fff;
+        min-height:100vh;
+        padding:20px;
+        box-sizing:border-box;
+        font-family:monospace;
+        white-space:pre-wrap;
+        overflow:auto;
+      ">
+❌ JavaScript Error
+
+Message:
+${message}
+
+File:
+${source || "Unknown"}
+
+Line:
+${lineno || 0}
+
+Column:
+${colno || 0}
+
+Stack:
+
+${error && error.stack ? error.stack : "No stack available"}
+      </div>
+      `;
+
+      const app = document.getElementById("app");
+
+      if (app) {
+        app.innerHTML = html;
+      } else {
+        document.body.innerHTML = html;
+      }
+
+      return true;
     };
+
+    window.addEventListener("unhandledrejection", function(event) {
+
+      console.error("Promise Error:", event.reason);
+
+      const app = document.getElementById("app");
+
+      const html = `
+      <div style="
+        background:#111;
+        color:#ff5252;
+        min-height:100vh;
+        padding:20px;
+        box-sizing:border-box;
+        font-family:monospace;
+        white-space:pre-wrap;
+      ">
+❌ Unhandled Promise Rejection
+
+${event.reason && event.reason.stack
+  ? event.reason.stack
+  : JSON.stringify(event.reason, null, 2)}
+      </div>
+      `;
+
+      if (app) {
+        app.innerHTML = html;
+      } else {
+        document.body.innerHTML = html;
+      }
+    });
   </script>
 
-  <!-- App -->
+  <!-- Main App -->
   <script src="app.js?v=1.0.2"></script>
 
-  <!-- PWA Service Worker -->
+  <!-- Service Worker -->
   <script>
     if ("serviceWorker" in navigator) {
+
       window.addEventListener("load", () => {
+
         navigator.serviceWorker
           .register("./sw.js?v=1.0.2")
-          .then(() => {
-            console.log("✅ Service Worker Registered");
+          .then(reg => {
+            console.log("✅ Service Worker Registered", reg);
           })
           .catch(err => {
-            console.error("❌ Service Worker Error:", err);
+            console.error("❌ Service Worker Register Failed", err);
           });
+
       });
+
     }
   </script>
 
