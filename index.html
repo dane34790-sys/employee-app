@@ -1,13 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Employee App</title>
 
-  <link rel="stylesheet" href="style.css">
-  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="./style.css">
+
+  <!-- PWA -->
+  <link rel="manifest" href="./manifest.json">
   <meta name="theme-color" content="#000000">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Employees">
+
 </head>
 
 <body>
@@ -18,114 +27,109 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- GLOBAL ERROR HANDLER -->
+  <!-- Global Error -->
   <script>
-    window.onerror = function(message, source, lineno, colno, error) {
 
-      console.error("JS ERROR:", {
-        message,
-        source,
-        lineno,
-        colno,
-        error
-      });
+    window.onerror = function (
+      message,
+      source,
+      lineno,
+      colno,
+      error
+    ) {
 
-      const html = `
-      <div style="
-        background:#111;
-        color:#fff;
-        min-height:100vh;
-        padding:20px;
-        box-sizing:border-box;
-        font-family:monospace;
-        white-space:pre-wrap;
-        overflow:auto;
-      ">
+      console.error(error);
+
+      document.getElementById("app").innerHTML = `
+        <div style="
+          padding:20px;
+          color:white;
+          background:#111;
+          min-height:100vh;
+          white-space:pre-wrap;
+          font-family:monospace;
+        ">
 ❌ JavaScript Error
 
-Message:
 ${message}
 
-File:
-${source || "Unknown"}
+${source}
 
-Line:
-${lineno || 0}
+Line: ${lineno}
 
-Column:
-${colno || 0}
-
-Stack:
-
-${error && error.stack ? error.stack : "No stack available"}
-      </div>
+${error && error.stack ? error.stack : ""}
+        </div>
       `;
-
-      const app = document.getElementById("app");
-
-      if (app) {
-        app.innerHTML = html;
-      } else {
-        document.body.innerHTML = html;
-      }
 
       return true;
+
     };
 
-    window.addEventListener("unhandledrejection", function(event) {
+    window.addEventListener(
+      "unhandledrejection",
+      e => {
 
-      console.error("Promise Error:", event.reason);
+        document.getElementById("app").innerHTML = `
+          <div style="
+            padding:20px;
+            color:#ff5252;
+            background:#111;
+            min-height:100vh;
+            white-space:pre-wrap;
+            font-family:monospace;
+          ">
+❌ Promise Error
 
-      const app = document.getElementById("app");
+${e.reason && e.reason.stack
+  ? e.reason.stack
+  : JSON.stringify(e.reason, null, 2)}
+          </div>
+        `;
 
-      const html = `
-      <div style="
-        background:#111;
-        color:#ff5252;
-        min-height:100vh;
-        padding:20px;
-        box-sizing:border-box;
-        font-family:monospace;
-        white-space:pre-wrap;
-      ">
-❌ Unhandled Promise Rejection
-
-${event.reason && event.reason.stack
-  ? event.reason.stack
-  : JSON.stringify(event.reason, null, 2)}
-      </div>
-      `;
-
-      if (app) {
-        app.innerHTML = html;
-      } else {
-        document.body.innerHTML = html;
       }
-    });
+    );
+
   </script>
 
-  <!-- Main App -->
-  <script src="app.js?v=1.0.2"></script>
+  <!-- App -->
+  <script src="./app.js"></script>
 
   <!-- Service Worker -->
   <script>
+
     if ("serviceWorker" in navigator) {
 
-      window.addEventListener("load", () => {
+      window.addEventListener("load", async () => {
 
-        navigator.serviceWorker
-          .register("./sw.js?v=1.0.2")
-          .then(reg => {
-            console.log("✅ Service Worker Registered", reg);
-          })
-          .catch(err => {
-            console.error("❌ Service Worker Register Failed", err);
-          });
+        try {
+
+          const regs =
+            await navigator.serviceWorker.getRegistrations();
+
+          for (const reg of regs) {
+
+            await reg.unregister();
+
+          }
+
+          await navigator.serviceWorker.register("./sw.js");
+
+          console.log("✅ Service Worker Registered");
+
+        }
+
+        catch (err) {
+
+          console.error(err);
+
+        }
 
       });
 
     }
+
   </script>
 
 </body>
+
 </html>
