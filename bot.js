@@ -7,32 +7,65 @@ const bot = new TelegramBot(
 
 const ADMIN_ID = 8494308052;
 
-// پیام کارمند به ادمین
-bot.on("message", (msg) => {
-  const chatId = msg.chat.id;
+console.log("🤖 Bot is running...");
 
-  // پیام‌های ادمین پردازش نشود
-  if (chatId === ADMIN_ID) return;
+bot.on("message", async (msg) => {
 
-  const text = msg.text || "";
+  try {
 
-  bot.sendMessage(
-    ADMIN_ID,
-    `📩 پیام از کارمند:\n\n${text}\n\nID: ${chatId}`
-  );
+    const chatId = msg.chat.id;
+    const text = msg.text || "";
+
+    console.log("MESSAGE:", chatId, text);
+
+    // دستور استارت
+    if (text === "/start") {
+
+      await bot.sendMessage(
+        chatId,
+        "✅ ربات فعال است. پیام خود را ارسال کنید."
+      );
+
+      return;
+    }
+
+    // ===== پاسخ ادمین =====
+    if (chatId === ADMIN_ID) {
+
+      if (!msg.reply_to_message) return;
+
+      const originalText = msg.reply_to_message.text || "";
+
+      const match = originalText.match(/ID:\s(\d+)/);
+
+      if (!match) return;
+
+      const targetId = Number(match[1]);
+
+      await bot.sendMessage(targetId, `📨 ${text}`);
+
+      return;
+    }
+
+    // ===== پیام کارمند =====
+    await bot.sendMessage(
+      ADMIN_ID,
+      `📩 پیام از کارمند
+
+👤 ID: ${chatId}
+
+💬 ${text}`
+    );
+
+    await bot.sendMessage(
+      chatId,
+      "✅ پیام شما برای ادمین ارسال شد."
+    );
+
+  } catch (err) {
+
+    console.error("BOT ERROR:", err);
+
+  }
+
 });
-
-// پاسخ ادمین
-bot.on("message", (msg) => {
-  if (msg.chat.id !== ADMIN_ID) return;
-  if (!msg.reply_to_message) return;
-
-  const match = msg.reply_to_message.text.match(/ID:\s(\d+)/);
-  if (!match) return;
-
-  const targetId = match[1];
-
-  bot.sendMessage(targetId, msg.text);
-});
-
-console.log("Bot is running...");
