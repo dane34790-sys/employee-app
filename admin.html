@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+<meta charset="UTF-8">
+<title>Admin Chat Panel</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: sans-serif;
+  display: flex;
+  height: 100vh;
+  background: #111;
+  color: white;
+}
+
+/* USERS LIST */
+#users {
+  width: 30%;
+  background: #1b1b1b;
+  overflow-y: auto;
+  border-right: 1px solid #333;
+}
+
+.user {
+  padding: 15px;
+  border-bottom: 1px solid #333;
+  cursor: pointer;
+}
+
+.user:hover {
+  background: #333;
+}
+
+/* CHAT BOX */
+#chatBox {
+  width: 70%;
+  display: flex;
+  flex-direction: column;
+}
+
+#messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.msg {
+  padding: 8px;
+  margin: 5px;
+  border-radius: 8px;
+  max-width: 70%;
+}
+
+.me {
+  background: #0b5;
+  align-self: flex-end;
+}
+
+.other {
+  background: #444;
+  align-self: flex-start;
+}
+
+/* INPUT */
+#inputArea {
+  display: flex;
+  padding: 10px;
+  background: #222;
+}
+
+#text {
+  flex: 1;
+  padding: 10px;
+}
+
+button {
+  padding: 10px 15px;
+}
+</style>
+</head>
+
+<body>
+
+<div id="users"></div>
+
+<div id="chatBox">
+  <div id="messages"></div>
+
+  <div id="inputArea">
+    <input id="text" placeholder="پیام..." />
+    <button onclick="send()">Send</button>
+  </div>
+</div>
+
+<script>
+const API = "https://employee-app-production-46a9.up.railway.app";
+
+let currentUser = null;
+
+// ======================
+// LOAD USERS
+// ======================
+async function loadUsers() {
+
+  const res = await fetch(API + "/users");
+  const data = await res.json();
+
+  const box = document.getElementById("users");
+  box.innerHTML = "";
+
+  data.forEach(u => {
+
+    const div = document.createElement("div");
+    div.className = "user";
+
+    div.innerHTML = `
+      👤 ${u.employeeId}<br>
+      💬 ${u.lastMessage?.text || ""}
+    `;
+
+    div.onclick = () => openChat(u.employeeId);
+
+    box.appendChild(div);
+  });
+}
+
+// ======================
+// OPEN CHAT
+// ======================
+async function openChat(id) {
+
+  currentUser = id;
+
+  const res = await fetch(API + "/chat/" + id);
+  const data = await res.json();
+
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  data.forEach(m => {
+
+    const div = document.createElement("div");
+
+    div.className = "msg " + (m.from === "admin" ? "me" : "other");
+
+    div.innerText = m.text;
+
+    box.appendChild(div);
+  });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+// ======================
+// SEND MESSAGE
+// ======================
+async function send() {
+
+  const text = document.getElementById("text").value;
+
+  if (!currentUser || !text) return;
+
+  await fetch(API + "/send", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      employeeId: currentUser,
+      text
+    })
+  });
+
+  document.getElementById("text").value = "";
+
+  openChat(currentUser);
+}
+
+// refresh every 3 sec (like WhatsApp)
+setInterval(loadUsers, 3000);
+
+loadUsers();
+</script>
+
+</body>
+</html>
