@@ -1,4 +1,3 @@
-console.log("SERVER OK");
 const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
 
@@ -9,6 +8,12 @@ const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.BOT_TOKEN;
 const ADMIN_ID = 8494308052;
 
+// 🚨 جلوگیری از crash
+if (!TOKEN) {
+  console.log("❌ BOT_TOKEN is missing");
+  process.exit(1);
+}
+
 // ================= MEMORY DB =================
 const chats = new Map();
 
@@ -17,21 +22,21 @@ function getChat(id) {
   return chats.get(id);
 }
 
-// ================= BOT (WEBHOOK MODE) =================
+// ================= BOT =================
 const bot = new TelegramBot(TOKEN);
 
-// این مهمه 👇 webhook فعال میشه
-const WEBHOOK_URL = `https://employee-app-production-46a9.up.railway.app/bot${TOKEN}`;
+// ✅ webhook صحیح (بدون token داخل URL)
+const WEBHOOK_URL = "https://employee-app-production-46a9.up.railway.app/bot";
 
 bot.setWebHook(WEBHOOK_URL);
 
 // ================= RECEIVE UPDATE =================
-app.post(`/bot${TOKEN}`, (req, res) => {
+app.post("/bot", (req, res) => {
   bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
-// ================= MESSAGE HANDLER =================
+// ================= MESSAGE =================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
@@ -58,43 +63,6 @@ bot.on("message", async (msg) => {
 });
 
 // ================= API =================
-app.get("/users", (req, res) => {
-  const list = [...chats.keys()].map(id => ({
-    employeeId: id,
-    lastMessage: chats.get(id).slice(-1)[0]
-  }));
-
-  res.json(list);
-});
-
-app.get("/chat/:id", (req, res) => {
-  const id = Number(req.params.id);
-  res.json(getChat(id));
-});
-
-app.post("/send", async (req, res) => {
-
-  const { employeeId, text } = req.body;
-
-  const id = Number(employeeId);
-  const chat = getChat(id);
-
-  chat.push({
-    from: "admin",
-    text,
-    date: Date.now()
-  });
-
-  try {
-    await bot.sendMessage(id, `📩 پیام از ادمین:\n\n💬 ${text}`);
-  } catch (e) {
-    console.error(e.message);
-  }
-
-  res.json({ success: true });
-});
-
-// ================= ROOT =================
 app.get("/", (req, res) => {
   res.send("Webhook Bot Running ✅");
 });
