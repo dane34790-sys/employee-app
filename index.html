@@ -4,172 +4,116 @@
 <head>
 
   <meta charset="UTF-8">
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Employee App</title>
 
-  <link
-    rel="stylesheet"
-    href="./style.css"
-  >
+  <link rel="stylesheet" href="./style.css">
 
   <!-- PWA -->
-  <link
-    rel="manifest"
-    href="./manifest.json"
-  >
+  <link rel="manifest" href="./manifest.json">
 
-  <meta
-    name="theme-color"
-    content="#000000"
-  >
+  <meta name="theme-color" content="#000000">
 
-  <meta
-    name="mobile-web-app-capable"
-    content="yes"
-  >
-
-  <meta
-    name="apple-mobile-web-app-capable"
-    content="yes"
-  >
-
-  <meta
-    name="apple-mobile-web-app-status-bar-style"
-    content="black"
-  >
-
-  <meta
-    name="apple-mobile-web-app-title"
-    content="Employees"
-  >
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Employees">
 
 </head>
 
 <body>
 
-  <div id="app">
+  <!-- 🔥 SIDEBAR -->
+  <div id="sidebar" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100vh;
+    background: #111;
+    color: white;
+    padding: 15px;
+    box-sizing: border-box;
+  ">
+
+    <h3 style="margin-top:0;">Menu</h3>
+
+    <a href="https://t.me/ar1_employee_private_bot"
+       target="_blank"
+       style="
+        display:block;
+        margin-top:15px;
+        padding:10px;
+        background:#229ED9;
+        color:white;
+        text-decoration:none;
+        border-radius:8px;
+        text-align:center;
+       ">
+      🤖 ورود به ربات کارمندان
+    </a>
+
+  </div>
+
+  <!-- 🔥 MAIN APP -->
+  <div id="app" style="margin-left:240px;">
     Loading...
   </div>
 
   <!-- Firebase -->
-
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
   <!-- Error Handler -->
-
   <script>
 
-    window.onerror = function (
-      message,
-      source,
-      lineno,
-      colno,
-      error
-    ) {
-
-      console.error(error);
+    window.onerror = function (message, source, lineno, colno, error) {
 
       document.getElementById("app").innerHTML = `
-        <div style="
-          padding:20px;
-          background:#111;
-          color:white;
-          min-height:100vh;
-          white-space:pre-wrap;
-          font-family:monospace;
-        ">
-
-❌ JavaScript Error
-
-${message}
-
-${source}
-
-Line: ${lineno}
-
-${error && error.stack ? error.stack : ""}
-
+        <div style="padding:20px;color:white;background:#111;">
+          ❌ ${message}
+          <br><br>
+          ${error && error.stack ? error.stack : ""}
         </div>
       `;
 
       return true;
-
     };
 
-    window.addEventListener(
-      "unhandledrejection",
-      e => {
-
-        document.getElementById("app").innerHTML = `
-          <div style="
-            padding:20px;
-            background:#111;
-            color:#ff5252;
-            min-height:100vh;
-            white-space:pre-wrap;
-            font-family:monospace;
-          ">
-
-❌ Promise Error
-
-${e.reason && e.reason.stack
-  ? e.reason.stack
-  : JSON.stringify(e.reason, null, 2)}
-
-          </div>
-        `;
-
-      }
-    );
+    window.addEventListener("unhandledrejection", e => {
+      document.getElementById("app").innerHTML = `
+        <div style="padding:20px;color:red;background:#111;">
+          ❌ ${e.reason}
+        </div>
+      `;
+    });
 
   </script>
 
   <!-- APP -->
-
   <script src="./app.js"></script>
 
   <!-- SERVICE WORKER -->
-
   <script>
 
     if ("serviceWorker" in navigator) {
 
-      window.addEventListener(
-        "load",
-        async () => {
+      window.addEventListener("load", async () => {
 
-          try {
+        try {
 
-            const registration =
-              await navigator.serviceWorker.register(
-                "/employee-app/sw.js"
-              );
+          await navigator.serviceWorker.register("/employee-app/sw.js");
 
-            await navigator.serviceWorker.ready;
+          console.log("✅ Service Worker Ready");
 
-            console.log(
-              "✅ Service Worker Ready",
-              registration
-            );
+        } catch (err) {
 
-          } catch (err) {
-
-            console.error(
-              "❌ Service Worker Failed",
-              err
-            );
-
-          }
+          console.error("❌ Service Worker Failed", err);
 
         }
-      );
+
+      });
 
     }
 
