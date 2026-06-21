@@ -4,104 +4,110 @@ const TelegramBot = require("node-telegram-bot-api");
 const app = express();
 app.use(express.json({ limit: "20mb" }));
 
+const PORT = process.env.PORT || 3000;
 const ADMIN_ID = 8494308052;
 
+// ================= BOT =================
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
-// 👇 دیتابیس ساده چت‌ها
+// ================= DB (memory) =================
 const chats = new Map();
 
-// =====================
-// پیام از کارمند
-// =====================
+// ================= HELPERS =================
+function getChat(id) {
+  if (!chats.has(id)) {
+    chats.set(id, []);
+  }
+  return chats.get(id);
+}
+
+// ================= INCOMING MESSAGES =================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
+  // ignore admin messages here
   if (chatId === ADMIN_ID) return;
 
-  // ذخیره پیام‌ها مثل واتساپ
-  if (!chats.has(chatId)) {
-    chats.set(chatId, []);
-  }
+  const chat = getChat(chatId);
 
-  chats.get(chatId).push({
+  chat.push({
     from: "employee",
     text,
     date: Date.now()
   });
 
-  // به ادمین اطلاع بده
-  await bot.sendMessage(
-    ADMIN_ID,
-    `📩 New Message
-👤 ID: ${chatId}
-💬 ${text}`
-  );
+  try {
+    await bot.sendMessage(
+      ADMIN_ID,
+      `📩 New Message\n👤 ID: ${chatId}\n💬 ${text}`
+    );
+  } catch (e) {
+    console.error("ADMIN NOTIFY ERROR:", e.message);
+  }
 });
 
-
-// =====================
-// گرفتن لیست کارمندها (مثل لیست چت واتساپ)
-// =====================
+// ================= GET USERS =================
 app.get("/users", (req, res) => {
-
   const list = [...chats.keys()].map(id => ({
     employeeId: id,
-    lastMessage: chats.get(id).slice(-1)[0]
+    lastMessage: chats.get(id).slice(-1)[0] || null
   }));
 
   res.json(list);
 });
 
-
-// =====================
-// گرفتن چت یک کارمند
-// =====================
+// ================= GET CHAT =================
 app.get("/chat/:id", (req, res) => {
 
-  const id = req.params.id;
+  const id = Number(req.params.id);
 
-  res.json(chats.get(Number(id)) || []);
+  if (!id) {
+    return res.status(400).json({ error: "invalid id" });
+  }
+
+  res.json(getChat(id));
 });
 
-
-// =====================
-// ارسال پیام از ادمین
-// =====================
+// ================= SEND MESSAGE (ADMIN -> EMPLOYEE) =================
 app.post("/send", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
   if (!employeeId || !text) {
-    return res.status(400).json({ success: false });
+    return res.status(400).json({ success: false, error: "missing data" });
   }
 
-  if (!chats.has(Number(employeeId))) {
-    chats.set(Number(employeeId), []);
-  }
+  const id = Number(employeeId);
+  const chat = getChat(id);
 
-  chats.get(Number(employeeId)).push({
+  chat.push({
     from: "admin",
     text,
     date: Date.now()
   });
 
-  await bot.sendMessage(
-    Number(employeeId),
-    `📩 پیام از ادمین:\n\n💬 ${text}`
-  );
+  try {
+    await bot.sendMessage(
+      id,
+      `📩 پیام از ادمین:\n\n💬 ${text}`
+    );
+  } catch (e) {
+    console.error("SEND ERROR:", e.message);
+  }
 
   res.json({ success: true });
 });
 
-
-// =====================
+// ================= ROOT =================
 app.get("/", (req, res) => {
-  res.send("WhatsApp Admin Bot Running");
+  res.send("Employee Bot Running ✅");
 });
 
-app.listen(process.env.PORT || 3000);
+// ================= START =================
+app.listen(PORT, () => {
+  console.log("Server running on port", PORT);
+});
