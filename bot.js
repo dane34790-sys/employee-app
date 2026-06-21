@@ -1,41 +1,38 @@
 const TelegramBot = require("node-telegram-bot-api");
 
-const bot = new TelegramBot("TOKEN", { polling: true });
+const bot = new TelegramBot(
+  "8909778001:AAG_3mfdu5mwmGXOireaO-Cux8S4RXhsMkc",
+  { polling: true }
+);
 
-const ADMIN_ID = 123456789;
-
-// نگه‌داشتن مپ پیام‌ها
-const userMap = {};
+const ADMIN_ID = 8494308052;
 
 // پیام کارمند به ادمین
 bot.on("message", (msg) => {
-
   const chatId = msg.chat.id;
-  const text = msg.text;
 
-  // پیام ادمین رو هندل نکن
+  // پیام‌های ادمین پردازش نشود
   if (chatId === ADMIN_ID) return;
 
-  // ذخیره ارتباط
-  userMap[msg.message_id] = chatId;
+  const text = msg.text || "";
 
-  bot.sendMessage(ADMIN_ID,
+  bot.sendMessage(
+    ADMIN_ID,
     `📩 پیام از کارمند:\n\n${text}\n\nID: ${chatId}`
   );
 });
 
-// جواب ادمین
+// پاسخ ادمین
 bot.on("message", (msg) => {
-
   if (msg.chat.id !== ADMIN_ID) return;
   if (!msg.reply_to_message) return;
 
-  const originalText = msg.reply_to_message.text;
-
-  const match = originalText.match(/ID:\s(\d+)/);
+  const match = msg.reply_to_message.text.match(/ID:\s(\d+)/);
   if (!match) return;
 
   const targetId = match[1];
 
   bot.sendMessage(targetId, msg.text);
 });
+
+console.log("Bot is running...");
