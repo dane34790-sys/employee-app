@@ -7,28 +7,38 @@ app.use(express.json({ limit: "20mb" }));
 
 const ADMIN_ID = 8494308052;
 
+// 👇 ذخیره کارمندها (موقت)
+const users = new Map();
+
 // BOT
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
 
-// ================================
-// 1. پیام از تلگرام به ادمین
-// ================================
+// ===================================
+// 1. پیام از تلگرام به ادمین (کارمندان)
+// ===================================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  // فقط پیام‌های غیر ادمین
+  // ❌ پیام ادمین نادیده گرفته شود
   if (chatId === ADMIN_ID) return;
+
+  // 👇 ذخیره کارمند
+  users.set(chatId, true);
 
   try {
 
     await bot.sendMessage(
       ADMIN_ID,
-      `📩 Telegram Message\n\n${text}\n\nID: ${chatId}`
+      `📩 Telegram Message
+
+👤 Employee ID: ${chatId}
+
+💬 ${text}`
     );
 
     await bot.sendMessage(
@@ -43,22 +53,29 @@ bot.on("message", async (msg) => {
 });
 
 
-// ================================
-// 2. پیام از PWA به تلگرام (اصلی)
-// ================================
+// ===================================
+// 2. پیام از PWA به ادمین
+// ===================================
 app.post("/sendToAdmin", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
-  if (!text) {
-    return res.status(400).json({ success: false, message: "Empty message" });
+  if (!text || !employeeId) {
+    return res.status(400).json({
+      success: false,
+      message: "Invalid data"
+    });
   }
 
   try {
 
     await bot.sendMessage(
       ADMIN_ID,
-      `📩 PWA Message\n\n👤 Employee: ${employeeId}\n\n💬 ${text}`
+      `📩 PWA Message
+
+👤 Employee: ${employeeId}
+
+💬 ${text}`
     );
 
     res.json({ success: true });
@@ -74,17 +91,53 @@ app.post("/sendToAdmin", async (req, res) => {
 });
 
 
-// ================================
-// 3. تست سرور
-// ================================
+// ===================================
+// 3. جواب ادمین به کارمند (خیلی مهم)
+// ===================================
+app.post("/replyToEmployee", async (req, res) => {
+
+  const { employeeId, text } = req.body;
+
+  if (!employeeId || !text) {
+    return res.status(400).json({
+      success: false,
+      message: "Missing data"
+    });
+  }
+
+  try {
+
+    await bot.sendMessage(
+      employeeId,
+      `📩 پیام از ادمین:
+
+💬 ${text}`
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+
+    console.error("Reply Error:", err);
+
+    res.status(500).json({ success: false });
+
+  }
+
+});
+
+
+// ===================================
+// 4. تست سرور
+// ===================================
 app.get("/", (req, res) => {
   res.send("Bot Server Running");
 });
 
 
-// ================================
-// 4. Start server
-// ================================
+// ===================================
+// 5. Start Server
+// ===================================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
