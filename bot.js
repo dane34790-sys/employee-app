@@ -7,23 +7,28 @@ app.use(express.json({ limit: "20mb" }));
 
 const ADMIN_ID = 8494308052;
 
+// BOT
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
-// پیام‌های دریافتی از تلگرام
+
+// ================================
+// 1. پیام از تلگرام به ادمین
+// ================================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
+  // فقط پیام‌های غیر ادمین
   if (chatId === ADMIN_ID) return;
 
   try {
 
     await bot.sendMessage(
       ADMIN_ID,
-      `📩 Telegram Message\n\n${text}\n\nID:${chatId}`
+      `📩 Telegram Message\n\n${text}\n\nID: ${chatId}`
     );
 
     await bot.sendMessage(
@@ -32,46 +37,54 @@ bot.on("message", async (msg) => {
     );
 
   } catch (err) {
-
-    console.error(err);
-
+    console.error("Telegram Error:", err);
   }
 
 });
 
-// پیام از PWA به تلگرام
+
+// ================================
+// 2. پیام از PWA به تلگرام (اصلی)
+// ================================
 app.post("/sendToAdmin", async (req, res) => {
+
+  const { employeeId, text } = req.body;
+
+  if (!text) {
+    return res.status(400).json({ success: false, message: "Empty message" });
+  }
 
   try {
 
-    const { employeeId, text } = req.body;
-
     await bot.sendMessage(
       ADMIN_ID,
-      `📩 PWA Message\n\nEmployee: ${employeeId}\n\n${text}`
+      `📩 PWA Message\n\n👤 Employee: ${employeeId}\n\n💬 ${text}`
     );
 
-    res.json({
-      success: true
-    });
+    res.json({ success: true });
 
   } catch (err) {
 
-    console.error(err);
+    console.error("PWA Error:", err);
 
-    res.status(500).json({
-      success: false
-    });
+    res.status(500).json({ success: false });
 
   }
 
 });
 
-// برای تست دامنه
+
+// ================================
+// 3. تست سرور
+// ================================
 app.get("/", (req, res) => {
   res.send("Bot Server Running");
 });
 
+
+// ================================
+// 4. Start server
+// ================================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
