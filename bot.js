@@ -10,16 +10,16 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
-// 👇 لیست کارمندها
+// 👇 لیست کارمندان
 const users = new Map();
 
-// 👇 چت فعال ادمین (مهم‌ترین بخش)
-let activeChatUser = null;
+// 👇 وضعیت انتخاب ادمین
+let adminSelectedUser = null;
 
 
-// ==========================
-// 1. پیام کارمند → ادمین
-// ==========================
+// =====================
+// 1. پیام از کارمند به ادمین
+// =====================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
@@ -29,7 +29,6 @@ bot.on("message", async (msg) => {
 
   // ذخیره کارمند
   users.set(chatId, {
-    id: chatId,
     lastSeen: Date.now()
   });
 
@@ -41,59 +40,48 @@ bot.on("message", async (msg) => {
 
 💬 ${text}
 
-➡️ برای پاسخ:
+➡️ برای جواب دادن:
 POST /selectUser
 { "employeeId": ${chatId} }`
   );
+
 });
 
 
-// ==========================
-// 2. انتخاب کارمند در پنل ادمین
-// ==========================
+// =====================
+// 2. انتخاب کارمند برای ادمین
+// =====================
 app.post("/selectUser", (req, res) => {
 
   const { employeeId } = req.body;
 
-  activeChatUser = Number(employeeId);
+  if (!employeeId) {
+    return res.status(400).json({ success: false });
+  }
+
+  adminSelectedUser = Number(employeeId);
 
   res.json({
     success: true,
-    activeChatUser
+    selected: adminSelectedUser
   });
 
-  console.log("Active chat set to:", activeChatUser);
 });
 
 
-// ==========================
-// 3. ارسال پیام از PWA به ادمین
-// ==========================
-app.post("/sendToAdmin", async (req, res) => {
+// =====================
+// 3. جواب ادمین به کارمند
+// =====================
+app.post("/replyToEmployee", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
-  await bot.sendMessage(
-    ADMIN_ID,
-    `📩 PWA Message
+  // اگر از API نفرستادی، از انتخاب ادمین استفاده کن
+  const targetId = employeeId
+    ? Number(employeeId)
+    : adminSelectedUser;
 
-👤 Employee: ${employeeId}
-
-💬 ${text}`
-  );
-
-  res.json({ success: true });
-});
-
-
-// ==========================
-// 4. جواب ادمین به کارمند (اصلی)
-// ==========================
-app.post("/replyToEmployee", async (req, res) => {
-
-  const { text } = req.body;
-
-  if (!activeChatUser) {
+  if (!targetId || !text) {
     return res.status(400).json({
       success: false,
       message: "No user selected"
@@ -103,7 +91,7 @@ app.post("/replyToEmployee", async (req, res) => {
   try {
 
     await bot.sendMessage(
-      activeChatUser,
+      targetId,
       `📩 پیام از ادمین:
 
 💬 ${text}`
@@ -115,14 +103,19 @@ app.post("/replyToEmployee", async (req, res) => {
     console.error(err);
     res.status(500).json({ success: false });
   }
+
 });
 
 
-// ==========================
+// =====================
+// تست
+// =====================
 app.get("/", (req, res) => {
   res.send("Bot Server Running");
 });
 
-app.listen(process.env.PORT || 3000, () => {
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
   console.log("Server Running");
 });
