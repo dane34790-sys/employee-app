@@ -2279,6 +2279,28 @@ async function sendChat(empId){
 
     saveChats();
 
+try {
+
+  await fetch(
+    "https://employee-app-production-46a9.up.railway.app/sendToAdmin",
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        employeeId: empId,
+        text: txt
+      })
+    }
+  );
+
+} catch (e) {
+
+  console.error(e);
+
+}
+
   }catch(err){
 
     chats[empId].pop();
