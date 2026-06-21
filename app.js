@@ -2135,16 +2135,9 @@ setTimeout(() => {
 }
 async function sendChat(empId) {
 
-  const txt = document
-    .getElementById("msgText")
-    .value
-    .trim();
-
-  const fileInput =
-    document.getElementById("chatFile");
-
-  const file =
-    fileInput?.files?.[0];
+  const txt = document.getElementById("msgText").value.trim();
+  const fileInput = document.getElementById("chatFile");
+  const file = fileInput?.files?.[0];
 
   if (!txt && !file) return;
 
@@ -2154,12 +2147,9 @@ async function sendChat(empId) {
 
   let fileData = null;
 
-  // =========================
-  // FILE HANDLING
-  // =========================
+  // ================= FILE =================
   if (file) {
 
-    // IMAGE
     if (file.type.startsWith("image/")) {
 
       fileData = await new Promise((resolve, reject) => {
@@ -2174,52 +2164,44 @@ async function sendChat(empId) {
 
             const canvas = document.createElement("canvas");
 
-            let width = img.width;
-            let height = img.height;
+            let w = img.width;
+            let h = img.height;
 
-            const MAX_WIDTH = 1200;
+            const MAX = 1200;
 
-            if (width > MAX_WIDTH) {
-              height = (height * MAX_WIDTH) / width;
-              width = MAX_WIDTH;
+            if (w > MAX) {
+              h = (h * MAX) / w;
+              w = MAX;
             }
 
-            canvas.width = width;
-            canvas.height = height;
+            canvas.width = w;
+            canvas.height = h;
 
             const ctx = canvas.getContext("2d");
-
-            ctx.drawImage(img, 0, 0, width, height);
-
-            const compressed = canvas.toDataURL("image/jpeg", 0.7);
+            ctx.drawImage(img, 0, 0, w, h);
 
             resolve({
               name: file.name,
               type: "image/jpeg",
-              data: compressed
+              data: canvas.toDataURL("image/jpeg", 0.7)
             });
 
           };
 
-          img.onerror = reject;
           img.src = e.target.result;
-
         };
 
-        reader.onerror = reject;
         reader.readAsDataURL(file);
-
       });
 
     } else {
 
-      // OTHER FILES (PDF, etc)
-      if (file.size > 2000000) {
-        alert("File size must be less than 2MB");
+      if (file.size > 2 * 1024 * 1024) {
+        alert("File too big");
         return;
       }
 
-      fileData = await new Promise((resolve, reject) => {
+      fileData = await new Promise(resolve => {
 
         const reader = new FileReader();
 
@@ -2231,37 +2213,25 @@ async function sendChat(empId) {
           });
         };
 
-        reader.onerror = reject;
         reader.readAsDataURL(file);
 
       });
     }
   }
 
-  // =========================
-  // SAVE LOCAL CHAT
-  // =========================
-  chats[empId].push({
-    from: currentUser.type === "admin" ? "admin" : "employee",
+  // ================= SAVE LOCAL =================
+  const msgObj = {
+    from: "employee",
     text: txt,
     file: fileData,
     date: Date.now(),
-    seen: false,
-    seenByAdmin: false
-  });
+    seen: false
+  };
 
-  try {
-    saveChats();
-  } catch (err) {
-    chats[empId].pop();
-    console.error(err);
-    alert("Storage error!");
-    return;
-  }
+  chats[empId].push(msgObj);
+  saveChats();
 
-  // =========================
-  // SEND TO SERVER (FIXED)
-  // =========================
+  // ================= SEND TO SERVER =================
   try {
 
     await fetch("https://employee-app-production-46a9.up.railway.app/sendToAdmin", {
@@ -2271,28 +2241,21 @@ async function sendChat(empId) {
       },
       body: JSON.stringify({
         employeeId: empId,
-        text: txt
+        text: txt,
+        file: fileData   // 🔥 مهم: فایل هم بفرست
       })
     });
 
   } catch (e) {
-    console.error("Send error:", e);
+    console.error("SEND ERROR:", e);
   }
 
-  // =========================
-  // CLEAN UI
-  // =========================
+  // ================= CLEAN =================
   document.getElementById("msgText").value = "";
-
   if (fileInput) fileInput.value = "";
 
-  const fileName = document.getElementById("fileName");
-  if (fileName) fileName.innerHTML = "";
-
   const chatBox = document.getElementById("chatBox");
-  if (chatBox) {
-    chatBox.scrollTop = chatBox.scrollHeight;
-  }
+  if (chatBox) chatBox.scrollTop = chatBox.scrollHeight;
 }
 function deleteMessage(empId,index){
 
