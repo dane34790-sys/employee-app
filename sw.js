@@ -1,100 +1,60 @@
-const CACHE_NAME = "employee-app-v9";
+const CACHE_NAME = "employee-app-v10";
 
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
-  "./manifest.json",
-  "./images/app-icon.png",
-  "./images/login-bg.png",
-  "./images/employee-bg.png"
+  "./manifest.json"
 ];
 
-// نصب
 self.addEventListener("install", event => {
 
   self.skipWaiting();
 
   event.waitUntil(
-    caches.open(CACHE_NAME).then(async cache => {
-
-      for (const file of FILES_TO_CACHE) {
-        try {
-          await cache.add(file);
-        } catch (err) {
-          console.warn("Cache skipped:", file, err);
-        }
-      }
-
-    })
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(FILES_TO_CACHE))
   );
 
 });
 
-// فعال‌سازی
 self.addEventListener("activate", event => {
 
   event.waitUntil(
-    caches.keys().then(keys => {
-
-      return Promise.all(
+    caches.keys().then(keys =>
+      Promise.all(
         keys.map(key => {
-
           if (key !== CACHE_NAME) {
             return caches.delete(key);
           }
-
         })
-      );
-
-    }).then(() => self.clients.claim())
+      )
+    ).then(() => self.clients.claim())
   );
 
 });
 
-// درخواست‌ها
 self.addEventListener("fetch", event => {
 
-  if (event.request.method !== "GET") {
-    return;
-  }
+  if (event.request.method !== "GET") return;
 
   event.respondWith(
 
-    caches.match(event.request).then(cacheRes => {
+    fetch(event.request)
+      .then(response => {
 
-      if (cacheRes) {
-        return cacheRes;
-      }
+        const clone = response.clone();
 
-      return fetch(event.request)
-        .then(networkRes => {
+        caches.open(CACHE_NAME)
+          .then(cache => cache.put(event.request, clone));
 
-          if (
-            networkRes &&
-            networkRes.status === 200 &&
-            networkRes.type === "basic"
-          ) {
+        return response;
 
-            const copy = networkRes.clone();
-
-            caches.open(CACHE_NAME).then(cache => {
-              cache.put(event.request, copy);
-            });
-
-          }
-
-          return networkRes;
-
-        })
-        .catch(() => {
-
-          return caches.match("./index.html");
-
-        });
-
-    })
+      })
+      .catch(() =>
+        caches.match(event.request)
+      )
 
   );
 
