@@ -1,33 +1,46 @@
+const express = require("express");
 const TelegramBot = require("node-telegram-bot-api");
 
+const app = express();
+
+app.use(express.json({ limit: "20mb" }));
+
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  polling: true,
+  polling: true
 });
 
 const ADMIN_ID = 8494308052;
 
-bot.on("message", async (msg) => {
-  const chatId = msg.chat.id;
-  const text = msg.text || "";
+// پیام از PWA به تلگرام
+app.post("/sendToAdmin", async (req, res) => {
 
-  console.log("MESSAGE:", chatId, text);
+  try {
 
-  // پیام ادمین
-  if (chatId === ADMIN_ID) {
-    return;
+    const { employeeId, text } = req.body;
+
+    await bot.sendMessage(
+      ADMIN_ID,
+      `📩 PWA Message\n\nEmployee: ${employeeId}\n\n${text}`
+    );
+
+    res.json({ success: true });
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json({
+      success: false
+    });
+
   }
 
-  // پیام کارمند → ادمین
-  await bot.sendMessage(
-    ADMIN_ID,
-    `📩 پیام جدید\n\n${text}\n\nID:${chatId}`
-  );
-
-  // تایید به کارمند
-  await bot.sendMessage(
-    chatId,
-    "✅ پیام شما برای مدیریت ارسال شد."
-  );
 });
 
-console.log("🤖 Bot is running...");
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log("Server Running");
+});
+
+console.log("Bot Running");
