@@ -7,7 +7,7 @@ app.use(express.json({ limit: "20mb" }));
 
 const ADMIN_ID = 8494308052;
 
-// 👇 ذخیره کارمندها (موقت)
+// 👇 ذخیره کارمندان فعال
 const users = new Map();
 
 // BOT
@@ -17,18 +17,20 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
 
 
 // ===================================
-// 1. پیام از تلگرام به ادمین (کارمندان)
+// 1. پیام از تلگرام به ادمین
 // ===================================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  // ❌ پیام ادمین نادیده گرفته شود
+  // ❌ نادیده گرفتن ادمین
   if (chatId === ADMIN_ID) return;
 
-  // 👇 ذخیره کارمند
-  users.set(chatId, true);
+  // 👇 ذخیره کاربر (کارمند)
+  users.set(chatId, {
+    lastSeen: Date.now()
+  });
 
   try {
 
@@ -92,7 +94,7 @@ app.post("/sendToAdmin", async (req, res) => {
 
 
 // ===================================
-// 3. جواب ادمین به کارمند (خیلی مهم)
+// 3. جواب ادمین به کارمند
 // ===================================
 app.post("/replyToEmployee", async (req, res) => {
 
@@ -106,6 +108,11 @@ app.post("/replyToEmployee", async (req, res) => {
   }
 
   try {
+
+    // ❗ چک اینکه کاربر قبلاً پیام داده یا نه
+    if (!users.has(Number(employeeId))) {
+      console.log("Unknown user:", employeeId);
+    }
 
     await bot.sendMessage(
       employeeId,
