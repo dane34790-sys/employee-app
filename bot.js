@@ -5,7 +5,7 @@ const bot = new TelegramBot(
   { polling: true }
 );
 
-const ADMIN_ID = 8494308052;
+const ADMIN_ID = 1;
 
 console.log("🤖 Bot is running...");
 
