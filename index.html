@@ -36,16 +36,39 @@ body{
 .sidebar{
   position:fixed !important;
   top:0;
-  right:-280px !important;
-  width:280px !important;
-  max-width:80vw !important;
+  right:-140px !important;
+
+  width:120px !important;
+  min-width:120px !important;
+  max-width:120px !important;
+
   height:100dvh !important;
+
   z-index:99999;
   transition:right .3s ease;
 }
 
 .sidebar.active{
   right:0 !important;
+}
+
+.menu-item,
+.menu-bot{
+  display:block;
+  width:95px;
+  margin:8px auto;
+  padding:10px 5px;
+
+  text-align:center;
+  text-decoration:none;
+
+  color:#fff;
+
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:12px;
+
+  font-size:12px;
 }
 </style>
 </head>
