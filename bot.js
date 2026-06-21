@@ -7,7 +7,7 @@ app.use(express.json({ limit: "20mb" }));
 
 const ADMIN_ID = 8494308052;
 
-// 👇 ذخیره کارمندان فعال
+// 👇 ذخیره کارمندان (RAM)
 const users = new Map();
 
 // BOT
@@ -24,10 +24,10 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  // ❌ نادیده گرفتن ادمین
+  // ❌ ادمین رد شود
   if (chatId === ADMIN_ID) return;
 
-  // 👇 ذخیره کاربر (کارمند)
+  // 👇 ثبت کاربر
   users.set(chatId, {
     lastSeen: Date.now()
   });
@@ -51,7 +51,6 @@ bot.on("message", async (msg) => {
   } catch (err) {
     console.error("Telegram Error:", err);
   }
-
 });
 
 
@@ -62,7 +61,7 @@ app.post("/sendToAdmin", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
-  if (!text || !employeeId) {
+  if (!employeeId || !text) {
     return res.status(400).json({
       success: false,
       message: "Invalid data"
@@ -83,18 +82,14 @@ app.post("/sendToAdmin", async (req, res) => {
     res.json({ success: true });
 
   } catch (err) {
-
     console.error("PWA Error:", err);
-
     res.status(500).json({ success: false });
-
   }
-
 });
 
 
 // ===================================
-// 3. جواب ادمین به کارمند
+// 3. جواب ادمین به کارمند (FIX شده)
 // ===================================
 app.post("/replyToEmployee", async (req, res) => {
 
@@ -109,13 +104,15 @@ app.post("/replyToEmployee", async (req, res) => {
 
   try {
 
-    // ❗ چک اینکه کاربر قبلاً پیام داده یا نه
-    if (!users.has(Number(employeeId))) {
-      console.log("Unknown user:", employeeId);
+    const id = Number(employeeId);
+
+    // ❗ چک کاربر
+    if (!users.has(id)) {
+      console.log("⚠️ Unknown user but sending anyway:", id);
     }
 
     await bot.sendMessage(
-      employeeId,
+      id,
       `📩 پیام از ادمین:
 
 💬 ${text}`
@@ -128,9 +125,7 @@ app.post("/replyToEmployee", async (req, res) => {
     console.error("Reply Error:", err);
 
     res.status(500).json({ success: false });
-
   }
-
 });
 
 
@@ -143,7 +138,7 @@ app.get("/", (req, res) => {
 
 
 // ===================================
-// 5. Start Server
+// 5. Start
 // ===================================
 const PORT = process.env.PORT || 3000;
 
