@@ -5,37 +5,37 @@ const app = express();
 app.use(express.json({ limit: "20mb" }));
 
 const PORT = process.env.PORT || 3000;
+const TOKEN = process.env.BOT_TOKEN;
 const ADMIN_ID = 8494308052;
-
-// ================= BOT (FIXED) =================
-// جلوگیری از 409 conflict + پایداری بیشتر روی Railway
-const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  polling: {
-    autoStart: true,
-    interval: 2000,
-    params: {
-      timeout: 10
-    }
-  }
-});
 
 // ================= MEMORY DB =================
 const chats = new Map();
 
 function getChat(id) {
-  if (!chats.has(id)) {
-    chats.set(id, []);
-  }
+  if (!chats.has(id)) chats.set(id, []);
   return chats.get(id);
 }
 
-// ================= INCOMING MESSAGES =================
+// ================= BOT (WEBHOOK MODE) =================
+const bot = new TelegramBot(TOKEN);
+
+// این مهمه 👇 webhook فعال میشه
+const WEBHOOK_URL = `https://employee-app-production-46a9.up.railway.app/bot${TOKEN}`;
+
+bot.setWebHook(WEBHOOK_URL);
+
+// ================= RECEIVE UPDATE =================
+app.post(`/bot${TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
+  res.sendStatus(200);
+});
+
+// ================= MESSAGE HANDLER =================
 bot.on("message", async (msg) => {
 
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  // ignore admin messages
   if (chatId === ADMIN_ID) return;
 
   const chat = getChat(chatId);
@@ -51,45 +51,29 @@ bot.on("message", async (msg) => {
       ADMIN_ID,
       `📩 New Message\n👤 ID: ${chatId}\n💬 ${text}`
     );
-  } catch (err) {
-    console.error("ADMIN NOTIFY ERROR:", err.message);
+  } catch (e) {
+    console.error(e.message);
   }
 });
 
-// ================= USERS LIST =================
+// ================= API =================
 app.get("/users", (req, res) => {
-
   const list = [...chats.keys()].map(id => ({
     employeeId: id,
-    lastMessage: chats.get(id).slice(-1)[0] || null
+    lastMessage: chats.get(id).slice(-1)[0]
   }));
 
   res.json(list);
 });
 
-// ================= CHAT HISTORY =================
 app.get("/chat/:id", (req, res) => {
-
   const id = Number(req.params.id);
-
-  if (!id) {
-    return res.status(400).json({ error: "invalid id" });
-  }
-
   res.json(getChat(id));
 });
 
-// ================= ADMIN SEND MESSAGE =================
 app.post("/send", async (req, res) => {
 
   const { employeeId, text } = req.body;
-
-  if (!employeeId || !text) {
-    return res.status(400).json({
-      success: false,
-      error: "missing data"
-    });
-  }
 
   const id = Number(employeeId);
   const chat = getChat(id);
@@ -101,12 +85,9 @@ app.post("/send", async (req, res) => {
   });
 
   try {
-    await bot.sendMessage(
-      id,
-      `📩 پیام از ادمین:\n\n💬 ${text}`
-    );
-  } catch (err) {
-    console.error("SEND ERROR:", err.message);
+    await bot.sendMessage(id, `📩 پیام از ادمین:\n\n💬 ${text}`);
+  } catch (e) {
+    console.error(e.message);
   }
 
   res.json({ success: true });
@@ -114,10 +95,10 @@ app.post("/send", async (req, res) => {
 
 // ================= ROOT =================
 app.get("/", (req, res) => {
-  res.send("Employee Bot Running ✅");
+  res.send("Webhook Bot Running ✅");
 });
 
-// ================= START (FIXED) =================
+// ================= START =================
 app.listen(PORT, () => {
-  console.log("Server running on port", PORT);
+  console.log("Server running on", PORT);
 });
