@@ -7,15 +7,21 @@ app.use(express.json({ limit: "20mb" }));
 const PORT = process.env.PORT || 3000;
 const ADMIN_ID = 8494308052;
 
-// ================= BOT =================
+// ================= BOT (FIXED) =================
+// جلوگیری از 409 conflict + پایداری بیشتر روی Railway
 const bot = new TelegramBot(process.env.BOT_TOKEN, {
-  polling: true
+  polling: {
+    autoStart: true,
+    interval: 2000,
+    params: {
+      timeout: 10
+    }
+  }
 });
 
-// ================= DB (memory) =================
+// ================= MEMORY DB =================
 const chats = new Map();
 
-// ================= HELPERS =================
 function getChat(id) {
   if (!chats.has(id)) {
     chats.set(id, []);
@@ -29,7 +35,7 @@ bot.on("message", async (msg) => {
   const chatId = msg.chat.id;
   const text = msg.text || "";
 
-  // ignore admin messages here
+  // ignore admin messages
   if (chatId === ADMIN_ID) return;
 
   const chat = getChat(chatId);
@@ -45,13 +51,14 @@ bot.on("message", async (msg) => {
       ADMIN_ID,
       `📩 New Message\n👤 ID: ${chatId}\n💬 ${text}`
     );
-  } catch (e) {
-    console.error("ADMIN NOTIFY ERROR:", e.message);
+  } catch (err) {
+    console.error("ADMIN NOTIFY ERROR:", err.message);
   }
 });
 
-// ================= GET USERS =================
+// ================= USERS LIST =================
 app.get("/users", (req, res) => {
+
   const list = [...chats.keys()].map(id => ({
     employeeId: id,
     lastMessage: chats.get(id).slice(-1)[0] || null
@@ -60,7 +67,7 @@ app.get("/users", (req, res) => {
   res.json(list);
 });
 
-// ================= GET CHAT =================
+// ================= CHAT HISTORY =================
 app.get("/chat/:id", (req, res) => {
 
   const id = Number(req.params.id);
@@ -72,13 +79,16 @@ app.get("/chat/:id", (req, res) => {
   res.json(getChat(id));
 });
 
-// ================= SEND MESSAGE (ADMIN -> EMPLOYEE) =================
+// ================= ADMIN SEND MESSAGE =================
 app.post("/send", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
   if (!employeeId || !text) {
-    return res.status(400).json({ success: false, error: "missing data" });
+    return res.status(400).json({
+      success: false,
+      error: "missing data"
+    });
   }
 
   const id = Number(employeeId);
@@ -95,8 +105,8 @@ app.post("/send", async (req, res) => {
       id,
       `📩 پیام از ادمین:\n\n💬 ${text}`
     );
-  } catch (e) {
-    console.error("SEND ERROR:", e.message);
+  } catch (err) {
+    console.error("SEND ERROR:", err.message);
   }
 
   res.json({ success: true });
@@ -107,7 +117,7 @@ app.get("/", (req, res) => {
   res.send("Employee Bot Running ✅");
 });
 
-// ================= START =================
+// ================= START (FIXED) =================
 app.listen(PORT, () => {
   console.log("Server running on port", PORT);
 });
