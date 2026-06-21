@@ -25,34 +25,40 @@ console.log("Firebase Ready");
 const pageStack = [];
 
 function pushPage(fn) {
-pageStack.push(fn);
-history.pushState({}, "", "");
+  pageStack.push(fn);
+  history.pushState({}, "", "");
 }
 
 /* 👇 BACK SAFE HANDLER */
 window.addEventListener("popstate", () => {
 
-if (pageStack.length <= 1) {
-pageStack.length = 0;
-history.back(); // خروج طبیعی
-return;
-}
+  if (pageStack.length <= 1) {
+    pageStack.length = 0;
+    history.back(); // خروج طبیعی
+    return;
+  }
 
-pageStack.pop();
+  pageStack.pop();
 
-const prev = pageStack[pageStack.length - 1];
+  const prev = pageStack[pageStack.length - 1];
 
-if (typeof prev === "function") {
-prev();
-}
+  if (typeof prev === "function") {
+    prev();
+  }
 });
 
 /* 👇 SAFE INIT (خیلی مهم برای جلوگیری از crash) */
-try {
-init();
-} catch (e) {
-console.error("INIT ERROR:", e);
-}
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    if (typeof init === "function") {
+      init();
+    } else {
+      console.log("init not found, skipping");
+    }
+  } catch (e) {
+    console.log("INIT ERROR:", e);
+  }
+});
 
 function formatNumber(n){
   n = String(n || "0");
@@ -222,14 +228,9 @@ function listenChats() {
 
   db.ref("chats").on("value", (snapshot) => {
 
-    window.isRefreshingChat = true;
-
     const data = snapshot.val();
 
-    if (!data) {
-      window.isRefreshingChat = false;
-      return;
-    }
+    if (!data) return;
 
     chats = data;
 
@@ -239,21 +240,18 @@ function listenChats() {
     );
 
     // اگر صفحه چت باز نیست
-    if (!currentChatEmpId) {
-      window.isRefreshingChat = false;
-      return;
-    }
+    if (!currentChatEmpId) return;
 
-    const chatBox = document.getElementById("chatBox");
+    const chatBox =
+      document.getElementById("chatBox");
 
-    if (!chatBox) {
-      window.isRefreshingChat = false;
-      return;
-    }
+    if (!chatBox) return;
 
-    const messages = chats[currentChatEmpId] || [];
+    const messages =
+      chats[currentChatEmpId] || [];
 
-    chatBox.innerHTML = messages.map((m, i) => `
+    chatBox.innerHTML =
+      messages.map((m, i) => `
 
       <div style="
         margin-bottom:10px;
@@ -261,8 +259,8 @@ function listenChats() {
         border-radius:12px;
         background:${
           m.from === "admin"
-            ? "linear-gradient(135deg, rgba(34,197,94,.25), rgba(22,163,74,.15))"
-            : "rgba(255,255,255,.08)"
+          ? "linear-gradient(135deg, rgba(34,197,94,.25), rgba(22,163,74,.15))"
+          : "rgba(255,255,255,.08)"
         };
         border:1px solid rgba(255,255,255,.12);
         color:white;
@@ -288,28 +286,37 @@ function listenChats() {
 
             ${
               (m.file.type || "").startsWith("image/")
-                ? `
-                  <img
-                    src="${m.file.data}"
-                    onclick="openImageFull('${m.file.data}')"
-                    style="
-                      max-width:220px;
-                      width:100%;
-                      border-radius:12px;
-                      cursor:pointer;
-                      border:1px solid rgba(255,255,255,.2);
-                    "
-                  >
-                `
-                : `
-                  <a
-                    href="${m.file.data}"
-                    download="${m.file.name}"
-                    style="color:white;"
-                  >
-                    📎 ${m.file.name}
-                  </a>
-                `
+
+              ? `
+
+              <img
+                src="${m.file.data}"
+                onclick="openImageFull('${m.file.data}')"
+                style="
+                  max-width:220px;
+                  width:100%;
+                  border-radius:12px;
+                  cursor:pointer;
+                  border:1px solid rgba(255,255,255,.2);
+                "
+              >
+
+              `
+
+              :
+
+              `
+
+              <a
+                href="${m.file.data}"
+                download="${m.file.name}"
+                style="color:white;"
+              >
+                📎 ${m.file.name}
+              </a>
+
+              `
+
             }
 
           </div>
@@ -320,11 +327,13 @@ function listenChats() {
           font-size:12px;
           color:rgba(255,255,255,.6)
         ">
+
           ${
             m.from === "admin"
-              ? (m.seen ? "✓✓" : "✓")
-              : (m.seenByAdmin ? "✓✓" : "✓")
+            ? (m.seen ? "✓✓" : "✓")
+            : (m.seenByAdmin ? "✓✓" : "✓")
           }
+
         </div>
 
         <button
@@ -346,10 +355,9 @@ function listenChats() {
 
     `).join("");
 
-    requestAnimationFrame(() => {
-      chatBox.scrollTop = chatBox.scrollHeight;
-      window.isRefreshingChat = false;
-    });
+    // اسکرول آخر چت
+    chatBox.scrollTop =
+      chatBox.scrollHeight;
 
   });
 
@@ -431,7 +439,7 @@ function showUI() {
   const list = isAdmin ? employees : [currentUser.emp];
 
   // 🔥 مهم: ثبت در history stack برای بک گوشی
-  
+  pushPage(() => showUI());
 
   // 👇 برای employee مستقیم همون خودش انتخاب میشه
   if (!isAdmin) {
@@ -443,7 +451,6 @@ function showUI() {
 
     <img src="images/employee-bg.png" class="bg-full">
 
-    <!-- فقط همینجا تغییر کرد: sidebar شیشه‌ای -->
     <div id="sidebar" class="sidebar active" style="
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(16px);
@@ -452,16 +459,33 @@ function showUI() {
     ">
 
       <img src="images/telegram.png"
-        onclick="openTelegram()"
-        style="cursor:pointer;">
+           onclick="openTelegram()"
+           style="cursor:pointer;">
 
       <img src="images/trustwallet.png"
-        onclick="openWalletPage()"
-        style="cursor:pointer;">
+           onclick="openWalletPage()"
+           style="cursor:pointer;">
 
       <img src="images/mypdf.jpg"
-        onclick="openDocumentsPage()"
-        style="cursor:pointer;">
+           onclick="openDocumentsPage()"
+           style="cursor:pointer;">
+
+      <div
+        onclick="window.open('https://t.me/ar1_employee_private_bot','_blank')"
+        style="
+          width:55px;
+          height:55px;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          font-size:30px;
+          cursor:pointer;
+          background:rgba(255,255,255,.08);
+          border-radius:12px;
+          margin-top:5px;
+        ">
+        🤖
+      </div>
 
     </div>
 
@@ -1428,7 +1452,6 @@ function openDocumentsPage(){
       onclick="showImageViewer('${img}')"
       onerror="this.parentElement.innerHTML='<div style=color:red;padding:20px;text-align:center>Image Not Found</div>'"
     >
-
   </div>
 `).join("")}
         <!-- SIDEBAR MEDIA -->
@@ -1864,31 +1887,16 @@ function saveChats() {
 }
 function openChat(empId){
 
-  currentChatEmpId = empId;
+currentChatEmpId = empId;
 
   pushPage(() => showUI()); // ✅ فقط اضافه شد (Back stack)
 
-  const emp = employees.find(
-  e => String(e.id) === String(empId)
-);
-console.log("empId =", empId);
-console.log("employees =", employees);
-console.log("emp =", emp);
-  // ✅ جلوگیری از کرش اگر کارمند پیدا نشد
-  if (!emp) {
-    alert("Employee not found");
-    return;
-  }
+  const emp = employees.find(e => e.id === empId);
 
   if(!chats[empId]){
     chats[empId] = [];
   }
-console.log("currentUser =", currentUser);
 
-if (!currentUser) {
-  alert("currentUser is NULL");
-  return;
-}
   if(currentUser.type === "admin"){
 
     chats[empId].forEach(m => {
@@ -1906,8 +1914,6 @@ if (!currentUser) {
     });
 
   }
-
-  // بقیه کد تابع بدون تغییر...
 
   if (!window.isRefreshingChat) {
   saveChats();
