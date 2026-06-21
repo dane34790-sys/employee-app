@@ -10,12 +10,15 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
-// 👇 مهم: دیتابیس موقت چت
-const users = new Map();   // لیست کارمندها
-const chats = new Map();   // پیام‌ها بر اساس هر کارمند
+// 👇 لیست کارمندها
+const users = new Map();
+
+// 👇 چت فعال ادمین (مهم‌ترین بخش)
+let activeChatUser = null;
+
 
 // ==========================
-// 1. پیام از تلگرام (کارمند)
+// 1. پیام کارمند → ادمین
 // ==========================
 bot.on("message", async (msg) => {
 
@@ -25,80 +28,91 @@ bot.on("message", async (msg) => {
   if (chatId === ADMIN_ID) return;
 
   // ذخیره کارمند
-  users.set(chatId, true);
-
-  // ذخیره پیام در چت خودش
-  if (!chats.has(chatId)) {
-    chats.set(chatId, []);
-  }
-
-  chats.get(chatId).push({
-    from: "employee",
-    text,
-    time: Date.now()
+  users.set(chatId, {
+    id: chatId,
+    lastSeen: Date.now()
   });
 
-  // ارسال به ادمین
   await bot.sendMessage(
     ADMIN_ID,
-    `📩 New Message\n\n👤 ${chatId}\n\n💬 ${text}`
+    `📩 New Message
+
+👤 Employee ID: ${chatId}
+
+💬 ${text}
+
+➡️ برای پاسخ:
+POST /selectUser
+{ "employeeId": ${chatId} }`
   );
-
-  // تایید به کارمند
-  await bot.sendMessage(chatId, "✅ پیام شما ارسال شد");
 });
 
 
 // ==========================
-// 2. لیست کارمندان (برای پنل)
+// 2. انتخاب کارمند در پنل ادمین
 // ==========================
-app.get("/users", (req, res) => {
-  res.json([...users.keys()]);
+app.post("/selectUser", (req, res) => {
+
+  const { employeeId } = req.body;
+
+  activeChatUser = Number(employeeId);
+
+  res.json({
+    success: true,
+    activeChatUser
+  });
+
+  console.log("Active chat set to:", activeChatUser);
 });
 
 
 // ==========================
-// 3. گرفتن چت یک کارمند
+// 3. ارسال پیام از PWA به ادمین
 // ==========================
-app.get("/chat/:id", (req, res) => {
-  const id = Number(req.params.id);
-  res.json(chats.get(id) || []);
-});
-
-
-// ==========================
-// 4. ارسال پیام ادمین به کارمند
-// ==========================
-app.post("/replyToEmployee", async (req, res) => {
+app.post("/sendToAdmin", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
-  if (!employeeId || !text) {
-    return res.status(400).json({ success: false });
+  await bot.sendMessage(
+    ADMIN_ID,
+    `📩 PWA Message
+
+👤 Employee: ${employeeId}
+
+💬 ${text}`
+  );
+
+  res.json({ success: true });
+});
+
+
+// ==========================
+// 4. جواب ادمین به کارمند (اصلی)
+// ==========================
+app.post("/replyToEmployee", async (req, res) => {
+
+  const { text } = req.body;
+
+  if (!activeChatUser) {
+    return res.status(400).json({
+      success: false,
+      message: "No user selected"
+    });
   }
 
   try {
 
     await bot.sendMessage(
-      Number(employeeId),
-      `📩 پیام از ادمین:\n\n💬 ${text}`
+      activeChatUser,
+      `📩 پیام از ادمین:
+
+💬 ${text}`
     );
-
-    // ذخیره در چت
-    if (!chats.has(Number(employeeId))) {
-      chats.set(Number(employeeId), []);
-    }
-
-    chats.get(Number(employeeId)).push({
-      from: "admin",
-      text,
-      time: Date.now()
-    });
 
     res.json({ success: true });
 
-  } catch (e) {
-    console.error(e);
+  } catch (err) {
+    console.error(err);
     res.status(500).json({ success: false });
   }
 });
@@ -109,8 +123,6 @@ app.get("/", (req, res) => {
   res.send("Bot Server Running");
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
+app.listen(process.env.PORT || 3000, () => {
   console.log("Server Running");
 });
