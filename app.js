@@ -2133,7 +2133,7 @@ setTimeout(() => {
     chatBox.scrollTop = chatBox.scrollHeight;
   }
 }
-async function sendChat(empId){
+async function sendChat(empId) {
 
   const txt = document
     .getElementById("msgText")
@@ -2146,20 +2146,23 @@ async function sendChat(empId){
   const file =
     fileInput?.files?.[0];
 
-  if(!txt && !file) return;
+  if (!txt && !file) return;
 
-  if(!chats[empId]){
+  if (!chats[empId]) {
     chats[empId] = [];
   }
 
   let fileData = null;
 
-  if(file){
+  // =========================
+  // FILE HANDLING
+  // =========================
+  if (file) {
 
     // IMAGE
-    if(file.type.startsWith("image/")){
+    if (file.type.startsWith("image/")) {
 
-      fileData = await new Promise((resolve,reject)=>{
+      fileData = await new Promise((resolve, reject) => {
 
         const reader = new FileReader();
 
@@ -2169,45 +2172,31 @@ async function sendChat(empId){
 
           img.onload = () => {
 
-            const canvas =
-              document.createElement("canvas");
+            const canvas = document.createElement("canvas");
 
             let width = img.width;
             let height = img.height;
 
             const MAX_WIDTH = 1200;
 
-            if(width > MAX_WIDTH){
-
-              height =
-                (height * MAX_WIDTH) / width;
-
+            if (width > MAX_WIDTH) {
+              height = (height * MAX_WIDTH) / width;
               width = MAX_WIDTH;
             }
+
             canvas.width = width;
             canvas.height = height;
 
-            const ctx =
-              canvas.getContext("2d");
+            const ctx = canvas.getContext("2d");
 
-            ctx.drawImage(
-              img,
-              0,
-              0,
-              width,
-              height
-            );
+            ctx.drawImage(img, 0, 0, width, height);
 
-            const compressed =
-              canvas.toDataURL(
-                "image/jpeg",
-                0.7
-              );
+            const compressed = canvas.toDataURL("image/jpeg", 0.7);
 
             resolve({
-              name:file.name,
-              type:"image/jpeg",
-              data:compressed
+              name: file.name,
+              type: "image/jpeg",
+              data: compressed
             });
 
           };
@@ -2218,72 +2207,64 @@ async function sendChat(empId){
         };
 
         reader.onerror = reject;
-
         reader.readAsDataURL(file);
 
       });
 
-    }else{
+    } else {
 
-      // PDF / OTHER FILES
-      if(file.size > 2000000){
-
-        alert(
-          "File size must be less than 2MB"
-        );
-
+      // OTHER FILES (PDF, etc)
+      if (file.size > 2000000) {
+        alert("File size must be less than 2MB");
         return;
       }
 
-      fileData = await new Promise((resolve)=>{
+      fileData = await new Promise((resolve, reject) => {
 
         const reader = new FileReader();
 
         reader.onload = e => {
-
           resolve({
-            name:file.name,
-            type:file.type,
-            data:e.target.result
+            name: file.name,
+            type: file.type,
+            data: e.target.result
           });
-
         };
 
+        reader.onerror = reject;
         reader.readAsDataURL(file);
 
       });
-
     }
-
   }
 
+  // =========================
+  // SAVE LOCAL CHAT
+  // =========================
   chats[empId].push({
-
-    from:
-      currentUser.type === "admin"
-      ? "admin"
-      : "employee",
-
+    from: currentUser.type === "admin" ? "admin" : "employee",
     text: txt,
-
     file: fileData,
-
     date: Date.now(),
-
-    seen:false,
-    seenByAdmin:false
-
+    seen: false,
+    seenByAdmin: false
   });
 
-  try{
-
+  try {
     saveChats();
+  } catch (err) {
+    chats[empId].pop();
+    console.error(err);
+    alert("Storage error!");
+    return;
+  }
 
-try {
+  // =========================
+  // SEND TO SERVER (FIXED)
+  // =========================
+  try {
 
-  await fetch(
-    "https://employee-app-production-46a9.up.railway.app/sendToAdmin",
-    {
+    await fetch("https://employee-app-production-46a9.up.railway.app/sendToAdmin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
@@ -2292,47 +2273,26 @@ try {
         employeeId: empId,
         text: txt
       })
-    }
-  );
+    });
 
-} catch (e) {
-
-  console.error(e);
-
-}
-
-  }catch(err){
-
-    chats[empId].pop();
-
-    alert(
-      "Storage full. Delete some old chat files."
-    );
-
-    console.error(err);
-
-    return;
+  } catch (e) {
+    console.error("Send error:", e);
   }
 
+  // =========================
+  // CLEAN UI
+  // =========================
   document.getElementById("msgText").value = "";
 
-  if(fileInput){
-    fileInput.value = "";
-  }
+  if (fileInput) fileInput.value = "";
 
-  const fileName =
-    document.getElementById("fileName");
-
-  if(fileName){
-    fileName.innerHTML = "";
-  }
+  const fileName = document.getElementById("fileName");
+  if (fileName) fileName.innerHTML = "";
 
   const chatBox = document.getElementById("chatBox");
-
-if (chatBox) {
-  chatBox.scrollTop = chatBox.scrollHeight;
-}
-
+  if (chatBox) {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
 }
 function deleteMessage(empId,index){
 
