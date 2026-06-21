@@ -10,15 +10,11 @@ const bot = new TelegramBot(process.env.BOT_TOKEN, {
   polling: true
 });
 
-// 👇 لیست کارمندان
-const users = new Map();
-
-// 👇 وضعیت انتخاب ادمین
-let adminSelectedUser = null;
-
+// 👇 دیتابیس ساده چت‌ها
+const chats = new Map();
 
 // =====================
-// 1. پیام از کارمند به ادمین
+// پیام از کارمند
 // =====================
 bot.on("message", async (msg) => {
 
@@ -27,95 +23,85 @@ bot.on("message", async (msg) => {
 
   if (chatId === ADMIN_ID) return;
 
-  // ذخیره کارمند
-  users.set(chatId, {
-    lastSeen: Date.now()
+  // ذخیره پیام‌ها مثل واتساپ
+  if (!chats.has(chatId)) {
+    chats.set(chatId, []);
+  }
+
+  chats.get(chatId).push({
+    from: "employee",
+    text,
+    date: Date.now()
   });
 
+  // به ادمین اطلاع بده
   await bot.sendMessage(
     ADMIN_ID,
     `📩 New Message
-
-👤 Employee ID: ${chatId}
-
-💬 ${text}
-
-➡️ برای جواب دادن:
-POST /selectUser
-{ "employeeId": ${chatId} }`
+👤 ID: ${chatId}
+💬 ${text}`
   );
-
 });
 
 
 // =====================
-// 2. انتخاب کارمند برای ادمین
+// گرفتن لیست کارمندها (مثل لیست چت واتساپ)
 // =====================
-app.post("/selectUser", (req, res) => {
+app.get("/users", (req, res) => {
 
-  const { employeeId } = req.body;
+  const list = [...chats.keys()].map(id => ({
+    employeeId: id,
+    lastMessage: chats.get(id).slice(-1)[0]
+  }));
 
-  if (!employeeId) {
-    return res.status(400).json({ success: false });
-  }
-
-  adminSelectedUser = Number(employeeId);
-
-  res.json({
-    success: true,
-    selected: adminSelectedUser
-  });
-
+  res.json(list);
 });
 
 
 // =====================
-// 3. جواب ادمین به کارمند
+// گرفتن چت یک کارمند
 // =====================
-app.post("/replyToEmployee", async (req, res) => {
+app.get("/chat/:id", (req, res) => {
+
+  const id = req.params.id;
+
+  res.json(chats.get(Number(id)) || []);
+});
+
+
+// =====================
+// ارسال پیام از ادمین
+// =====================
+app.post("/send", async (req, res) => {
 
   const { employeeId, text } = req.body;
 
-  // اگر از API نفرستادی، از انتخاب ادمین استفاده کن
-  const targetId = employeeId
-    ? Number(employeeId)
-    : adminSelectedUser;
-
-  if (!targetId || !text) {
-    return res.status(400).json({
-      success: false,
-      message: "No user selected"
-    });
+  if (!employeeId || !text) {
+    return res.status(400).json({ success: false });
   }
 
-  try {
-
-    await bot.sendMessage(
-      targetId,
-      `📩 پیام از ادمین:
-
-💬 ${text}`
-    );
-
-    res.json({ success: true });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false });
+  if (!chats.has(Number(employeeId))) {
+    chats.set(Number(employeeId), []);
   }
 
+  chats.get(Number(employeeId)).push({
+    from: "admin",
+    text,
+    date: Date.now()
+  });
+
+  await bot.sendMessage(
+    Number(employeeId),
+    `📩 پیام از ادمین:\n\n💬 ${text}`
+  );
+
+  res.json({ success: true });
 });
 
 
-// =====================
-// تست
 // =====================
 app.get("/", (req, res) => {
-  res.send("Bot Server Running");
+  res.send("WhatsApp Admin Bot Running");
 });
 
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server Running");
-});
+app.listen(process.env.PORT || 3000);
