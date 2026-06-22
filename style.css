@@ -1,27 +1,17 @@
-*{
-  box-sizing:border-box;
+html, body {
+  height: 100%;
+  margin: 0;
 }
 
-html,
-body{
-  width:100%;
-  height:100%;
-  margin:0;
-  padding:0;
-  overflow-x:hidden;
-}
-
-#app{
-  width:100%;
-  min-height:100dvh;
-  display:flex;
-  flex-direction:column;
-  overflow-x:hidden;
+#app {
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
 }
 
 .screen{
   width:100%;
-  height:100dvh;
+  height:100vh;
   position:relative;
   overflow:hidden;
 }
@@ -41,26 +31,22 @@ body{
   position:absolute;
   inset:0;
   z-index:2;
-
+  
   display:flex;
   flex-direction:column;
   justify-content:center;
   align-items:center;
   gap:10px;
-
-  width:100%;
 }
 
 /* INPUTS */
-#id,
-#pass,
-#mobile,
-#otp{
+#id, #pass, #mobile, #otp{
   width:70%;
   max-width:220px;
   padding:12px;
   border:none;
   border-radius:16px;
+  box-sizing:border-box;
 }
 
 /* BUTTON */
@@ -83,45 +69,47 @@ body{
   right:20px;
 
   font-size:34px;
-  color:#fff;
+  color:white;
 
-  z-index:1000000;
+  z-index:1000000 !important;
   cursor:pointer;
   user-select:none;
 }
 
-.sidebar{
-  position:fixed;
-  top:0;
-  right:-140px;
+/* SIDEBAR */
+#sidebar {
+  position: fixed;
+  top: 0;
+  right: -140px;   /* بسته (خارج صفحه) */
+  width: 120px;
+  height: 100vh;
 
-  width:120px;
-  max-width:120px;
-  min-width:120px;
+  background: rgba(255,255,255,0.06);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
 
-  height:100dvh;
+  border-left: 1px solid rgba(255,255,255,0.15);
 
-  background:rgba(0,0,0,.92);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 
-  display:flex;
-  flex-direction:column;
-  align-items:center;
+  gap: 22px;
+  padding-top: 80px;
 
-  gap:18px;
-  padding-top:80px;
-
-  transition:right .3s ease;
-  z-index:999999;
+  transition: right 0.3s ease;
+  z-index: 999999;
 }
 
-.sidebar.active{
-  right:0;
+/* باز شدن */
+#sidebar.active {
+  right: 0;
 }
 
-.sidebar img{
-  width:55px;
-  height:55px;
-  cursor:pointer;
+#sidebar img {
+  width: 55px;
+  height: 55px;
+  cursor: pointer;
 }
 
 /* PANEL */
@@ -130,7 +118,7 @@ body{
 
   top:170px;
   left:10px;
-  right:10px;
+  right:10px;   /* ❗ قبلاً 130px بود */
   bottom:15px;
 
   display:flex;
@@ -138,12 +126,11 @@ body{
   gap:8px;
 
   overflow-y:auto;
-  overflow-x:hidden;
-
   z-index:2;
 
   padding-right:5px;
 }
+
 /* ================= GLASS CARD (NEW) ================= */
 .card{
   background: rgba(255,255,255,0.08);
@@ -334,13 +321,6 @@ body{
   z-index: 0;
 }
 
-.overlay {
-  position: relative;
-  z-index: 2;
-  height: 100%;
-  overflow-y: auto;
-}
-
 .admin-panel{
   background: rgba(255,255,255,0.06);
   border: 1px solid rgba(255,255,255,0.12);
@@ -351,15 +331,6 @@ body{
   padding:10px;
 
   box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-}
-
-.card{
-  background:rgba(255,255,255,.06);
-  backdrop-filter:blur(12px);
-  border:1px solid rgba(255,215,0,.25);
-  border-radius:24px;
-  padding:16px;
-  margin-bottom:20px;
 }
 
 .info-row{
@@ -397,19 +368,6 @@ body{
   border:none;
   border-radius:12px;
   padding:12px;
-}
-
-.info-row{
-  display:flex;
-  align-items:center;
-  gap:12px;
-  margin-bottom:10px;
-}
-
-.info-left{
-  width:34px;
-  font-size:24px;
-  text-align:center;
 }
 
 .glass-value{
@@ -470,4 +428,8 @@ button:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 25px rgba(37,99,235,0.45);
 }
-
+.sidebar img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  }
