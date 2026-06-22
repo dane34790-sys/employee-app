@@ -6,11 +6,13 @@
   <title>Employee App</title>
 
   <link rel="stylesheet" href="./style.css">
+
+  <!-- ✅ FIX: manifest -->
+  <link rel="manifest" href="manifest.json">
 </head>
 
 <body style="margin:0;background:#000;">
 
-  <!-- فقط این یکی -->
   <div id="app">Loading...</div>
 
   <!-- Firebase -->
@@ -19,6 +21,13 @@
 
   <!-- App -->
   <script src="./app.js"></script>
+
+  <!-- ✅ FIX: service worker -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js');
+    }
+  </script>
 
 </body>
 </html>
