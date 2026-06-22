@@ -445,48 +445,54 @@ function showUI() {
   }
 
   document.getElementById("app").innerHTML = `
-  <div class="screen">
+    <div class="screen">
 
-    <img src="images/employee-bg.png" class="bg-full">
+      <img src="images/employee-bg.png" class="bg-full">
 
-    <div id="sidebar" class="sidebar active" style="
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(255,255,255,0.15);
-    ">
+      <!-- ✅ SIDEBAR FIXED (HIDDEN BY DEFAULT) -->
+      <div id="sidebar" class="sidebar">
 
-      <img src="images/telegram.png"
-           onclick="openTelegram()"
-           style="cursor:pointer;">
+        <img src="images/telegram.png"
+             onclick="openTelegram()"
+             style="cursor:pointer;width:50px;margin-bottom:10px;">
 
-      <img src="images/trustwallet.png"
-           onclick="openWalletPage()"
-           style="cursor:pointer;">
+        <img src="images/trustwallet.png"
+             onclick="openWalletPage()"
+             style="cursor:pointer;width:50px;margin-bottom:10px;">
 
-      <img src="images/mypdf.jpg"
-           onclick="openDocumentsPage()"
-           style="cursor:pointer;">
+        <img src="images/mypdf.jpg"
+             onclick="openDocumentsPage()"
+             style="cursor:pointer;width:50px;margin-bottom:10px;">
+
+      </div>
+
+      <!-- ☰ MENU BUTTON -->
+      <div class="menu-btn" onclick="toggleMenu()">
+        ☰
+      </div>
+
+      <!-- MAIN PANEL -->
+      <div class="panel">
+
+        ${isAdmin ? `
+          <button onclick="addEmployee()" class="btn-add">
+            ➕ Add Employee
+          </button>
+        ` : ""}
+
+        ${list.map(emp => `
+          <div onclick="selectedEmpId='${emp.id}'">
+            ${card(emp, isAdmin)}
+          </div>
+        `).join("")}
+
+        <button class="logout" onclick="showLogin()">
+          LOGOUT
+        </button>
+
+      </div>
 
     </div>
-
-    <div class="menu-btn" onclick="toggleMenu()">☰</div>
-
-    <div class="panel">
-
-      ${isAdmin ? `<button onclick="addEmployee()">➕ Add</button>` : ""}
-
-      ${list.map(emp => `
-        <div onclick="selectedEmpId='${emp.id}'">
-          ${card(emp, isAdmin)}
-        </div>
-      `).join("")}
-
-      <button class="logout" onclick="showLogin()">LOGOUT</button>
-
-    </div>
-
-  </div>
   `;
 }
 /* ================= ICON ROW SYSTEM (NEW) ================= */
@@ -730,7 +736,10 @@ function toggleStatus(id) {
 /* ================= SIDEBAR ================= */
 
 function toggleMenu() {
-  document.getElementById("sidebar")?.classList.toggle("active");
+  const sidebar = document.getElementById("sidebar");
+  if (!sidebar) return;
+
+  sidebar.classList.toggle("active");
 }
 function openTelegram() {
   window.open("https://t.me/Ar1mastercard", "_blank");
