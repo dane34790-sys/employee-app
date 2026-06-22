@@ -1,155 +1,24 @@
 <!DOCTYPE html>
 <html lang="fa">
-
 <head>
-
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Employee App</title>
 
   <link rel="stylesheet" href="./style.css">
-  <link rel="manifest" href="./manifest.json">
-
-  <meta name="theme-color" content="#000000">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="Employees">
-
 </head>
 
-<body>
+<body style="margin:0;background:#000;">
 
-  <!-- 🔥 SIDEBAR -->
-  <div id="sidebar" style="
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 220px;
-    height: 100vh;
-    background: #111;
-    color: white;
-    padding: 15px;
-    box-sizing: border-box;
-    overflow-y:auto;
-  ">
-
-    <h3 style="margin-top:0;">Menu</h3>
-
-    <a href="#"
-       style="
-        display:block;
-        margin-top:10px;
-        padding:10px;
-        background:#333;
-        color:white;
-        text-decoration:none;
-        border-radius:8px;
-        text-align:center;
-       ">
-      📢 Telegram Channel
-    </a>
-
-    <a href="#"
-       style="
-        display:block;
-        margin-top:10px;
-        padding:10px;
-        background:#333;
-        color:white;
-        text-decoration:none;
-        border-radius:8px;
-        text-align:center;
-       ">
-      💰 Wallet
-    </a>
-
-    <a href="#"
-       style="
-        display:block;
-        margin-top:10px;
-        padding:10px;
-        background:#333;
-        color:white;
-        text-decoration:none;
-        border-radius:8px;
-        text-align:center;
-       ">
-      📄 PDF
-    </a>
-
-  </div>
-
-  <!-- 🔥 MAIN APP -->
-  <div id="app" style="margin-left:240px;">
-    Loading...
-  </div>
+  <!-- فقط این یکی -->
+  <div id="app">Loading...</div>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-  <!-- ERROR HANDLER -->
-  <script>
-    window.onerror = function (message, source, lineno, colno, error) {
-
-      const app = document.getElementById("app");
-      if (!app) return;
-
-      app.innerHTML = `
-        <div style="padding:20px;color:white;background:#111;">
-          ❌ ${message}
-          <br><br>
-          ${error?.stack || ""}
-        </div>
-      `;
-
-      return true;
-    };
-
-    window.addEventListener("unhandledrejection", e => {
-
-      const app = document.getElementById("app");
-      if (!app) return;
-
-      app.innerHTML = `
-        <div style="padding:20px;color:red;background:#111;">
-          ❌ ${e.reason}
-        </div>
-      `;
-    });
-  </script>
-
-  <!-- APP -->
+  <!-- App -->
   <script src="./app.js"></script>
 
-  <!-- SERVICE WORKER -->
-  <script>
-
-    if ("serviceWorker" in navigator) {
-
-      window.addEventListener("load", async () => {
-
-        try {
-
-          await navigator.serviceWorker.register("./sw.js");
-
-          console.log("✅ Service Worker Ready");
-
-        } catch (err) {
-
-          console.error("❌ Service Worker Failed", err);
-
-        }
-
-      });
-
-    }
-
-  </script>
-
 </body>
-
 </html>
