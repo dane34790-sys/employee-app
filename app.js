@@ -427,11 +427,13 @@ function verifyOTP() {
 /* ================= UI ================= */
 
 let selectedEmpId = null; // 👈 بالا فایل اضافه کن
-console.log("SHOWUI CALLED", currentUser);
 function showUI() {
+
+  console.log("SHOWUI CALLED", currentUser);
 
   if (!currentUser) {
     console.log("NO USER");
+    showLogin();
     return;
   }
 
@@ -449,8 +451,8 @@ function showUI() {
 
       <img src="images/employee-bg.png" class="bg-full">
 
-      <!-- SIDEBAR -->
       <div id="sidebar" class="sidebar">
+
         <img src="images/telegram.png"
              onclick="openTelegram()">
 
@@ -459,14 +461,13 @@ function showUI() {
 
         <img src="images/mypdf.jpg"
              onclick="openDocumentsPage()">
+
       </div>
 
-      <!-- MENU BUTTON -->
       <div class="menu-btn" onclick="toggleMenu()">
         ☰
       </div>
 
-      <!-- PANEL -->
       <div class="panel">
 
         ${isAdmin ? `
@@ -490,16 +491,19 @@ function showUI() {
     </div>
   `;
 
-  // 🎯 ANIMATION (SAFE + NO BUG)
   requestAnimationFrame(() => {
+
     const screen = document.querySelector(".screen");
+
     if (screen) {
-      screen.classList.remove("fade-in"); // reset
-      void screen.offsetWidth;            // force reflow
-      screen.classList.add("fade-in");    // animate
+      screen.classList.remove("fade-in");
+      void screen.offsetWidth;
+      screen.classList.add("fade-in");
     }
+
   });
-                        }
+
+}
 /* ================= ICON ROW SYSTEM (NEW) ================= */
 
 function row(icon, label, value) {
