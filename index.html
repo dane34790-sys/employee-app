@@ -1,165 +1,155 @@
 <!DOCTYPE html>
 <html lang="fa">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 
-<title>Employee App</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 
-<link rel="stylesheet" href="./style.css">
-<link rel="manifest" href="./manifest.json">
+  <title>Employee App</title>
 
-<meta name="theme-color" content="#000000">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black">
-<meta name="apple-mobile-web-app-title" content="Employees">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="manifest" href="./manifest.json">
 
-<style>
-html,
-body{
-  margin:0;
-  padding:0;
-  width:100%;
-  height:100%;
-  overflow-x:hidden;
-  background:#000;
-}
+  <meta name="theme-color" content="#000000">
 
-#app{
-  width:100%;
-  min-height:100dvh;
-  overflow-x:hidden;
-}
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Employees">
 
-/* Sidebar Fix */
-.sidebar{
-  position:fixed !important;
-  top:0;
-  right:-140px !important;
-
-  width:120px !important;
-  min-width:120px !important;
-  max-width:120px !important;
-
-  height:100dvh !important;
-
-  z-index:99999;
-  transition:right .3s ease;
-}
-
-.sidebar.active{
-  right:0 !important;
-}
-
-.menu-item{
-  display:block;
-  width:95px;
-  margin:8px auto;
-  padding:10px 5px;
-
-  text-align:center;
-  text-decoration:none;
-
-  color:#fff;
-
-  background:rgba(255,255,255,.08);
-  border:1px solid rgba(255,255,255,.15);
-  border-radius:12px;
-
-  font-size:12px;
-}
-</style>
 </head>
 
 <body>
 
-<div class="sidebar">
+  <!-- 🔥 SIDEBAR -->
+  <div id="sidebar" style="
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 220px;
+    height: 100vh;
+    background: #111;
+    color: white;
+    padding: 15px;
+    box-sizing: border-box;
+    overflow-y:auto;
+  ">
 
-  <h3>Menu</h3>
+    <h3 style="margin-top:0;">Menu</h3>
 
-  <a href="#" class="menu-item">
-    📢 Telegram
-  </a>
+    <a href="#"
+       style="
+        display:block;
+        margin-top:10px;
+        padding:10px;
+        background:#333;
+        color:white;
+        text-decoration:none;
+        border-radius:8px;
+        text-align:center;
+       ">
+      📢 Telegram Channel
+    </a>
 
-  <a href="#" class="menu-item">
-    💰 Wallet
-  </a>
+    <a href="#"
+       style="
+        display:block;
+        margin-top:10px;
+        padding:10px;
+        background:#333;
+        color:white;
+        text-decoration:none;
+        border-radius:8px;
+        text-align:center;
+       ">
+      💰 Wallet
+    </a>
 
-  <a href="#" class="menu-item">
-    📄 PDF
-  </a>
+    <a href="#"
+       style="
+        display:block;
+        margin-top:10px;
+        padding:10px;
+        background:#333;
+        color:white;
+        text-decoration:none;
+        border-radius:8px;
+        text-align:center;
+       ">
+      📄 PDF
+    </a>
 
-</div>
+  </div>
 
-<div id="app">
-  Loading...
-</div>
+  <!-- 🔥 MAIN APP -->
+  <div id="app" style="margin-left:240px;">
+    Loading...
+  </div>
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
-<script>
-window.onerror = function(message, source, lineno, colno, error){
+  <!-- ERROR HANDLER -->
+  <script>
+    window.onerror = function (message, source, lineno, colno, error) {
 
-  const app = document.getElementById("app");
+      const app = document.getElementById("app");
+      if (!app) return;
 
-  if(app){
-    app.innerHTML = `
-      <div style="padding:20px;color:white;background:#111">
-        ❌ ${message}<br><br>
-        ${error?.stack || ""}
-      </div>
-    `;
-  }
+      app.innerHTML = `
+        <div style="padding:20px;color:white;background:#111;">
+          ❌ ${message}
+          <br><br>
+          ${error?.stack || ""}
+        </div>
+      `;
 
-  return true;
-};
+      return true;
+    };
 
-window.addEventListener("unhandledrejection", e => {
+    window.addEventListener("unhandledrejection", e => {
 
-  const app = document.getElementById("app");
+      const app = document.getElementById("app");
+      if (!app) return;
 
-  if(app){
-    app.innerHTML = `
-      <div style="padding:20px;color:red;background:#111">
-        ❌ ${e.reason}
-      </div>
-    `;
-  }
+      app.innerHTML = `
+        <div style="padding:20px;color:red;background:#111;">
+          ❌ ${e.reason}
+        </div>
+      `;
+    });
+  </script>
 
-});
-</script>
+  <!-- APP -->
+  <script src="./app.js"></script>
 
-<script src="./app.js"></script>
+  <!-- SERVICE WORKER -->
+  <script>
 
-<script>
-if("serviceWorker" in navigator){
+    if ("serviceWorker" in navigator) {
 
-  window.addEventListener("load", async()=>{
+      window.addEventListener("load", async () => {
 
-    try{
+        try {
 
-      const regs = await navigator.serviceWorker.getRegistrations();
+          await navigator.serviceWorker.register("./sw.js");
 
-      for(const reg of regs){
-        await reg.unregister();
-      }
+          console.log("✅ Service Worker Ready");
 
-      await navigator.serviceWorker.register("./sw.js");
+        } catch (err) {
 
-      console.log("✅ SW Registered");
+          console.error("❌ Service Worker Failed", err);
 
-    }catch(err){
+        }
 
-      console.error(err);
+      });
 
     }
 
-  });
-
-}
-</script>
+  </script>
 
 </body>
+
 </html>
