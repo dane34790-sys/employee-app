@@ -438,8 +438,10 @@ function showUI() {
   const isAdmin = currentUser.type === "admin";
   const list = isAdmin ? employees : [currentUser.emp];
 
+  // 🔥 مهم: ثبت در history stack برای بک گوشی
   pushPage(() => showUI());
 
+  // 👇 برای employee مستقیم همون خودش انتخاب میشه
   if (!isAdmin) {
     selectedEmpId = currentUser.emp.id;
   }
@@ -456,9 +458,17 @@ function showUI() {
       border: 1px solid rgba(255,255,255,0.15);
     ">
 
-      <img src="images/telegram.png" onclick="openTelegram()" style="cursor:pointer;">
-      <img src="images/trustwallet.png" onclick="openWalletPage()" style="cursor:pointer;">
-      <img src="images/mypdf.jpg" onclick="openDocumentsPage()" style="cursor:pointer;">
+      <img src="images/telegram.png"
+           onclick="openTelegram()"
+           style="cursor:pointer;">
+
+      <img src="images/trustwallet.png"
+           onclick="openWalletPage()"
+           style="cursor:pointer;">
+
+      <img src="images/mypdf.jpg"
+           onclick="openDocumentsPage()"
+           style="cursor:pointer;">
 
       <div
         onclick="window.open('https://t.me/ar1_employee_private_bot','_blank')"
@@ -486,53 +496,8 @@ function showUI() {
       ${isAdmin ? `<button onclick="addEmployee()">➕ Add</button>` : ""}
 
       ${list.map(emp => `
-        <div style="margin-bottom:12px;">
-
-          <div onclick="selectedEmpId='${emp.id}'">
-            ${card(emp, isAdmin)}
-          </div>
-
-          <!-- ================= BOT PANEL (FIXED - FOR BOTH ADMIN & EMPLOYEE) ================= -->
-          <div style="
-            margin-top:6px;
-            padding:10px;
-            border-radius:10px;
-            background:rgba(0,0,0,0.35);
-            border:1px solid rgba(255,255,255,0.15);
-          ">
-
-            <div style="color:white;font-size:12px;margin-bottom:6px;">
-              🤖 Bot - ${emp.name}
-            </div>
-
-            <textarea id="botMsg_${emp.id}"
-              placeholder="Send bot message..."
-              style="
-                width:100%;
-                height:60px;
-                border-radius:8px;
-                padding:8px;
-                border:none;
-                outline:none;
-              "></textarea>
-
-            <button onclick="sendToBot('${emp.id}')"
-              style="
-                width:100%;
-                margin-top:6px;
-                padding:8px;
-                background:#22c55e;
-                color:white;
-                border:none;
-                border-radius:8px;
-                cursor:pointer;
-              ">
-              Send
-            </button>
-
-          </div>
-          <!-- =============================================================== -->
-
+        <div onclick="selectedEmpId='${emp.id}'">
+          ${card(emp, isAdmin)}
         </div>
       `).join("")}
 
@@ -544,42 +509,7 @@ function showUI() {
   `;
 }
 /* ================= ICON ROW SYSTEM (NEW) ================= */
-async function sendToBot(empId){
 
-  const el = document.getElementById(`botMsg_${empId}`);
-  const msg = el?.value?.trim();
-
-  if(!msg){
-    alert("پیام خالیه");
-    return;
-  }
-
-  console.log("BOT SEND:", empId, msg);
-
-  try {
-    const res = await fetch("https://YOUR_API/sendToBot", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        employeeId: empId,
-        text: msg
-      })
-    });
-
-    if(!res.ok){
-      throw new Error("Server response error");
-    }
-
-    el.value = "";
-    alert("Sent to bot ✅");
-
-  } catch (e) {
-    console.error("BOT ERROR:", e);
-    alert("Bot error ❌");
-  }
-}
 function row(icon, label, value) {
   return `
     <div class="info-row">
@@ -1676,7 +1606,6 @@ function addSidebarImage(empId){
   }
 
   emp.sidebarMedia.images.push(url);
-
   saveEmployees();
 
   input.value = ""; // پاک کردن input
@@ -2222,7 +2151,7 @@ async function sendChat(empId) {
 
     if (file.type.startsWith("image/")) {
 
-      fileData = await new Promise((resolve) => {
+      fileData = await new Promise((resolve, reject) => {
 
         const reader = new FileReader();
 
@@ -2284,6 +2213,7 @@ async function sendChat(empId) {
         };
 
         reader.readAsDataURL(file);
+
       });
     }
   }
@@ -2300,27 +2230,23 @@ async function sendChat(empId) {
   chats[empId].push(msgObj);
   saveChats();
 
-  // ================= SEND TO SERVER (FIXED) =================
+  // ================= SEND TO SERVER =================
   try {
 
-    await fetch("https://employee-app-production-46a9.up.railway.app/send", {
-
+    await fetch("https://employee-app-production-46a9.up.railway.app/sendToAdmin", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-
       body: JSON.stringify({
         employeeId: empId,
         text: txt,
-        file: fileData
+        file: fileData   // 🔥 مهم: فایل هم بفرست
       })
-
     });
 
   } catch (e) {
     console.error("SEND ERROR:", e);
-    alert("Bot error ❌");
   }
 
   // ================= CLEAN =================
