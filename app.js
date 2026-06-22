@@ -438,10 +438,8 @@ function showUI() {
   const isAdmin = currentUser.type === "admin";
   const list = isAdmin ? employees : [currentUser.emp];
 
-  // 🔥 مهم: ثبت در history stack برای بک گوشی
   pushPage(() => showUI());
 
-  // 👇 برای employee مستقیم همون خودش انتخاب میشه
   if (!isAdmin) {
     selectedEmpId = currentUser.emp.id;
   }
@@ -469,23 +467,6 @@ function showUI() {
       <img src="images/mypdf.jpg"
            onclick="openDocumentsPage()"
            style="cursor:pointer;">
-
-      <div
-        onclick="window.open('https://t.me/ar1_employee_private_bot','_blank')"
-        style="
-          width:55px;
-          height:55px;
-          display:flex;
-          align-items:center;
-          justify-content:center;
-          font-size:30px;
-          cursor:pointer;
-          background:rgba(255,255,255,.08);
-          border-radius:12px;
-          margin-top:5px;
-        ">
-        🤖
-      </div>
 
     </div>
 
