@@ -449,29 +449,24 @@ function showUI() {
 
       <img src="images/employee-bg.png" class="bg-full">
 
-      <!-- ✅ SIDEBAR FIXED (HIDDEN BY DEFAULT) -->
+      <!-- SIDEBAR -->
       <div id="sidebar" class="sidebar">
-
         <img src="images/telegram.png"
-             onclick="openTelegram()"
-             style="cursor:pointer;width:50px;margin-bottom:10px;">
+             onclick="openTelegram()">
 
         <img src="images/trustwallet.png"
-             onclick="openWalletPage()"
-             style="cursor:pointer;width:50px;margin-bottom:10px;">
+             onclick="openWalletPage()">
 
         <img src="images/mypdf.jpg"
-             onclick="openDocumentsPage()"
-             style="cursor:pointer;width:50px;margin-bottom:10px;">
-
+             onclick="openDocumentsPage()">
       </div>
 
-      <!-- ☰ MENU BUTTON -->
+      <!-- MENU BUTTON -->
       <div class="menu-btn" onclick="toggleMenu()">
         ☰
       </div>
 
-      <!-- MAIN PANEL -->
+      <!-- PANEL -->
       <div class="panel">
 
         ${isAdmin ? `
@@ -494,7 +489,17 @@ function showUI() {
 
     </div>
   `;
-}
+
+  // 🎯 ANIMATION (SAFE + NO BUG)
+  requestAnimationFrame(() => {
+    const screen = document.querySelector(".screen");
+    if (screen) {
+      screen.classList.remove("fade-in"); // reset
+      void screen.offsetWidth;            // force reflow
+      screen.classList.add("fade-in");    // animate
+    }
+  });
+                        }
 /* ================= ICON ROW SYSTEM (NEW) ================= */
 
 function row(icon, label, value) {
