@@ -533,6 +533,20 @@ letter-spacing:2px;
 Arian Urban Development Company
 </div>
 
+<div id="secureText"
+style="
+color:#00ff88;
+font-size:12px;
+letter-spacing:2px;
+margin-bottom:15px;
+text-align:center;
+text-shadow:
+0 0 10px #00ff88,
+0 0 20px #00ff88;
+">
+SYSTEM AUTHENTICATION
+</div>
+
     <div id="percent"
       style="
       font-size:70px;
@@ -551,19 +565,68 @@ Arian Urban Development Company
         width:0%;
         height:100%;
         background:#ffd700;
+        box-shadow:
+        0 0 10px #ffd700,
+        0 0 20px #ffd700,
+        0 0 40px #ffd700;
       ">
       </div>
     </div>
 
   </div>
 
+<div id="secureText"
+style="
+color:#00ff88;
+font-size:12px;
+letter-spacing:2px;
+margin-bottom:15px;
+text-align:center;
+text-shadow:
+0 0 10px #00ff88,
+0 0 20px #00ff88;
+">
+SYSTEM AUTHENTICATION
+</div>
+
   `;
+
+  const secureText =
+    document.getElementById("secureText");
+    let blink = true;
+
+setInterval(() => {
+
+  if (!secureText) return;
+
+  if (blink) {
+    secureText.innerText += " █";
+  } else {
+    secureText.innerText =
+      secureText.innerText.replace(" █", "");
+  }
+
+  blink = !blink;
+
+}, 500);
 
   let p = 0;
 
   const timer = setInterval(() => {
 
     p++;
+
+if(p > 20)
+  secureText.innerText =
+    "SECURE CONNECTION";
+
+if(p > 50)
+  secureText.innerText =
+    "ENCRYPTING SESSION";
+
+if(p > 80)
+  secureText.innerText =
+    "AUTHORIZATION CHECK";
 
     document.getElementById("percent").innerText =
       p + "%";
