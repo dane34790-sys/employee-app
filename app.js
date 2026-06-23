@@ -418,15 +418,184 @@ function showOTP() {
   </div>
 `;
 }
-
 function verifyOTP() {
-  if (v("otp") !== otpCode) return alert("Wrong OTP");
-  showUI();
+
+  if (v("otp") !== otpCode)
+    return alert("Wrong OTP");
+
+  showLoadingScreen();
+
 }
 
 /* ================= UI ================= */
 
-let selectedEmpId = null; // 👈 بالا فایل اضافه کن
+const loadingStyle = document.createElement("style");
+
+loadingStyle.innerHTML = `
+@keyframes spin{
+  from{transform:rotate(0deg);}
+  to{transform:rotate(360deg);}
+}
+
+@keyframes pulse{
+
+  0%{
+    box-shadow:
+    0 0 20px #ffd700,
+    0 0 50px #ffd700;
+  }
+
+  50%{
+    box-shadow:
+    0 0 40px #ffd700,
+    0 0 100px #ffd700,
+    0 0 160px rgba(255,215,0,.8);
+  }
+
+  100%{
+    box-shadow:
+    0 0 20px #ffd700,
+    0 0 50px #ffd700;
+  }
+
+}
+`;
+
+document.head.appendChild(loadingStyle);
+
+let selectedEmpId = null;
+
+function showLoadingScreen(){
+
+  document.getElementById("app").innerHTML = `
+
+  <div style="
+    height:100vh;
+    background:#030303;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    color:#ffd700;
+    font-family:Consolas;
+  ">
+
+    <h2>AUTH SUCCESS</h2>
+    
+<div id="masterLogo"
+style="
+width:180px;
+height:180px;
+border-radius:50%;
+border:2px solid #ffd700;
+display:flex;
+align-items:center;
+justify-content:center;
+margin-bottom:20px;
+box-shadow:
+0 0 20px #ffd700,
+0 0 50px #ffd700;
+
+animation:
+pulse 2s ease-in-out infinite;
+">
+
+<div style="text-align:center">
+
+<div style="
+font-size:22px;
+font-weight:bold;
+color:#ffd700;
+">
+MASTERCARD
+</div>
+
+<div style="
+font-size:12px;
+letter-spacing:3px;
+color:#00ff88;
+margin-top:8px;
+">
+ARIAN ROY
+</div>
+
+</div>
+
+</div>
+
+<div style="
+color:#00ff88;
+margin-bottom:20px;
+text-align:center;
+letter-spacing:2px;
+">
+Arian Urban Development Company
+</div>
+
+    <div id="percent"
+      style="
+      font-size:70px;
+      margin:20px;
+    ">
+      0%
+    </div>
+
+    <div style="
+      width:300px;
+      height:12px;
+      border:1px solid #ffd700;
+    ">
+      <div id="fill"
+        style="
+        width:0%;
+        height:100%;
+        background:#ffd700;
+      ">
+      </div>
+    </div>
+
+  </div>
+
+  `;
+
+  let p = 0;
+
+  const timer = setInterval(() => {
+
+    p++;
+
+    document.getElementById("percent").innerText =
+      p + "%";
+
+    document.getElementById("fill").style.width =
+      p + "%";
+
+    if (p >= 100){
+
+  clearInterval(timer);
+
+  document.querySelector("h2").innerText =
+    "✓ VERIFIED";
+
+  setTimeout(() => {
+
+    document.querySelector("h2").innerText =
+      "ACCESS GRANTED";
+
+  }, 500);
+
+  setTimeout(() => {
+
+    showUI();
+
+  }, 1500);
+
+}
+
+  }, 30);
+
+}
+
 function showUI() {
 
   console.log("SHOWUI CALLED", currentUser);
