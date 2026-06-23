@@ -497,6 +497,7 @@ box-shadow:
 0 0 50px #ffd700;
 
 animation:
+spin 8s linear infinite,
 pulse 2s ease-in-out infinite;
 ">
 
@@ -575,20 +576,64 @@ Arian Urban Development Company
   clearInterval(timer);
 
   document.querySelector("h2").innerText =
-    "✓ VERIFIED";
+    "LOADING COMPLETE";
+
+  setTimeout(() => {
+
+  const txt = "VERIFYING USER...";
+  let i = 0;
+
+  document.querySelector("h2").innerText = "";
+
+  const typing = setInterval(() => {
+
+    document.querySelector("h2").innerText +=
+      txt.charAt(i);
+
+    i++;
+
+    if(i >= txt.length){
+      clearInterval(typing);
+    }
+
+  }, 80);
+
+}, 700);
 
   setTimeout(() => {
 
     document.querySelector("h2").innerText =
-      "ACCESS GRANTED";
+      "✓ VERIFIED";
 
-  }, 500);
+  }, 1700);
 
   setTimeout(() => {
 
-    showUI();
+  const userName =
+    currentUser?.emp?.name ||
+    currentUser?.name ||
+    "User";
 
-  }, 1500);
+const userRole =
+    currentUser?.type === "admin"
+      ? "👑 ADMIN"
+      : "👤 EMPLOYEE";
+
+document.querySelector("h2").innerHTML =
+
+    "ACCESS GRANTED<br><br>" +
+    "Welcome<br>" +
+    userName +
+    "<br><br>" +
+    userRole;
+
+}, 2700);
+
+setTimeout(() => {
+
+  showUI();
+
+}, 5000);
 
 }
 
