@@ -26,18 +26,28 @@ const pageStack = [];
 
 function pushPage(fn) {
   pageStack.push(fn);
-  history.pushState({}, "", "");
+
+  // state واقعی برای جلوگیری از خروج اشتباه
+  history.pushState(
+    { index: pageStack.length },
+    "",
+    "#app"
+  );
 }
 
 /* 👇 BACK SAFE HANDLER */
 window.addEventListener("popstate", () => {
 
+  // اگر فقط یک صفحه داریم → برگرد به هوم امن
   if (pageStack.length <= 1) {
     pageStack.length = 0;
-    history.back(); // خروج طبیعی
+
+    // ❌ history.back() ممنوع چون اپ رو می‌بنده
+    openMainPage();
     return;
   }
 
+  // حذف صفحه فعلی
   pageStack.pop();
 
   const prev = pageStack[pageStack.length - 1];
@@ -47,13 +57,11 @@ window.addEventListener("popstate", () => {
   }
 });
 
-/* 👇 SAFE INIT (خیلی مهم برای جلوگیری از crash) */
+/* 👇 SAFE INIT */
 document.addEventListener("DOMContentLoaded", () => {
   try {
     if (typeof init === "function") {
       init();
-    } else {
-      console.log("init not found, skipping");
     }
   } catch (e) {
     console.log("INIT ERROR:", e);
@@ -1072,7 +1080,29 @@ function openWalletPage() {
 }
 function openLinePage(empId){
 
-  const emp = employees.find(e => String(e.id) === String(empId));
+  const emp = employees.find(
+  e => String(e.id) === String(empId)
+);
+
+if(!emp.documents){
+  emp.documents = {};
+}
+
+if(emp.documents.stopCPU === undefined){
+  emp.documents.stopCPU = false;
+}
+
+if(emp.documents.stopRAM === undefined){
+  emp.documents.stopRAM = false;
+}
+
+if(emp.documents.stopNetwork === undefined){
+  emp.documents.stopNetwork = false;
+}
+
+if(emp.documents.stopLogs === undefined){
+  emp.documents.stopLogs = false;
+}
 
   if(!emp || !emp.documents?.lineEnabled){
     alert("LINE Panel Disabled");
@@ -1157,21 +1187,30 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 
         <div style="margin:6px 0;">
   ASIA:
-  <span class="online-blink">ONLINE</span>
+  <span class="online-blink">
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
+  </span>
 </div>
 
 <div style="margin:6px 0;">
   EUROPE:
-  <span class="online-blink">ONLINE</span>
+  <span class="online-blink">
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
+  </span>
 </div>
 
 <div style="margin:6px 0;">
-  AMERICA:<span class="online-blink">ONLINE</span>
+  AMERICA:
+  <span class="online-blink">
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
+  </span>
 </div>
 
 <div style="margin:6px 0;">
   AFRICA:
-  <span class="online-blink">ONLINE</span>
+  <span class="online-blink">
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
+  </span>
 </div>
 
       </div>
@@ -1245,6 +1284,7 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 >
 
 ${window.isAdmin ? `
+
 <button
   onclick="saveLineData('${emp.id}')"
   style="
@@ -1261,8 +1301,76 @@ ${window.isAdmin ? `
   💾 SAVE
 </button>
 
-` : ""}
+<button
+  onclick="toggleCPU('${emp.id}')"
+  style="
+    width:100%;
+    background:#ff9800;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:8px;
+  ">
+  ⏸ CPU STOP
+</button>
 
+<button
+  onclick="toggleRAM('${emp.id}')"
+  style="
+    width:100%;
+    background:#ff5722;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:8px;
+  ">
+  ⏸ RAM STOP
+</button>
+
+<button
+  onclick="toggleNetwork('${emp.id}')"
+  style="
+    width:100%;
+    background:#9c27b0;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:8px;
+  ">
+  ⏸ NETWORK STOP
+</button>
+
+<button
+  onclick="toggleLogs('${emp.id}')"
+  style="
+    width:100%;
+    background:#f44336;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    margin-bottom:8px;
+  ">
+  ⏸ LOG STOP
+</button>
+
+<button
+  onclick="openMainPage()"
+  style="
+    width:100%;
+    background:#00c853;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+  ">
+  ⬅ Back
+</button>
+
+` : ""}
 </div>
 
 <div class="cyber-panel logs">
@@ -1287,17 +1395,17 @@ ${window.isAdmin ? `
 
   setInterval(() => {
 
-    if(cpu){
-      cpu.style.width =
-      (40 + Math.random() * 60) + "%";
-    }
+  if(cpu && !emp.documents.stopCPU){
+    cpu.style.width =
+    (40 + Math.random() * 60) + "%";
+  }
 
-    if(ram){
-      ram.style.width =
-      (30 + Math.random() * 60) + "%";
-    }
+  if(ram && !emp.documents.stopRAM){
+    ram.style.width =
+    (30 + Math.random() * 60) + "%";
+  }
 
-  },1000);
+},1000);
 
   const logs = [
     "AUTH SUCCESS",
@@ -1313,32 +1421,34 @@ ${window.isAdmin ? `
   ];
 
   const logArea =
-  document.getElementById("logArea");
+document.getElementById("logArea");
 
-  setInterval(() => {
+setInterval(() => {
 
-    if(!logArea) return;
+  if(emp.documents.stopLogs) return;
 
-    const div =
-    document.createElement("div");
+  if(!logArea) return;
 
-    div.style.margin = "4px 0";
+  const div =
+  document.createElement("div");
 
-    div.innerText =
-"[" +
-new Date().toLocaleTimeString("en-GB", {
-  hour12: false
-}) +
-"] " +
-logs[Math.floor(Math.random() * logs.length)];
+  div.style.margin = "4px 0";
 
-    logArea.appendChild(div);
+  div.innerText =
+  "[" +
+  new Date().toLocaleTimeString("en-GB", {
+    hour12:false
+  }) +
+  "] " +
+  logs[Math.floor(Math.random() * logs.length)];
 
-    if(logArea.children.length > 18){
-      logArea.removeChild(logArea.firstChild);
-    }
+  logArea.appendChild(div);
 
-  },400);
+  if(logArea.children.length > 18){
+    logArea.removeChild(logArea.firstChild);
+  }
+
+},400);
 
 }
 function getLineExpiry(emp){
@@ -2851,3 +2961,82 @@ function saveLineData(empId){
   alert("LINE UPDATED ✔");
  }
  
+function toggleCPU(empId){
+
+  const emp = employees.find(
+    e => String(e.id) === String(empId)
+  );
+
+  if(!emp) return;
+
+  if(!emp.documents){
+    emp.documents = {};
+  }
+
+  emp.documents.stopCPU =
+  !emp.documents.stopCPU;
+
+  saveEmployees();
+
+  openLinePage(empId);
+}
+
+function toggleRAM(empId){
+
+  const emp = employees.find(
+    e => String(e.id) === String(empId)
+  );
+
+  if(!emp) return;
+
+  if(!emp.documents){
+    emp.documents = {};
+  }
+
+  emp.documents.stopRAM =
+  !emp.documents.stopRAM;
+
+  saveEmployees();
+
+  openLinePage(empId);
+}
+
+function toggleNetwork(empId){
+
+  const emp = employees.find(
+    e => String(e.id) === String(empId)
+  );
+
+  if(!emp) return;
+
+  if(!emp.documents){
+    emp.documents = {};
+  }
+
+  emp.documents.stopNetwork =
+  !emp.documents.stopNetwork;
+
+  saveEmployees();
+
+  openLinePage(empId);
+}
+
+function toggleLogs(empId){
+
+  const emp = employees.find(
+    e => String(e.id) === String(empId)
+  );
+
+  if(!emp) return;
+
+  if(!emp.documents){
+    emp.documents = {};
+  }
+
+  emp.documents.stopLogs =
+  !emp.documents.stopLogs;
+
+  saveEmployees();
+
+  openLinePage(empId);
+}
