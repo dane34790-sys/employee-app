@@ -478,7 +478,7 @@ position:absolute;
 inset:15px;
 display:grid;
 grid-template-columns:1fr 1fr;
-grid-template-rows:180px 180px auto;
+grid-template-rows:180px auto auto;
 gap:12px;
 z-index:2;
 }
@@ -488,7 +488,7 @@ background:rgba(0,255,120,.04);
 border:1px solid rgba(0,255,120,.2);
 backdrop-filter:blur(8px);
 padding:12px;
-overflow:hidden;
+overflow:auto;
 box-shadow:0 0 20px rgba(0,255,120,.08);
 color:#00ff88;
 }
@@ -514,13 +514,14 @@ box-shadow:0 0 10px #00ff88;
 .logs{
 grid-column:1/3;
 font-size:12px;
-overflow:hidden;
+overflow-y:auto;
 position:relative;
+padding-bottom:120px;
 }
 
 .led{
 position:absolute;
-bottom:285px;
+bottom:300px;
 right:15px;
 
 width:22px;
@@ -577,4 +578,4 @@ z-index:1;
 .online-blink{
   animation:blinkOnline .8s infinite;
   color:#00ff88;
-}
+  }
