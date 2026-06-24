@@ -1190,11 +1190,13 @@ const endText   = new Date(end).toLocaleDateString("en-US");
   style="
     width:100%;
     margin-bottom:10px;
-    background:#001f12;
-    border:1px solid #00ff88;
+    background:${window.isAdmin ? '#001f12' : 'transparent'};
+    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+    outline:none;
+    box-shadow:none;
     color:#00ff88;
     padding:6px;
-    ${window.isAdmin ? "" : "opacity:.8;"}
+    ${window.isAdmin ? '' : 'opacity:.8;'}
   "
 >
 
@@ -1210,11 +1212,13 @@ const endText   = new Date(end).toLocaleDateString("en-US");
   style="
     width:100%;
     margin-bottom:10px;
-    background:#001f12;
-    border:1px solid #00ff88;
+    background:${window.isAdmin ? '#001f12' : 'transparent'};
+    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+    outline:none;
+    box-shadow:none;
     color:#00ff88;
     padding:6px;
-    ${window.isAdmin ? "" : "opacity:.8;"}
+    ${window.isAdmin ? '' : 'opacity:.8;'}
   "
 >
 
@@ -1228,13 +1232,15 @@ const endText   = new Date(end).toLocaleDateString("en-US");
   value="${emp.documents.lineCode || ''}"
   style="
     width:100%;
-    background:#001f12;
-    border:1px solid #00ff88;
+    background:${window.isAdmin ? '#001f12' : 'transparent'};
+    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+    outline:none;
+    box-shadow:none;
     color:#00ff88;
     padding:6px;
     font-size:14px;
     margin-bottom:10px;
-    ${window.isAdmin ? "" : "opacity:.8;"}
+    ${window.isAdmin ? '' : 'opacity:.8;'}
   "
 >
 
@@ -1255,37 +1261,7 @@ ${window.isAdmin ? `
   💾 SAVE
 </button>
 
-<button
-  onclick="deleteEmployee('${emp.id}')"
-  style="
-    width:100%;
-    background:#ff1744;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    font-size:15px;
-    font-weight:bold;
-    margin-bottom:8px;
-  ">
-  🗑 DELETE
-</button>
 ` : ""}
-
-<button
-  onclick="openMainPage()"
-  style="
-    width:100%;
-    background:#00c853;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    font-size:15px;
-    font-weight:bold;
-  ">
-  ⬅ Back
-</button>
 
 </div>
 
