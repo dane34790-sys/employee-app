@@ -1067,12 +1067,11 @@ function openWalletPage() {
 function openLinePage(empId){
 
   const emp = employees.find(e => String(e.id) === String(empId));
+
   if(!emp || !emp.documents?.lineEnabled){
     alert("LINE Panel Disabled");
     return;
   }
-
-  const isAdmin = currentUser.type === "admin";
 
   const start = emp.documents.expiryStart || Date.now();
   const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
@@ -1080,88 +1079,221 @@ function openLinePage(empId){
   const startText = new Date(start).toLocaleDateString("en-CA");
   const endText   = new Date(end).toLocaleDateString("en-CA");
 
-  // 👇 اینجا push درست (صفحه واقعی، نه showUI)
   pushPage(() => openLinePage(empId));
 
   document.getElementById("app").innerHTML = `
-    <div class="screen">
 
-      <img src="images/employee-bg.png" class="bg-full">
+  <div class="screen">
 
-      <div class="overlay">
+    <img src="images/employee-bg.png" class="bg-full">
 
-        <!-- ECG -->
-        <svg viewBox="0 0 200 60" width="320" class="ecg">
-          <path class="line1" d="M0 30 L20 30 L30 10 L40 50 L50 30 L70 30 L80 20 L90 40 L100 30 L200 30"/>
-          <path class="line2" d="M0 30 L20 30 L30 20 L40 45 L50 30 L70 30 L80 25 L90 35 L100 30 L200 30"/>
-        </svg>
+    <div class="scan"></div>
 
-        <!-- CLOCK -->
-        <div class="clock" id="clock"></div>
+    <div class="access">
+      ACCESS GRANTED
+    </div>
 
-        <div class="neon-box">
+    <div class="dashboard">
 
-          <div style="display:flex;align-items:center;gap:6px;max-width:100%;">
-            <input id="lineName"
-              class="neon-text"
-              style="flex:1;min-width:0;"
-              value="${emp.documents.lineName || ''}"
-              ${!isAdmin ? "disabled" : ""}>
-            <span style="flex-shrink:0;">📡</span>
-          </div>
+      <div class="cyber-panel">
 
-          <div style="display:flex;align-items:center;gap:6px;max-width:100%;">
-            <input id="lineCode"
-              class="neon-text"
-              style="flex:1;min-width:0;"
-              value="${emp.documents.lineCode || ''}"
-              ${!isAdmin ? "disabled" : ""}>
-            <span style="flex-shrink:0;">🔑</span>
-          </div>
+  <div style="font-size:22px;">
+    ONLINE
+  </div>
 
-          <div style="display:flex;align-items:center;gap:6px;max-width:100%;">
-            <input id="price"
-              class="neon-text"
-              style="flex:1;min-width:0;"
-              value="${emp.documents?.price || ''}"
-              ${!isAdmin ? "readonly" : ""}>
-            <span style="flex-shrink:0;">💲</span>
-          </div>
+  <div style="margin-top:10px;">
+    TOKEN:VERIFIED
+  </div>
 
-          <div id="lineCountdown" class="neon-text" style="margin-top:8px;"></div>
+  <div style="margin-top:10px;">
+    ACTIVE
+  </div>
 
-          <div class="neon-text">
-            🚀 START : <span style="color:#00ff6a !important">${startText}</span>
-          </div>
+  <div style="
+    margin-top:10px;
+    font-size:14px;
+    color:#00ff88;
+    word-break:break-all;
+    line-height:1.3;
+    opacity:.9;
+  ">
+    ${emp.documents.lineCode || ""}
+  </div>
 
-          <div class="neon-text">
-            🏁 END : <span style="color:#ff3b3b !important">${endText}</span>
-          </div>
+</div>
 
-          ${isAdmin ? `
-            <input id="lineStartDate"
-              type="date"
-              value="${new Date(start).toISOString().split('T')[0]}">
-          ` : ""}
+      <div class="cyber-panel">
 
+        <div class="cyber-title">
+          SERVER LOAD
         </div>
 
-        ${isAdmin ? `
-          <button onclick="saveLine('${emp.id}')"
-            style="margin-top:10px;padding:10px;width:100%;background:#00e676;border:none;border-radius:8px;">
-            💾 SAVE LINE
-          </button>
-        ` : ""}
+        CPU
 
-        <!-- ✅ مهم: بک واقعی گوشی -->
-        <button onclick="history.back()" class="logout">⬅ Back</button>
+        <div class="bar">
+          <div id="cpu" class="fill"></div>
+        </div>
+
+        <br>
+
+        RAM
+
+        <div class="bar">
+          <div id="ram" class="fill"></div>
+        </div>
 
       </div>
+
+      <div class="cyber-panel">
+
+        <div class="cyber-title">
+          NETWORK ${emp.documents.Codeline || "Hanover 5690"}
+        </div>
+
+        <div style="margin:6px 0;">
+  ASIA:
+  <span class="online-blink">ONLINE</span>
+</div>
+
+<div style="margin:6px 0;">
+  EUROPE:
+  <span class="online-blink">ONLINE</span>
+</div>
+
+<div style="margin:6px 0;">
+  AMERICA:<span class="online-blink">ONLINE</span>
+</div>
+
+<div style="margin:6px 0;">
+  AFRICA:
+  <span class="online-blink">ONLINE</span>
+</div>
+
+      </div>
+
+      <div class="cyber-panel">
+
+        <div style="font-size:12px;opacity:.7;">
+          START DATE
+        </div>
+
+        <div style="margin-bottom:10px;">
+          ${startText}
+        </div>
+
+        <div style="font-size:12px;opacity:.7;">
+          END DATE
+        </div>
+
+        <div style="margin-bottom:10px;">
+          ${endText}
+        </div>
+
+        <div style="font-size:12px;opacity:.7;">
+          LINE NAME
+        </div>
+
+        <div style="margin-bottom:10px;">
+          ${emp.documents.lineName || ""}
+        </div>
+
+        <div style="font-size:12px;opacity:.7;">
+          LINE CODE
+        </div>
+
+        <div style="word-break:break-all;">
+          ${emp.documents.lineCode || ""}
+        </div>
+
+      </div>
+
+      <div class="cyber-panel logs">
+
+        <div class="cyber-title">
+          LIVE SERVER LOG
+        </div>
+
+        <div id="logArea"></div>
+
+      </div>
+
     </div>
+
+    <div class="led"></div>
+
+    <button
+      onclick="history.back()"
+      class="logout"
+      style="
+        position:absolute;
+        left:15px;
+        right:15px;
+        bottom:15px;
+        z-index:50;
+        background:#00c853;
+      ">
+      ⬅ Back
+    </button>
+
+  </div>
   `;
 
-  startClock();
-  startLineCountdown(emp);
+  const cpu = document.getElementById("cpu");
+  const ram = document.getElementById("ram");
+
+  setInterval(() => {
+
+    if(cpu){
+      cpu.style.width =
+      (40 + Math.random() * 60) + "%";
+    }
+
+    if(ram){
+      ram.style.width =
+      (30 + Math.random() * 60) + "%";
+    }
+
+  },1000);
+
+  const logs = [
+    "AUTH SUCCESS",
+    "DATABASE VERIFIED",
+    "FIREBASE CONNECTED",
+    "API RESPONSE 200",
+    "TOKEN GENERATED",
+    "EMPLOYEE SYNC",
+    "NETWORK ACTIVE",
+    "SERVER READY",
+    "ENCRYPTION ENABLED",
+    "BACKUP COMPLETED"
+  ];
+
+  const logArea =
+  document.getElementById("logArea");
+
+  setInterval(() => {
+
+    if(!logArea) return;
+
+    const div =
+    document.createElement("div");
+
+    div.style.margin = "4px 0";
+
+    div.innerText =
+    "[" +
+    new Date().toLocaleTimeString() +
+    "] " +
+    logs[Math.floor(Math.random() * logs.length)];
+
+    logArea.appendChild(div);
+
+    if(logArea.children.length > 18){
+      logArea.removeChild(logArea.firstChild);
+    }
+
+  },400);
+
 }
 function getLineExpiry(emp){
 
