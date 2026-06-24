@@ -1073,14 +1073,13 @@ function openLinePage(empId){
     return;
   }
 
-  const start = emp.documents.expiryStart || Date.now();
-  const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
+const start = emp.documents.expiryStart || Date.now();
+const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
 
-  const startText = new Date(start).toLocaleDateString("en-CA");
-  const endText   = new Date(end).toLocaleDateString("en-CA");
+const startText = new Date(start).toLocaleDateString("en-US");
+const endText   = new Date(end).toLocaleDateString("en-US");
 
   pushPage(() => openLinePage(empId));
-
   document.getElementById("app").innerHTML = `
 
   <div class="screen">
@@ -1244,7 +1243,7 @@ function openLinePage(empId){
 </button>
 
 <button
-  onclick="history.back()"
+  onclick="openMainPage()"
   style="
     width:100%;
     background:#00c853;
@@ -1320,10 +1319,12 @@ function openLinePage(empId){
     div.style.margin = "4px 0";
 
     div.innerText =
-    "[" +
-    new Date().toLocaleTimeString() +
-    "] " +
-    logs[Math.floor(Math.random() * logs.length)];
+"[" +
+new Date().toLocaleTimeString("en-GB", {
+  hour12: false
+}) +
+"] " +
+logs[Math.floor(Math.random() * logs.length)];
 
     logArea.appendChild(div);
 
@@ -1404,7 +1405,7 @@ function openTransactions(empId){
           <div class="card" style="color:red">
             Employee not found
           </div>
-          <button onclick="history.back()" class="logout">⬅ Back</button>
+          <button onclick="openMainPage()" class="logout">⬅ Back</button>
         </div>
       </div>
     `;
@@ -2840,4 +2841,4 @@ function saveLineData(empId){
   saveEmployees();
 
   alert("LINE UPDATED ✔");
-      }
+                   }
