@@ -520,7 +520,7 @@ position:relative;
 
 .led{
 position:absolute;
-bottom:15px;
+bottom:285px;
 right:15px;
 
 width:22px;
@@ -577,4 +577,4 @@ z-index:1;
 .online-blink{
   animation:blinkOnline .8s infinite;
   color:#00ff88;
-  }
+}
