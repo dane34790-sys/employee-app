@@ -1,11 +1,13 @@
-const CACHE_NAME = "employee-app-v11";
+const CACHE_NAME = "employee-app-v12";
+
+const BASE = "/employee-app/";
 
 const FILES_TO_CACHE = [
-  "/employee-app/",
-  "/employee-app/index.html",
-  "/employee-app/style.css",
-  "/employee-app/app.js",
-  "/employee-app/manifest.json"
+  BASE,
+  BASE + "index.html",
+  BASE + "style.css",
+  BASE + "app.js",
+  BASE + "manifest.json"
 ];
 
 self.addEventListener("install", event => {
@@ -31,22 +33,23 @@ self.addEventListener("activate", event => {
 self.addEventListener("fetch", event => {
   if (event.request.method !== "GET") return;
 
+  const url = new URL(event.request.url);
+
   event.respondWith(
     fetch(event.request)
       .then(response => {
         const clone = response.clone();
-
-        caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, clone);
-        });
-
+        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       })
       .catch(() => {
-        return caches.match(event.request)
-          .then(res => {
-            return res || caches.match("/employee-app/index.html");
-          });
+
+        // 🔥 مهم‌ترین FIX: اگر صفحه route بود → برگرد به index.html
+        if (event.request.mode === "navigate") {
+          return caches.match(BASE + "index.html");
+        }
+
+        return caches.match(event.request);
       })
   );
 });
