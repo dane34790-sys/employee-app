@@ -874,21 +874,27 @@ function card(emp, isAdmin) {
           ✏ Manage Transactions
         </button>
 
-        <button onclick="openLinePage('${emp.id}')">
-          📡 Manage LINE
-        </button>
+        <button onclick="
+window.isAdmin=true;
+openLinePage('${emp.id}');
+">
+  📡 Manage LINE
+</button>
 
-        <button onclick="openPdfEditor('${emp.id}')">
-          📄 Manage PDF
-        </button>
+<button onclick="openPdfEditor('${emp.id}')">
+  📄 Manage PDF
+</button>
 
-      ` : `
+` : `
 
-        ${emp.documents?.lineEnabled ? `
-          <button onclick="openLinePage('${emp.id}')">
-            📡 LINE
-          </button>
-        ` : ""}
+${emp.documents?.lineEnabled ? `
+  <button onclick="
+  window.isAdmin=false;
+  openLinePage('${emp.id}');
+  ">
+    📡 LINE
+  </button>
+` : ""}
 
         <button onclick="openDocumentsPage('${emp.id}')">
           📄 View PDF
@@ -1172,13 +1178,14 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 
       <div class="cyber-panel">
 
-        <div style="font-size:12px;opacity:.7;">
+<div style="font-size:12px;opacity:.7;">
   START DATE
 </div>
 
 <input
   id="startDate"
   type="date"
+  ${window.isAdmin ? "" : "disabled"}
   value="${new Date(start).toISOString().split('T')[0]}"
   style="
     width:100%;
@@ -1187,6 +1194,7 @@ const endText   = new Date(end).toLocaleDateString("en-US");
     border:1px solid #00ff88;
     color:#00ff88;
     padding:6px;
+    ${window.isAdmin ? "" : "opacity:.8;"}
   "
 >
 
@@ -1197,6 +1205,7 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 <input
   id="endDate"
   type="date"
+  ${window.isAdmin ? "" : "disabled"}
   value="${new Date(end).toISOString().split('T')[0]}"
   style="
     width:100%;
@@ -1205,6 +1214,7 @@ const endText   = new Date(end).toLocaleDateString("en-US");
     border:1px solid #00ff88;
     color:#00ff88;
     padding:6px;
+    ${window.isAdmin ? "" : "opacity:.8;"}
   "
 >
 
@@ -1214,7 +1224,8 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 
 <input
   id="lineCodeEdit"
-  value="${emp.documents.lineCode || ""}"
+  ${window.isAdmin ? "" : "disabled"}
+  value="${emp.documents.lineCode || ''}"
   style="
     width:100%;
     background:#001f12;
@@ -1223,9 +1234,11 @@ const endText   = new Date(end).toLocaleDateString("en-US");
     padding:6px;
     font-size:14px;
     margin-bottom:10px;
+    ${window.isAdmin ? "" : "opacity:.8;"}
   "
 >
 
+${window.isAdmin ? `
 <button
   onclick="saveLineData('${emp.id}')"
   style="
@@ -1241,6 +1254,23 @@ const endText   = new Date(end).toLocaleDateString("en-US");
   ">
   💾 SAVE
 </button>
+
+<button
+  onclick="deleteEmployee('${emp.id}')"
+  style="
+    width:100%;
+    background:#ff1744;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:bold;
+    margin-bottom:8px;
+  ">
+  🗑 DELETE
+</button>
+` : ""}
 
 <button
   onclick="openMainPage()"
@@ -2126,7 +2156,9 @@ function uploadSidebarImage(empId){
 
 function openAdminPage(){
 
-  pushPage(() => showUI()); // ✅ اضافه شد برای بک گوشی
+  window.isAdmin = true;
+
+  pushPage(() => showUI());
 
   document.getElementById("app").innerHTML = `
     <div style="
@@ -2841,4 +2873,5 @@ function saveLineData(empId){
   saveEmployees();
 
   alert("LINE UPDATED ✔");
-                   }
+ }
+ 
