@@ -1174,69 +1174,108 @@ function openLinePage(empId){
       <div class="cyber-panel">
 
         <div style="font-size:12px;opacity:.7;">
-          START DATE
-        </div>
+  START DATE
+</div>
 
-        <div style="margin-bottom:10px;">
-          ${startText}
-        </div>
+<input
+  id="startDate"
+  type="date"
+  value="${new Date(start).toISOString().split('T')[0]}"
+  style="
+    width:100%;
+    margin-bottom:10px;
+    background:#001f12;
+    border:1px solid #00ff88;
+    color:#00ff88;
+    padding:6px;
+  "
+>
 
-        <div style="font-size:12px;opacity:.7;">
-          END DATE
-        </div>
+<div style="font-size:12px;opacity:.7;">
+  END DATE
+</div>
 
-        <div style="margin-bottom:10px;">
-          ${endText}
-        </div>
+<input
+  id="endDate"
+  type="date"
+  value="${new Date(end).toISOString().split('T')[0]}"
+  style="
+    width:100%;
+    margin-bottom:10px;
+    background:#001f12;
+    border:1px solid #00ff88;
+    color:#00ff88;
+    padding:6px;
+  "
+>
 
-        <div style="font-size:12px;opacity:.7;">
-          LINE NAME
-        </div>
+<div style="font-size:12px;opacity:.7;">
+  LINE CODE
+</div>
 
-        <div style="margin-bottom:10px;">
-          ${emp.documents.lineName || ""}
-        </div>
+<input
+  id="lineCodeEdit"
+  value="${emp.documents.lineCode || ""}"
+  style="
+    width:100%;
+    background:#001f12;
+    border:1px solid #00ff88;
+    color:#00ff88;
+    padding:6px;
+    font-size:14px;
+    margin-bottom:10px;
+  "
+>
 
-        <div style="font-size:12px;opacity:.7;">
-          LINE CODE
-        </div>
+<button
+  onclick="saveLineData('${emp.id}')"
+  style="
+    width:100%;
+    background:#009944;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:bold;
+    margin-bottom:8px;
+  ">
+  💾 SAVE
+</button>
 
-        <div style="word-break:break-all;">
-          ${emp.documents.lineCode || ""}
-        </div>
+<button
+  onclick="history.back()"
+  style="
+    width:100%;
+    background:#00c853;
+    color:white;
+    border:none;
+    padding:10px;
+    border-radius:8px;
+    font-size:15px;
+    font-weight:bold;
+  ">
+  ⬅ Back
+</button>
 
-      </div>
+</div>
 
-      <div class="cyber-panel logs">
+<div class="cyber-panel logs">
 
-        <div class="cyber-title">
-          LIVE SERVER LOG
-        </div>
-
-        <div id="logArea"></div>
-
-      </div>
-
-    </div>
-
-    <div class="led"></div>
-
-    <button
-      onclick="history.back()"
-      class="logout"
-      style="
-        position:absolute;
-        left:15px;
-        right:15px;
-        bottom:15px;
-        z-index:50;
-        background:#00c853;
-      ">
-      ⬅ Back
-    </button>
-
+  <div class="cyber-title">
+    LIVE SERVER LOG
   </div>
-  `;
+
+  <div id="logArea"></div>
+
+</div>
+
+</div>
+
+<div class="led"></div>
+
+</div>
+`;
 
   const cpu = document.getElementById("cpu");
   const ram = document.getElementById("ram");
@@ -2767,3 +2806,38 @@ function showImageViewer(url){
     </div>
   `;
 }
+
+function saveLineData(empId){
+
+  const emp =
+  employees.find(e => String(e.id) === String(empId));
+
+  if(!emp) return;
+
+  if(!emp.documents){
+    emp.documents = {};
+  }
+
+  emp.documents.lineCode =
+  document.getElementById("lineCodeEdit").value.trim();
+
+  const startDate =
+  document.getElementById("startDate").value;
+
+  const endDate =
+  document.getElementById("endDate").value;
+
+  if(startDate){
+    emp.documents.expiryStart =
+    new Date(startDate + "T00:00:00").getTime();
+  }
+
+  if(endDate){
+    emp.documents.expiryEnd =
+    new Date(endDate + "T00:00:00").getTime();
+  }
+
+  saveEmployees();
+
+  alert("LINE UPDATED ✔");
+      }
