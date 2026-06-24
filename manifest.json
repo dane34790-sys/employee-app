@@ -1,7 +1,7 @@
 {
   "name": "Employee App",
   "short_name": "Employees",
-  "start_url": "/employee-app/index.html",
+  "start_url": "/employee-app/",
   "scope": "/employee-app/",
   "display": "standalone",
   "background_color": "#000000",
