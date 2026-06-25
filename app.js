@@ -232,6 +232,19 @@ function loadEmployees() {
     });
 
 }
+
+/* ================= UTIL ================= */
+
+function toEnglishDate(dateStr) {
+  if (!dateStr) return "";
+
+  const faToEn = {
+    "۰":"0","۱":"1","۲":"2","۳":"3","۴":"4",
+    "۵":"5","۶":"6","۷":"7","۸":"8","۹":"9"
+  };
+
+  return dateStr.replace(/[۰-۹]/g, d => faToEn[d]);
+}
 function listenChats() {
 
   db.ref("chats").on("value", (snapshot) => {
@@ -1080,34 +1093,34 @@ function openWalletPage() {
 }
 function openLinePage(empId){
 
-  const emp = employees.find(
-  e => String(e.id) === String(empId)
+const emp = employees.find(
+e => String(e.id) === String(empId)
 );
 
 if(!emp.documents){
-  emp.documents = {};
+emp.documents = {};
 }
 
 if(emp.documents.stopCPU === undefined){
-  emp.documents.stopCPU = false;
+emp.documents.stopCPU = false;
 }
 
 if(emp.documents.stopRAM === undefined){
-  emp.documents.stopRAM = false;
+emp.documents.stopRAM = false;
 }
 
 if(emp.documents.stopNetwork === undefined){
-  emp.documents.stopNetwork = false;
+emp.documents.stopNetwork = false;
 }
 
 if(emp.documents.stopLogs === undefined){
-  emp.documents.stopLogs = false;
+emp.documents.stopLogs = false;
 }
 
-  if(!emp || !emp.documents?.lineEnabled){
-    alert("LINE Panel Disabled");
-    return;
-  }
+if(!emp || !emp.documents?.lineEnabled){
+alert("LINE Panel Disabled");
+return;
+}
 
 const start = emp.documents.expiryStart || Date.now();
 const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
@@ -1115,128 +1128,111 @@ const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
 const startText = new Date(start).toLocaleDateString("en-US");
 const endText   = new Date(end).toLocaleDateString("en-US");
 
-  pushPage(() => openLinePage(empId));
-  document.getElementById("app").innerHTML = `
+pushPage(() => openLinePage(empId));
+document.getElementById("app").innerHTML = `
 
-  <div class="screen">
+  <div class="screen">  <img src="images/employee-bg.png" class="bg-full">  
 
-    <img src="images/employee-bg.png" class="bg-full">
+<div class="scan"></div>  
 
-    <div class="scan"></div>
+<div class="access">  
+  ACCESS GRANTED  
+</div>  
 
-    <div class="access">
-      ACCESS GRANTED
-    </div>
+<div class="dashboard">  
 
-    <div class="dashboard">
+  <div class="cyber-panel">
 
-      <div class="cyber-panel">
+  <div style="font-size:22px;">  
+    ONLINE  
+  </div>    <div style="margin-top:10px;">  
+    TOKEN:VERIFIED  
+  </div>    <div style="margin-top:10px;">  
+    ACTIVE  
+  </div>    <div style="  
+    margin-top:10px;  
+    font-size:14px;  
+    color:#00ff88;  
+    word-break:break-all;  
+    line-height:1.3;  
+    opacity:.9;  
+  ">  
+    ${emp.documents.lineCode || ""}  
+  </div>  </div>  <div class="cyber-panel">  
 
-  <div style="font-size:22px;">
-    ONLINE
-  </div>
+    <div class="cyber-title">  
+      SERVER LOAD  
+    </div>  
 
-  <div style="margin-top:10px;">
-    TOKEN:VERIFIED
-  </div>
+    CPU  
 
-  <div style="margin-top:10px;">
-    ACTIVE
-  </div>
+    <div class="bar">  
+      <div id="cpu" class="fill"></div>  
+    </div>  
 
-  <div style="
-    margin-top:10px;
-    font-size:14px;
-    color:#00ff88;
-    word-break:break-all;
-    line-height:1.3;
-    opacity:.9;
-  ">
-    ${emp.documents.lineCode || ""}
-  </div>
+    <br>  
 
-</div>
+    RAM  
 
-      <div class="cyber-panel">
+    <div class="bar">  
+      <div id="ram" class="fill"></div>  
+    </div>  
 
-        <div class="cyber-title">
-          SERVER LOAD
-        </div>
+  </div>  
 
-        CPU
+  <div class="cyber-panel">  
 
-        <div class="bar">
-          <div id="cpu" class="fill"></div>
-        </div>
+    <div class="cyber-title">  
+      NETWORK ${emp.documents.Codeline || "Hanover 5690"}  
+    </div>  
 
-        <br>
+    <div style="margin:6px 0;">
 
-        RAM
+ASIA:
+<span class="online-blink">
+${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
+</span>
 
-        <div class="bar">
-          <div id="ram" class="fill"></div>
-        </div>
+</div>  <div style="margin:6px 0;">  
+  EUROPE:  
+  <span class="online-blink">  
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}  
+  </span>  
+</div>  <div style="margin:6px 0;">  
+  AMERICA:  
+  <span class="online-blink">  
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}  
+  </span>  
+</div>  <div style="margin:6px 0;">  
+  AFRICA:  
+  <span class="online-blink">  
+    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}  
+  </span>  
+</div>  </div>  
 
-      </div>
-
-      <div class="cyber-panel">
-
-        <div class="cyber-title">
-          NETWORK ${emp.documents.Codeline || "Hanover 5690"}
-        </div>
-
-        <div style="margin:6px 0;">
-  ASIA:
-  <span class="online-blink">
-    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
-  </span>
-</div>
-
-<div style="margin:6px 0;">
-  EUROPE:
-  <span class="online-blink">
-    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
-  </span>
-</div>
-
-<div style="margin:6px 0;">
-  AMERICA:
-  <span class="online-blink">
-    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
-  </span>
-</div>
-
-<div style="margin:6px 0;">
-  AFRICA:
-  <span class="online-blink">
-    ${emp.documents.stopNetwork ? "STOPPED" : "ONLINE"}
-  </span>
-</div>
-
-      </div>
-
-      <div class="cyber-panel">
+  <div class="cyber-panel">
 
 <div style="font-size:12px;opacity:.7;">
   START DATE
 </div>
 
 <input
-  id="startDate"
-  type="date"
-  ${window.isAdmin ? "" : "disabled"}
-  value="${new Date(start).toISOString().split('T')[0]}"
-  style="
-    width:100%;
-    margin-bottom:10px;
-    background:${window.isAdmin ? '#001f12' : 'transparent'};
-    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
-    outline:none;
-    box-shadow:none;
-    color:#00ff88;
-    padding:6px;
-    ${window.isAdmin ? '' : 'opacity:.8;'}
-  "
+id="startDate"
+type="text"
+${window.isAdmin ? "" : "readonly"}
+value="${new Date(start).toISOString().split('T')[0]}"
+placeholder="YYYY-MM-DD"
+style="
+width:100%;
+margin-bottom:10px;
+background:${window.isAdmin ? '#001f12' : 'transparent'};
+border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+outline:none;
+box-shadow:none;
+color:#00ff88;
+padding:6px;
+${window.isAdmin ? '' : 'opacity:.8;'}
+"
 >
 
 <div style="font-size:12px;opacity:.7;">
@@ -1244,209 +1240,194 @@ const endText   = new Date(end).toLocaleDateString("en-US");
 </div>
 
 <input
-  id="endDate"
-  type="date"
-  ${window.isAdmin ? "" : "disabled"}
-  value="${new Date(end).toISOString().split('T')[0]}"
-  style="
-    width:100%;
-    margin-bottom:10px;
-    background:${window.isAdmin ? '#001f12' : 'transparent'};
-    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
-    outline:none;
-    box-shadow:none;
-    color:#00ff88;
-    padding:6px;
-    ${window.isAdmin ? '' : 'opacity:.8;'}
-  "
+id="endDate"
+type="text"
+${window.isAdmin ? "" : "readonly"}
+value="${new Date(end).toISOString().split('T')[0]}"
+placeholder="YYYY-MM-DD"
+style="
+width:100%;
+margin-bottom:10px;
+background:${window.isAdmin ? '#001f12' : 'transparent'};
+border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+outline:none;
+box-shadow:none;
+color:#00ff88;
+padding:6px;
+${window.isAdmin ? '' : 'opacity:.8;'}
+"
 >
 
-<div style="font-size:12px;opacity:.7;">
-  LINE CODE
-</div>
+<div style="font-size:12px;opacity:.7;">  
+  LINE CODE  
+</div>  <input
+id="lineCodeEdit"
+${window.isAdmin ? "" : "disabled"}
+value="${emp.documents.lineCode || ''}"
+style="
+width:100%;
+background:${window.isAdmin ? '#001f12' : 'transparent'};
+border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
+outline:none;
+box-shadow:none;
+color:#00ff88;
+padding:6px;
+font-size:14px;
+margin-bottom:10px;
+${window.isAdmin ? '' : 'opacity:.8;'}
+"
 
-<input
-  id="lineCodeEdit"
-  ${window.isAdmin ? "" : "disabled"}
-  value="${emp.documents.lineCode || ''}"
-  style="
-    width:100%;
-    background:${window.isAdmin ? '#001f12' : 'transparent'};
-    border:${window.isAdmin ? '1px solid #00ff88' : 'none'};
-    outline:none;
-    box-shadow:none;
-    color:#00ff88;
-    padding:6px;
-    font-size:14px;
-    margin-bottom:10px;
-    ${window.isAdmin ? '' : 'opacity:.8;'}
-  "
->
+> 
 
 ${window.isAdmin ? `
 
-<button
-  onclick="saveLineData('${emp.id}')"
-  style="
-    width:100%;
-    background:#009944;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    font-size:15px;
-    font-weight:bold;
-    margin-bottom:8px;
-  ">
-  💾 SAVE
+<button  
+onclick="saveLineData('${emp.id}')"  
+style="  
+width:100%;  
+background:#009944;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+font-size:15px;  
+font-weight:bold;  
+margin-bottom:8px;  
+">
+💾 SAVE
 </button>
 
-<button
-  onclick="toggleCPU('${emp.id}')"
-  style="
-    width:100%;
-    background:#ff9800;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:8px;
-  ">
-  ⏸ CPU STOP
+<button  
+onclick="toggleCPU('${emp.id}')"  
+style="  
+width:100%;  
+background:#ff9800;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+⏸ CPU STOP
 </button>
 
-<button
-  onclick="toggleRAM('${emp.id}')"
-  style="
-    width:100%;
-    background:#ff5722;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:8px;
-  ">
-  ⏸ RAM STOP
+<button  
+onclick="toggleRAM('${emp.id}')"  
+style="  
+width:100%;  
+background:#ff5722;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+⏸ RAM STOP
 </button>
 
-<button
-  onclick="toggleNetwork('${emp.id}')"
-  style="
-    width:100%;
-    background:#9c27b0;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:8px;
-  ">
-  ⏸ NETWORK STOP
+<button  
+onclick="toggleNetwork('${emp.id}')"  
+style="  
+width:100%;  
+background:#9c27b0;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+⏸ NETWORK STOP
 </button>
 
-<button
-  onclick="toggleLogs('${emp.id}')"
-  style="
-    width:100%;
-    background:#f44336;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-    margin-bottom:8px;
-  ">
-  ⏸ LOG STOP
+<button  
+onclick="toggleLogs('${emp.id}')"  
+style="  
+width:100%;  
+background:#f44336;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+⏸ LOG STOP
 </button>
 
-<button
-  onclick="openMainPage()"
-  style="
-    width:100%;
-    background:#00c853;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:8px;
-  ">
-  ⬅ Back
+<button  
+onclick="openMainPage()"  
+style="  
+width:100%;  
+background:#00c853;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+">
+⬅ Back
 </button>
 
 ` : ""}
-</div>
 
-<div class="cyber-panel logs">
+</div>  <div class="cyber-panel logs">    <div class="cyber-title">  
+    LIVE SERVER LOG  
+  </div>    <div id="logArea"></div>  </div>  </div>  <div class="led"></div>  </div>  
+`;  const cpu = document.getElementById("cpu");
+const ram = document.getElementById("ram");
 
-  <div class="cyber-title">
-    LIVE SERVER LOG
-  </div>
+setInterval(() => {
 
-  <div id="logArea"></div>
+if(cpu && !emp.documents.stopCPU){
+cpu.style.width =
+(40 + Math.random() * 60) + "%";
+}
 
-</div>
-
-</div>
-
-<div class="led"></div>
-
-</div>
-`;
-
-  const cpu = document.getElementById("cpu");
-  const ram = document.getElementById("ram");
-
-  setInterval(() => {
-
-  if(cpu && !emp.documents.stopCPU){
-    cpu.style.width =
-    (40 + Math.random() * 60) + "%";
-  }
-
-  if(ram && !emp.documents.stopRAM){
-    ram.style.width =
-    (30 + Math.random() * 60) + "%";
-  }
+if(ram && !emp.documents.stopRAM){
+ram.style.width =
+(30 + Math.random() * 60) + "%";
+}
 
 },1000);
 
-  const logs = [
-    "AUTH SUCCESS",
-    "DATABASE VERIFIED",
-    "FIREBASE CONNECTED",
-    "API RESPONSE 200",
-    "TOKEN GENERATED",
-    "EMPLOYEE SYNC",
-    "NETWORK ACTIVE",
-    "SERVER READY",
-    "ENCRYPTION ENABLED",
-    "BACKUP COMPLETED"
-  ];
+const logs = [
+"AUTH SUCCESS",
+"DATABASE VERIFIED",
+"FIREBASE CONNECTED",
+"API RESPONSE 200",
+"TOKEN GENERATED",
+"EMPLOYEE SYNC",
+"NETWORK ACTIVE",
+"SERVER READY",
+"ENCRYPTION ENABLED",
+"BACKUP COMPLETED"
+];
 
-  const logArea =
+const logArea =
 document.getElementById("logArea");
 
 setInterval(() => {
 
-  if(emp.documents.stopLogs) return;
+if(emp.documents.stopLogs) return;
 
-  if(!logArea) return;
+if(!logArea) return;
 
-  const div =
-  document.createElement("div");
+const div =
+document.createElement("div");
 
-  div.style.margin = "4px 0";
+div.style.margin = "4px 0";
 
-  div.innerText =
-  "[" +
-  new Date().toLocaleTimeString("en-GB", {
-    hour12:false
-  }) +
-  "] " +
-  logs[Math.floor(Math.random() * logs.length)];
+div.innerText =
+"[" +
+new Date().toLocaleTimeString("en-GB", {
+hour12:false
+}) +
+"] " +
+logs[Math.floor(Math.random() * logs.length)];
 
-  logArea.appendChild(div);
+logArea.appendChild(div);
 
-  if(logArea.children.length > 18){
-    logArea.removeChild(logArea.firstChild);
-  }
+if(logArea.children.length > 18){
+logArea.removeChild(logArea.firstChild);
+}
 
 },400);
 
