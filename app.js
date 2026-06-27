@@ -1417,33 +1417,28 @@ margin-bottom:8px;
     GLOBAL NETWORK    
 </div>    <canvas id="earth"></canvas>
 
-<div class="network-status">    <div class="status-title">    
-    NETWORK STATUS    
-</div>    
-
-<div class="status-online">    
-    ● ONLINE    
-</div>    
-
-<div class="status-grid">    
-
-    <div class="status-box">    
-        <span>NODES</span>    
-        <b id="nodesCount">1287</b>    
-    </div>    
-
-    <div class="status-box">    
-        <span>LATENCY</span>    
-        <b id="latency">48 ms</b>    
-    </div>    
-
-    <div class="status-box">    
-        <span>UPTIME</span>    
-        <b id="uptime">99.98%</b>    
-    </div>    
-
+<div class="network-status">
+    <div class="status-title">
+        NETWORK STATUS
+    </div>
+    <div class="status-online">
+        ● ONLINE
+    </div>
+    <div class="status-grid" style="display:flex; justify-content:center; gap:6px; flex-wrap:wrap;">
+        <div class="status-box" style="flex:0 1 auto; min-width:55px; padding:4px 6px; text-align:center; background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.2); border-radius:4px;">
+            <span style="font-size:8px; opacity:0.7; display:block;">NODES</span>
+            <b id="nodesCount" style="display:block; font-size:12px; color:#00ff88;">1287</b>
+        </div>
+        <div class="status-box" style="flex:0 1 auto; min-width:55px; padding:4px 6px; text-align:center; background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.2); border-radius:4px;">
+            <span style="font-size:8px; opacity:0.7; display:block;">LATENCY</span>
+            <b id="latency" style="display:block; font-size:12px; color:#00ff88;">48 ms</b>
+        </div>
+        <div class="status-box" style="flex:0 1 auto; min-width:55px; padding:4px 6px; text-align:center; background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.2); border-radius:4px;">
+            <span style="font-size:8px; opacity:0.7; display:block;">UPTIME</span>
+            <b id="uptime" style="display:block; font-size:12px; color:#00ff88;">99.98%</b>
+        </div>
+    </div>
 </div>
-
 </div>  </div> 
 
   <div class="cyber-panel logs">  <div class="cyber-title">    
@@ -3378,4 +3373,4 @@ function startEarth(){
 
     update();
 
-      }
+          }
