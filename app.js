@@ -1091,45 +1091,52 @@ function openWalletPage() {
     </div>
   `;
 }
-function openLinePage(empId){
+function openLinePage(empId) {
+    const emp = employees.find(
+        e => String(e.id) === String(empId)
+    );
 
-const emp = employees.find(
-e => String(e.id) === String(empId)
-);
+    if (!emp.documents) {
+        emp.documents = {};
+    }
 
-if(!emp.documents){
-emp.documents = {};
-}
+    if (emp.documents.stopCPU === undefined) {
+        emp.documents.stopCPU = false;
+    }
 
-if(emp.documents.stopCPU === undefined){
-emp.documents.stopCPU = false;
-}
+    if (emp.documents.stopRAM === undefined) {
+        emp.documents.stopRAM = false;
+    }
 
-if(emp.documents.stopRAM === undefined){
-emp.documents.stopRAM = false;
-}
+    if (emp.documents.stopNetwork === undefined) {
+        emp.documents.stopNetwork = false;
+    }
 
-if(emp.documents.stopNetwork === undefined){
-emp.documents.stopNetwork = false;
-}
+    if (emp.documents.stopLogs === undefined) {
+        emp.documents.stopLogs = false;
+    }
 
-if(emp.documents.stopLogs === undefined){
-emp.documents.stopLogs = false;
-}
+    if (emp.documents.stopMovement === undefined) {
+        emp.documents.stopMovement = false;
+    }
 
-if(!emp || !emp.documents?.lineEnabled){
-alert("LINE Panel Disabled");
-return;
-}
+    if (emp.documents.stopSignal === undefined) {
+        emp.documents.stopSignal = false;
+    }
 
-const start = emp.documents.expiryStart || Date.now();
-const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
+    if (!emp || !emp.documents?.lineEnabled) {
+        alert("LINE Panel Disabled");
+        return;
+    }
 
-const startText = new Date(start).toLocaleDateString("en-US");
-const endText   = new Date(end).toLocaleDateString("en-US");
+    const start = emp.documents.expiryStart || Date.now();
+    const end = start + (5 * 365 * 24 * 60 * 60 * 1000);
 
-pushPage(() => openLinePage(empId));
-document.getElementById("app").innerHTML = `
+    const startText = new Date(start).toLocaleDateString("en-US");
+    const endText = new Date(end).toLocaleDateString("en-US");
+
+    pushPage(() => openLinePage(empId));
+    document.getElementById("app").innerHTML = `
 
   <div class="screen">  <img src="images/employee-bg.png" class="bg-full">  
 
@@ -1141,24 +1148,7 @@ document.getElementById("app").innerHTML = `
 
 <div class="dashboard">  
 
-  <div class="cyber-panel">
-
-  <div style="font-size:22px;">  
-    ONLINE  
-  </div>    <div style="margin-top:10px;">  
-    TOKEN:VERIFIED  
-  </div>    <div style="margin-top:10px;">  
-    ACTIVE  
-  </div>    <div style="  
-    margin-top:10px;  
-    font-size:14px;  
-    color:#00ff88;  
-    word-break:break-all;  
-    line-height:1.3;  
-    opacity:.9;  
-  ">  
-    ${emp.documents.lineCode || ""}  
-  </div>  </div>  <div class="cyber-panel">  
+ <div class="cyber-panel">  
 
     <div class="cyber-title">  
       SERVER LOAD  
@@ -1176,6 +1166,14 @@ document.getElementById("app").innerHTML = `
 
     <div class="bar">  
       <div id="ram" class="fill"></div>  
+    </div>  
+
+    <br>  
+
+    NETWORK  
+
+    <div class="bar">  
+      <div id="network" class="fill"></div>  
     </div>  
 
   </div>  
@@ -1354,83 +1352,423 @@ margin-bottom:8px;
 </button>
 
 <button  
-onclick="openMainPage()"  
+onclick="toggleMovement('${emp.id}')"  
 style="  
 width:100%;  
-background:#00c853;  
+background:#e91e63;  
 color:white;  
 border:none;  
 padding:10px;  
 border-radius:8px;  
+margin-bottom:8px;  
 ">
-⬅ Back
+⏸ MOVEMENT STOP
 </button>
 
-` : ""}
+<button  
+onclick="toggleSignal('${emp.id}')"  
+style="  
+width:100%;  
+background:#3f51b5;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+📡 SIGNAL STOP
+</button>
 
-</div>  <div class="cyber-panel logs">    <div class="cyber-title">  
-    LIVE SERVER LOG  
-  </div>    <div id="logArea"></div>  </div>  </div>  <div class="led"></div>  </div>  
-`;  const cpu = document.getElementById("cpu");
-const ram = document.getElementById("ram");
+` : `
 
-setInterval(() => {
+<div class="cyber-panel mini-monitor">  <div class="cyber-title">    
+    EMPLOYEE STATUS    
+</div>    <div class="status-line">    
+    ACCESS    
+    <span style="color:#00ff88;">GRANTED</span>    
+</div>    <div class="status-line">    
+    SECURITY    
+    <span style="color:#00ff88;">ACTIVE</span>    
+</div>    <div class="status-line">    
+    SESSION    
+    <span id="sessionTime">00:00:00</span>    
+</div>    <div class="status-line">    
+    SIGNAL    
+    <span id="signalValue">100%</span>    
+</div>    <div class="signal-bar">    
+    <div id="signalFill"></div>    
+</div>  </div>
 
-if(cpu && !emp.documents.stopCPU){
-cpu.style.width =
-(40 + Math.random() * 60) + "%";
+<div class="cyber-panel system-health" style="margin-top:10px; padding:8px;">
+    <div class="cyber-title" style="font-size:11px; text-align:center; margin-bottom:4px;">
+        🛰️ RADAR SCAN
+    </div>
+    <div style="display:flex; justify-content:center; align-items:center; flex-direction:column;">
+        <canvas id="radarCanvas" width="130" height="130" style="background:transparent; max-width:100%;"></canvas>
+        <div style="display:flex; justify-content:space-around; width:100%; margin-top:2px; font-size:8px; flex-wrap:wrap; gap:2px;">
+            <span style="white-space:nowrap;">TARGETS: <span id="targetCount" style="color:#00ff88;">12</span></span>
+            <span style="white-space:nowrap;">SIGNAL: <span id="signalPower" style="color:#00ff88;">94%</span></span>
+            <span style="white-space:nowrap;">STATUS: <span id="scanStatus" style="color:#ff9800;">ACTIVE</span></span>
+        </div>
+    </div>
+</div>
+
+`}  </div>  <div class="cyber-panel earth-panel">  <div class="cyber-title">    
+    GLOBAL NETWORK    
+</div>    <canvas id="earth"></canvas>
+
+<div class="network-status">    <div class="status-title">    
+    NETWORK STATUS    
+</div>    
+
+<div class="status-online">    
+    ● ONLINE    
+</div>    
+
+<div class="status-grid">    
+
+    <div class="status-box">    
+        <span>NODES</span>    
+        <b id="nodesCount">1287</b>    
+    </div>    
+
+    <div class="status-box">    
+        <span>LATENCY</span>    
+        <b id="latency">48 ms</b>    
+    </div>    
+
+    <div class="status-box">    
+        <span>UPTIME</span>    
+        <b id="uptime">99.98%</b>    
+    </div>    
+
+</div>
+
+</div>  </div> 
+
+  <div class="cyber-panel logs">  <div class="cyber-title">    
+    LIVE SERVER LOG    
+</div>    <div id="logArea"></div>  </div>  </div>  <div class="led"></div>  </div>    
+<!-- NETWORK SIGNAL MONITOR -->
+<div class="cyber-panel signal-monitor">
+
+    <div class="signal-header">
+
+        <div class="cyber-title">
+            NETWORK SIGNAL MONITOR
+        </div>
+
+        <div class="signal-state">
+            📶 STRONG SIGNAL
+        </div>
+
+    </div>
+
+    <canvas id="signalChart" width="900" height="170"></canvas>
+
+    <div class="signal-info">
+
+        <div class="signal-box">
+            <div class="signal-label">SIGNAL STRENGTH</div>
+            <div class="signal-value" id="dbmValue">-42 dBm</div>
+        </div>
+
+        <div class="signal-box">
+            <div class="signal-label">NOISE LEVEL</div>
+            <div class="signal-value" id="noiseValue">-92 dBm</div>
+        </div>
+
+        <div class="signal-box">
+            <div class="signal-label">PACKET LOSS</div>
+            <div class="signal-value" id="lossValue">0.00%</div>
+        </div>
+
+        <div class="signal-box">
+            <div class="signal-label">CONNECTION</div>
+            <div class="signal-value">STABLE</div>
+        </div>
+
+    </div>
+
+</div>
+`;
+
+    if (window.startEarth) {
+        startEarth();
+    }
+
+    function startSignalChart() {
+        const canvas = document.getElementById("signalChart");
+        if (!canvas) return;
+
+        const ctx = canvas.getContext("2d");
+        let data = [];
+
+        for (let i = 0; i < 120; i++) {
+            data.push(60 + Math.random() * 60);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            ctx.strokeStyle = "#003d22";
+            ctx.lineWidth = 1;
+
+            for (let x = 0; x < canvas.width; x += 30) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, canvas.height);
+                ctx.stroke();
+            }
+
+            for (let y = 0; y < canvas.height; y += 25) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(canvas.width, y);
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.strokeStyle = "#00ff88";
+            ctx.lineWidth = 2;
+
+            data.forEach((v, i) => {
+                let x = i * (canvas.width / data.length);
+                let y = canvas.height - v;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+
+            ctx.stroke();
+
+            data.shift();
+            data.push(40 + Math.random() * 100);
+
+            requestAnimationFrame(draw);
+        }
+
+        draw();
+    }
+
+    startSignalChart();
+
+    const cpu = document.getElementById("cpu");
+    const ram = document.getElementById("ram");
+    const network = document.getElementById("network");
+
+    setInterval(() => {
+        if (cpu && !emp.documents.stopCPU) {
+            cpu.style.width = (40 + Math.random() * 60) + "%";
+        }
+
+        if (ram && !emp.documents.stopRAM) {
+            ram.style.width = (30 + Math.random() * 60) + "%";
+        }
+
+        if (network && !emp.documents.stopMovement) {
+            network.style.width = (30 + Math.random() * 60) + "%";
+        }
+    }, 1000);
+
+    // -------- NETWORK STATUS --------
+    const nodesCount = document.getElementById("nodesCount");
+    const latency = document.getElementById("latency");
+    const uptime = document.getElementById("uptime");
+
+    if (nodesCount) {
+        setInterval(() => {
+            nodesCount.textContent = 1200 + Math.floor(Math.random() * 400);
+            latency.textContent = (20 + Math.floor(Math.random() * 40)) + " ms";
+            uptime.textContent = (99.90 + Math.random() * 0.09).toFixed(2) + "%";
+        }, 800);
+    }
+
+    // -------- EMPLOYEE STATUS --------
+    const sessionTime = document.getElementById("sessionTime");
+    const signalValue = document.getElementById("signalValue");
+    const signalFill = document.getElementById("signalFill");
+
+    let sec = 0;
+
+    setInterval(() => {
+        if (sessionTime) {
+            sec++;
+            const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+            const s = String(sec % 60).padStart(2, "0");
+            sessionTime.textContent = `${h}:${m}:${s}`;
+        }
+
+        if (signalValue && signalFill) {
+            const value = 85 + Math.floor(Math.random() * 16);
+            signalValue.textContent = value + "%";
+            signalFill.style.width = value + "%";
+        }
+    }, 1000);
+
+    // -------- LIVE LOG --------
+    const logs = [
+        "AUTH SUCCESS",
+        "DATABASE VERIFIED",
+        "FIREBASE CONNECTED",
+        "API RESPONSE 200",
+        "TOKEN GENERATED",
+        "EMPLOYEE SYNC",
+        "NETWORK ACTIVE",
+        "SERVER READY",
+        "ENCRYPTION ENABLED",
+        "BACKUP COMPLETED"
+    ];
+
+    const logArea = document.getElementById("logArea");
+
+    setInterval(() => {
+        if (emp.documents.stopLogs) return;
+        if (!logArea) return;
+
+        const div = document.createElement("div");
+        div.style.margin = "4px 0";
+        div.innerText = "[" + new Date().toLocaleTimeString("en-GB", { hour12: false }) + "] " + logs[Math.floor(Math.random() * logs.length)];
+
+        logArea.appendChild(div);
+
+        if (logArea.children.length > 18) {
+            logArea.removeChild(logArea.firstChild);
+        }
+    }, 400);
+
+    // -------- RADAR --------
+    const radar = document.getElementById("radarCanvas");
+
+    if (radar) {
+        const ctx = radar.getContext("2d");
+        let angle = 0;
+
+        function drawRadar() {
+            const w = radar.width;
+            const h = radar.height;
+
+            ctx.clearRect(0, 0, w, h);
+
+            const cx = w / 2;
+            const cy = h / 2;
+
+            ctx.strokeStyle = "#00ff88";
+            ctx.lineWidth = 1;
+
+            for (let r = 30; r <= 90; r += 20) {
+                ctx.beginPath();
+                ctx.arc(cx, cy, r, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            ctx.lineTo(cx, h);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(0, cy);
+            ctx.lineTo(w, cy);
+            ctx.stroke();
+
+            ctx.strokeStyle = "#00ff88";
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(
+                cx + Math.cos(angle) * 90,
+                cy + Math.sin(angle) * 90
+            );
+            ctx.stroke();
+
+            ctx.fillStyle = "#00ff88";
+
+            for (let i = 0; i < 8; i++) {
+                const a = Math.random() * Math.PI * 2;
+                const rr = 15 + Math.random() * 75;
+
+                ctx.beginPath();
+                ctx.arc(
+                    cx + Math.cos(a) * rr,
+                    cy + Math.sin(a) * rr,
+                    2.5,
+                    0,
+                    Math.PI * 2
+                );
+                ctx.fill();
+            }
+
+            angle += 0.02;
+
+            requestAnimationFrame(drawRadar);
+        }
+
+        drawRadar();
+
+        const targetCount = document.getElementById("targetCount");
+        const signalPower = document.getElementById("signalPower");
+        const scanStatus = document.getElementById("scanStatus");
+
+        const scanModes = [
+            "ACTIVE",
+            "TRACKING",
+            "SCANNING",
+            "LOCKED"
+        ];
+
+        setInterval(() => {
+            if (targetCount) {
+                targetCount.textContent = 10 + Math.floor(Math.random() * 15);
+            }
+
+            if (signalPower) {
+                signalPower.textContent = (90 + Math.floor(Math.random() * 10)) + "%";
+            }
+
+            if (scanStatus) {
+                scanStatus.textContent = scanModes[Math.floor(Math.random() * scanModes.length)];
+            }
+        }, 1000);
+    }
+
+    // -------- SIGNAL MONITOR (SIGNAL STRENGTH, NOISE LEVEL, PACKET LOSS) --------
+    setTimeout(() => {
+        const dbmValue = document.getElementById("dbmValue");
+        const noiseValue = document.getElementById("noiseValue");
+        const lossValue = document.getElementById("lossValue");
+
+        if (dbmValue && noiseValue && lossValue) {
+            setInterval(() => {
+                if (emp.documents.stopSignal) return;
+
+                const signal = -(40 + Math.floor(Math.random() * 45));
+                dbmValue.textContent = signal + " dBm";
+
+                const noise = -(80 + Math.floor(Math.random() * 15));
+                noiseValue.textContent = noise + " dBm";
+
+                const loss = (Math.random() * 0.5).toFixed(2);
+                lossValue.textContent = loss + "%";
+            }, 1500);
+        }
+    }, 500);
 }
 
-if(ram && !emp.documents.stopRAM){
-ram.style.width =
-(30 + Math.random() * 60) + "%";
+function toggleSignal(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) return;
+
+    emp.documents.stopSignal = !emp.documents.stopSignal;
+    alert("Signal Monitor " + (emp.documents.stopSignal ? "STOPPED" : "RESUMED"));
 }
+function toggleMovement(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) return;
 
-},1000);
-
-const logs = [
-"AUTH SUCCESS",
-"DATABASE VERIFIED",
-"FIREBASE CONNECTED",
-"API RESPONSE 200",
-"TOKEN GENERATED",
-"EMPLOYEE SYNC",
-"NETWORK ACTIVE",
-"SERVER READY",
-"ENCRYPTION ENABLED",
-"BACKUP COMPLETED"
-];
-
-const logArea =
-document.getElementById("logArea");
-
-setInterval(() => {
-
-if(emp.documents.stopLogs) return;
-
-if(!logArea) return;
-
-const div =
-document.createElement("div");
-
-div.style.margin = "4px 0";
-
-div.innerText =
-"[" +
-new Date().toLocaleTimeString("en-GB", {
-hour12:false
-}) +
-"] " +
-logs[Math.floor(Math.random() * logs.length)];
-
-logArea.appendChild(div);
-
-if(logArea.children.length > 18){
-logArea.removeChild(logArea.firstChild);
-}
-
-},400);
-
+    emp.documents.stopMovement = !emp.documents.stopMovement;
+    alert("Movement " + (emp.documents.stopMovement ? "STOPPED" : "RESUMED"));
 }
 function getLineExpiry(emp){
 
@@ -3021,3 +3359,23 @@ function toggleLogs(empId){
 
   openLinePage(empId);
 }
+// =====================
+// START EARTH
+// =====================
+
+function startEarth(){
+
+    const canvas = document.getElementById("earth");
+
+    if(!canvas) return;
+
+    // اگر قبلاً اجرا شده دوباره اجرا نشود
+    if(canvas.dataset.loaded) return;
+
+    canvas.dataset.loaded = "1";
+
+    resize();
+
+    update();
+
+      }
