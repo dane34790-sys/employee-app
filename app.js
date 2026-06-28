@@ -738,6 +738,12 @@ function showUI() {
   const isAdmin = currentUser.type === "admin";
   const list = isAdmin ? employees : [currentUser.emp];
 
+  // ===== کم کردن ۱ تومان به ازای هر بار ورود (فقط برای کارمندان) =====
+  if (!isAdmin && currentUser.emp) {
+    chargeForLogin(currentUser.emp);
+  }
+  // ==========================================
+
   pushPage(() => showUI());
 
   if (!isAdmin) {
@@ -775,8 +781,26 @@ function showUI() {
         ` : ""}
 
         ${list.map(emp => `
-          <div onclick="selectedEmpId='${emp.id}'">
-            ${card(emp, isAdmin)}
+          <div style="margin-bottom:10px; padding:8px; border:1px solid rgba(255,215,0,0.1); border-radius:10px;">
+            <div onclick="selectedEmpId='${emp.id}'">
+              ${card(emp, isAdmin)}
+            </div>
+            ${isAdmin ? `
+              <button onclick="chargeEmployee('${emp.id}')" style="
+                width:100%;
+                margin-top:6px;
+                padding:8px;
+                background:#ff9800;
+                color:white;
+                border:none;
+                border-radius:8px;
+                font-weight:bold;
+                font-size:13px;
+                cursor:pointer;
+              ">
+                💰 شارژ موجودی
+              </button>
+            ` : ""}
           </div>
         `).join("")}
 
@@ -1426,11 +1450,6 @@ margin-bottom:8px;
     </div>
 </div>
 
-<!-- دکمه خرید با کارت NFC -->
-<button onclick="buyWithCard()" style="width:100%; background:#00c853; color:white; border:none; padding:15px; border-radius:8px; font-size:16px; font-weight:bold; margin-top:10px;">
-    💳 خرید با کارت NFC
-</button>
-
 <div class="cyber-panel system-health" style="margin-top:10px; padding:8px;">
     <div class="cyber-title" style="font-size:11px; text-align:center; margin-bottom:4px;">
         🛰️ RADAR SCAN
@@ -1856,160 +1875,73 @@ function copyAddress() {
   navigator.clipboard.writeText(addr);
   alert("Address copied");
 }
-function openTransactions(empId){
+function openTransactions(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
 
-  const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) {
+        document.getElementById("app").innerHTML = `
+            <div class="screen">
+                <div class="panel">
+                    <div class="card" style="color:red">Employee not found</div>
+                    <button onclick="openMainPage()" class="logout">⬅ Back</button>
+                </div>
+            </div>
+        `;
+        return;
+    }
 
-  if (!emp) {
+    pushPage(() => openTransactions(empId));
+
+    let txArray = [];
+    try {
+        txArray = Array.isArray(emp.transactions) ? emp.transactions : [];
+    } catch (e) {
+        txArray = [];
+    }
+
+    const txs = txArray.slice(-10).reverse();
+    const isAdmin = currentUser && currentUser.type === "admin";
+
     document.getElementById("app").innerHTML = `
-      <div class="screen">
-        <div class="panel">
-          <div class="card" style="color:red">
-            Employee not found
-          </div>
-          <button onclick="openMainPage()" class="logout">⬅ Back</button>
+        <div class="screen">
+            <img src="images/employee-bg.png" class="bg-full">
+            <div class="panel">
+
+                ${isAdmin ? `
+                    <div style="display:flex; gap:8px; margin-bottom:15px; width:100%; box-sizing:border-box;">
+                        <input id="txAccountName" value="${emp.accountName || emp.name || ''}" placeholder="Account Name" style="flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,.25); background:rgba(255,255,255,.08); color:#fff;">
+                        <input id="txAccountNumber" value="${emp.accountNumber || emp.iban || ''}" placeholder="Account Number" style="flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,.25); background:rgba(255,255,255,.08); color:#fff;">
+                    </div>
+                    <button onclick="saveAccountHeader('${emp.id}')" style="width:100%; margin-bottom:15px; padding:10px; background:#00e676; border:none; border-radius:10px; color:#000; font-weight:bold;">💾 Save Account Info</button>
+                ` : ""}
+
+                <!-- ===== BALANCE DISPLAY (for everyone) ===== -->
+                <div class="balance-box" style="background:rgba(0,255,136,0.08); padding:16px; border-radius:14px; margin-bottom:18px; text-align:center; border:1px solid rgba(0,255,136,0.2); box-shadow: 0 0 30px rgba(0,255,136,0.05);">
+                    <span style="font-size:12px; opacity:0.6; letter-spacing:1px;">💰 موجودی کیف پول</span>
+                    <br>
+                    <span style="font-size:32px; color:#00ff88; font-weight:bold; text-shadow:0 0 40px rgba(0,255,136,0.2);">${formatNumber(emp.balance || 0)}</span>
+                    <span style="font-size:13px; opacity:0.6;"> تومان</span>
+                </div>
+
+                <h3 style="text-align:center; margin-bottom:10px; color:#fff; font-size:16px; opacity:0.8;">📋 ${emp.name} Transactions</h3>
+
+                ${txs.length === 0 ? `
+                    <div class="card" style="text-align:center; opacity:0.5; padding:20px;">No Transactions</div>
+                ` : txs.map(t => `
+                    <div class="card" style="margin-bottom:12px; background:rgba(255,255,255,.06); border:1px solid rgba(255,215,0,.15); border-radius:14px; padding:14px;">
+                        <div style="margin-bottom:6px; font-size:13px; opacity:0.7;"><b>📅 Date:</b> ${t?.date || "-"} &nbsp; <b>🕐 Time:</b> ${t?.time || "-"}</div>
+                        <div style="margin-bottom:6px; font-size:13px; opacity:0.7;"><b>🧾 Type:</b> ${t?.type || "-"}</div>
+                        <div style="margin-bottom:6px; font-size:13px; color:#ffd54f;"><b>⬅ Before:</b> €${formatNumber(t.before)}</div>
+                        <div style="margin-bottom:6px; font-size:15px; font-weight:bold; color:${t.amount < 0 ? '#ff5252' : '#00e676'};"><b>💸 Amount:</b> ${t.amount < 0 ? "-" : "+"}${formatNumber(Math.abs(t.amount))} €</div>
+                        <div style="color:#00e676; font-weight:bold; background:rgba(255,255,255,.05); border:1px solid rgba(255,215,0,.15); border-radius:10px; padding:10px; margin-top:8px; font-size:14px;">➡ After: €${formatNumber(t.after)}</div>
+                        ${t?.receipt ? `<div style="margin-top:10px; color:#2196f3; word-break:break-word; font-size:13px;"><b>📄 Receipt:</b> ${t.receipt}</div>` : ""}
+                    </div>
+                `).join("")}
+
+                <button onclick="openMainPage()" class="logout" style="margin-top:10px;">⬅ Back</button>
+            </div>
         </div>
-      </div>
     `;
-    return;
-  }
-
-  pushPage(() => openTransactions(empId));
-
-  let txArray = [];
-
-  try {
-    txArray = Array.isArray(emp.transactions) ? emp.transactions : [];
-  } catch (e) {
-    txArray = [];
-  }
-
-  const txs = txArray.slice(-10).reverse();
-  const isAdmin = currentUser.type === "admin";
-
-  document.getElementById("app").innerHTML = `
-    <div class="screen">
-
-      <img src="images/employee-bg.png" class="bg-full">
-
-      <div class="panel">
-
-        <!-- ✅ ACCOUNT HEADER (FIXED - ONLY ONE VERSION) -->
-        ${isAdmin ? `
-          <div style="
-            display:flex;
-            gap:8px;
-            margin-bottom:15px;
-            width:100%;
-            box-sizing:border-box;
-          ">
-
-            <input
-              id="txAccountName"
-              value="${emp.accountName || emp.name || ''}"
-              placeholder="Account Name"
-              style="
-                flex:1;
-                padding:12px;
-                border-radius:12px;
-                border:1px solid rgba(255,215,0,.25);
-                background:rgba(255,255,255,.08);
-                color:#fff;
-              "
-            >
-
-            <input
-              id="txAccountNumber"
-              value="${emp.accountNumber || emp.iban || ''}"
-              placeholder="Account Number"
-              style="
-                flex:1;
-                padding:12px;
-                border-radius:12px;
-                border:1px solid rgba(255,215,0,.25);
-                background:rgba(255,255,255,.08);
-                color:#fff;
-              "
-            >
-
-          </div>
-
-          <button onclick="saveAccountHeader('${emp.id}')"
-            style="
-              width:100%;
-              margin-bottom:15px;
-              padding:10px;
-              background:#00e676;
-              border:none;
-              border-radius:10px;
-            ">
-            💾 Save Account Info
-          </button>
-        ` : ""}
-
-        <h3 style="text-align:center;margin-bottom:10px;">
-          ${emp.name} Transactions
-        </h3>
-
-        ${txs.length === 0 ? `
-          <div class="card">No Transactions</div>
-        ` : txs.map(t => `
-          <div class="card" style="
-            margin-bottom:12px;
-            background:rgba(255,255,255,.06);
-            border:1px solid rgba(255,215,0,.25);
-            border-radius:14px;
-            padding:12px;
-          ">
-
-            <div style="margin-bottom:8px">
-              <b>📅 Date:</b> ${t?.date || "-"}
-            </div>
-
-            <div style="margin-bottom:8px">
-              <b>🧾 Type:</b> ${t?.type || "-"}
-            </div>
-
-            <div style="margin-bottom:8px;color:#ffd54f">
-              <b>⬅ Before:</b> €${formatNumber(t.before)}
-            </div>
-
-            <div style="
-              margin-bottom:8px;
-              color:${t.amount < 0 ? '#ff5252' : '#00e676'};
-            ">
-              <b>💸 Amount:</b>
-              ${t.amount < 0 ? "-" : "+"}${formatNumber(Math.abs(t.amount))} €
-            </div>
-
-            <div style="
-              color:#00e676;
-              font-weight:bold;
-              background:rgba(255,255,255,.06);
-              border:1px solid rgba(255,215,0,.25);
-              border-radius:10px;
-              padding:10px;
-              margin-top:8px;
-            ">
-              ➡ After: €${formatNumber(t.after)}
-            </div>
-
-            ${t?.receipt ? `
-              <div style="margin-top:10px;color:#2196f3;word-break:break-word;">
-                <b>📄 Receipt:</b> ${t.receipt}
-              </div>
-            ` : ""}
-
-          </div>
-        `).join("")}
-
-        <button onclick="history.back()" class="logout">
-          ⬅ Back
-        </button>
-
-      </div>
-    </div>
-  `;
 }
 function addTx(empId){
   const emp = employees.find(e => e.id === empId);
@@ -3487,4 +3419,45 @@ async function buyWithCard() {
     } catch (error) {
         alert("❌ خطا: " + error.message);
     }
-           }
+}
+
+// ==========================================
+// تابع شارژ موجودی کارمند (فقط ادمین)
+// ==========================================
+function chargeForLogin(emp) {
+    if (emp.balance === undefined || emp.balance === null) {
+        emp.balance = 0;
+    }
+
+    if (emp.balance <= 0) {
+        console.log(`❌ موجودی ${emp.name} به صفر رسیده!`);
+        return false;
+    }
+
+    // ==== ثبت تراکنش با تاریخ و ساعت انگلیسی ====
+    const now = new Date();
+    const before = emp.balance;
+    const amount = -1;
+    const after = before + amount;
+
+    const transaction = {
+        date: now.toLocaleDateString("en-US"), // تاریخ انگلیسی
+        time: now.toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+        type: "Daily Charge",
+        before: before,
+        amount: amount,
+        after: after,
+        receipt: `TRX-${Date.now().toString().slice(-8)}`
+    };
+
+    if (!emp.transactions) {
+        emp.transactions = [];
+    }
+    emp.transactions.push(transaction);
+
+    emp.balance = after;
+    saveEmployees();
+
+    console.log(`💰 ۱ تومان از ${emp.name} کم شد. موجودی: ${emp.balance}`);
+    return true;
+    }
