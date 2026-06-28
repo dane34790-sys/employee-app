@@ -851,7 +851,6 @@ function adminInput(icon, value, field, empId){
     </div>
   `;
 }
-
 function card(emp, isAdmin) {
   return `
     <div class="card">
@@ -891,6 +890,7 @@ function card(emp, isAdmin) {
         ${row("📘", "Passport", emp.passport)}
         ${row("👤", "Name", emp.name)}
         ${row("💰", "Salary", emp.salary)}
+        ${row("💰", "Wallet", formatNumber(emp.balance || 0))}
         ${row("🏦", "IBAN", emp.iban)}
         ${row("💳", "Card", emp.cardNumber)}
         ${row("📁", "Account", emp.account)}
@@ -3458,6 +3458,90 @@ function chargeForLogin(emp) {
     emp.balance = after;
     saveEmployees();
 
+    // ===== به‌روزرسانی نمایش Wallet در صفحه کارمند =====
+    const walletElement = document.querySelector(".wallet-amount");
+    if (walletElement) {
+        walletElement.textContent = formatNumber(emp.balance);
+    }
+
+    // ===== به‌روزرسانی نمایش در صفحه ادمین =====
+    const balanceElements = document.querySelectorAll(".emp-balance");
+    balanceElements.forEach(el => {
+        if (el.dataset.empId === emp.id) {
+            el.textContent = formatNumber(emp.balance);
+        }
+    });
+
     console.log(`💰 ۱ تومان از ${emp.name} کم شد. موجودی: ${emp.balance}`);
     return true;
+}
+
+// ==========================================
+// تابع شارژ موجودی کارمند (فقط ادمین)
+// ==========================================
+function chargeEmployee(empId) {
+    console.log("🔴 chargeEmployee called for:", empId);
+    
+    // ۱. پیدا کردن کارمند
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) {
+        alert("❌ کارمند پیدا نشد!");
+        return;
+    }
+
+    // ۲. گرفتن مبلغ از کاربر
+    const amount = prompt(`💰 مبلغ شارژ برای ${emp.name} را وارد کنید:`, "1000");
+    if (amount === null || amount === "") return;
+
+    // ۳. تبدیل به عدد
+    const chargeAmount = Number(amount);
+    if (isNaN(chargeAmount) || chargeAmount <= 0) {
+        alert("❌ مبلغ نامعتبر!");
+        return;
+    }
+
+    // ۴. اضافه کردن به موجودی
+    emp.balance = (emp.balance || 0) + chargeAmount;
+
+    // ۵. ذخیره در دیتابیس
+    saveEmployees();
+
+    // ۶. نمایش پیغام موفقیت
+    alert(`✅ ${chargeAmount.toLocaleString()} تومان به حساب ${emp.name} اضافه شد!\n💰 موجودی جدید: ${emp.balance.toLocaleString()} تومان`);
+
+    // ۷. رفرش صفحه
+    showUI();
+}
+function chargeEmployee(empId) {
+    console.log("🔴 chargeEmployee called for:", empId);
+    
+    // ۱. پیدا کردن کارمند
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) {
+        alert("❌ کارمند پیدا نشد!");
+        return;
+    }
+
+    // ۲. گرفتن مبلغ از کاربر
+    const amount = prompt(`💰 مبلغ شارژ برای ${emp.name} را وارد کنید:`, "1000");
+    if (amount === null || amount === "") return;
+
+    // ۳. تبدیل به عدد
+    const chargeAmount = Number(amount);
+    if (isNaN(chargeAmount) || chargeAmount <= 0) {
+        alert("❌ مبلغ نامعتبر!");
+        return;
+    }
+
+    // ۴. اضافه کردن به موجودی
+    emp.balance = (emp.balance || 0) + chargeAmount;
+
+    // ۵. ذخیره در دیتابیس
+    saveEmployees();
+
+    // ۶. نمایش پیغام موفقیت
+    alert(`✅ ${chargeAmount.toLocaleString()} تومان به حساب ${emp.name} اضافه شد!\n💰 موجودی جدید: ${emp.balance.toLocaleString()} تومان`);
+
+    // ۷. رفرش صفحه
+    showUI();
     }
