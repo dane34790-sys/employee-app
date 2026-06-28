@@ -995,41 +995,48 @@ function update(id, field, value) {
   saveEmployees();
 }
 function addEmployee() {
-  employees.push({
-    id: String(Date.now()),
-    passport: "",
-    name: "",
-    salary: "",
-    iban: "",
-    cardNumber: "",
-    account: "",
-    status: "OFFLINE",
-    expiry: "",
-    ccv2: "",
-    zip: "",
-    phone: "",
-    pass: "",
-    balance: 0,
+    // ۱. گرفتن اطلاعات از کاربر
+    const name = prompt("نام کارمند را وارد کنید:");
+    if (!name) return;
 
-    documents: {
-      lineEnabled: false,
-      lineName: "",
-      lineCode: "",
-      expiryStart: Date.now(),
-      files: [],
-      price: ""
-    },
+    const phone = prompt("شماره موبایل را وارد کنید:");
+    if (!phone) return;
 
-    // سایدبار
-    sidebarMedia: {
-      images: []
-    },
+    const passport = prompt("کد پرسنلی را وارد کنید:");
+    if (!passport) return;
 
-    transactions: []
-  });
+    // ۲. ساختن کارمند جدید
+    employees.push({
+        id: String(Date.now()),
+        passport: passport,
+        name: name,
+        phone: phone,
+        salary: "",
+        iban: "",
+        cardNumber: "",
+        account: "",
+        status: "OFFLINE",
+        expiry: "",
+        ccv2: "",
+        zip: "",
+        pass: "",
+        balance: 0,
+        documents: {
+            lineEnabled: false,
+            lineName: "",
+            lineCode: "",
+            expiryStart: Date.now(),
+            files: [],
+            price: ""
+        },
+        sidebarMedia: { images: [] },
+        transactions: []
+    });
 
-  saveEmployees();
-  showUI();
+    // ۳. ذخیره و رفرش
+    saveEmployees();
+    alert("✅ کارمند با موفقیت اضافه شد!");
+    showUI();
 }
 function deleteEmp(id) {
   employees = employees.filter(e => e.id !== id);
@@ -1381,23 +1388,35 @@ margin-bottom:8px;
 
 ` : `
 
-<div class="cyber-panel mini-monitor">  <div class="cyber-title">    
-    EMPLOYEE STATUS    
-</div>    <div class="status-line">    
-    ACCESS    
-    <span style="color:#00ff88;">GRANTED</span>    
-</div>    <div class="status-line">    
-    SECURITY    
-    <span style="color:#00ff88;">ACTIVE</span>    
-</div>    <div class="status-line">    
-    SESSION    
-    <span id="sessionTime">00:00:00</span>    
-</div>    <div class="status-line">    
-    SIGNAL    
-    <span id="signalValue">100%</span>    
-</div>    <div class="signal-bar">    
-    <div id="signalFill"></div>    
-</div>  </div>
+<div class="cyber-panel mini-monitor">
+    <div class="cyber-title">
+        EMPLOYEE STATUS
+    </div>
+    <div class="status-line">
+        ACCESS
+        <span style="color:#00ff88;">GRANTED</span>
+    </div>
+    <div class="status-line">
+        SECURITY
+        <span style="color:#00ff88;">ACTIVE</span>
+    </div>
+    <div class="status-line">
+        SESSION
+        <span id="sessionTime">00:00:00</span>
+    </div>
+    <div class="status-line">
+        SIGNAL
+        <span id="signalValue">100%</span>
+    </div>
+    <div class="signal-bar">
+        <div id="signalFill"></div>
+    </div>
+</div>
+
+<!-- دکمه خرید با کارت NFC -->
+<button onclick="buyWithCard()" style="width:100%; background:#00c853; color:white; border:none; padding:15px; border-radius:8px; font-size:16px; font-weight:bold; margin-top:10px;">
+    💳 خرید با کارت NFC
+</button>
 
 <div class="cyber-panel system-health" style="margin-top:10px; padding:8px;">
     <div class="cyber-title" style="font-size:11px; text-align:center; margin-bottom:4px;">
@@ -3373,4 +3392,87 @@ function startEarth(){
 
     update();
 
+}
+
+// ==========================================
+// توابع NFC (خواندن و نوشتن روی کارت)
+// ==========================================
+
+// تابع خواندن موجودی از کارت NFC
+async function readCardBalance() {
+    try {
+        // بررسی پشتیبانی از NFC
+        if (!('NDEFReader' in window)) {
+            alert("❌ گوشی شما از NFC پشتیبانی نمی‌کند!");
+            return null;
+        }
+
+        const reader = new NDEFReader();
+        await reader.scan();
+        
+        return new Promise((resolve, reject) => {
+            reader.addEventListener("reading", ({ message }) => {
+                for (const record of message.records) {
+                    if (record.type === "text") {
+                        const decoder = new TextDecoder(record.encoding);
+                        const balance = parseInt(decoder.decode(record.data));
+                        resolve(balance);
+                        return;
+                    }
+                }
+                reject("❌ رکورد متنی روی کارت پیدا نشد!");
+            });
+        });
+    } catch (error) {
+        alert("❌ خطا در خواندن کارت: " + error.message);
+        return null;
+    }
+}
+
+// تابع نوشتن موجودی روی کارت NFC
+async function writeCardBalance(newBalance) {
+    try {
+        if (!('NDEFReader' in window)) {
+            alert("❌ گوشی شما از NFC پشتیبانی نمی‌کند!");
+            return false;
+        }
+
+        const writer = new NDEFReader();
+        await writer.write({
+            records: [{ recordType: "text", data: String(newBalance) }]
+        });
+        return true;
+    } catch (error) {
+        alert("❌ خطا در نوشتن روی کارت: " + error.message);
+        return false;
+    }
+}
+
+// تابع اصلی خرید با کارت NFC
+async function buyWithCard() {
+    try {
+        // ۱. خواندن موجودی از کارت
+        const balance = await readCardBalance();
+        if (balance === null) return;
+        
+        // ۲. بررسی موجودی
+        if (balance <= 0) {
+            alert("❌ موجودی کارت کافی نیست!");
+            return;
+        }
+        
+        // ۳. کم کردن ۱ تومان
+        const newBalance = balance - 1;
+        
+        // ۴. نوشتن موجودی جدید روی کارت
+        const success = await writeCardBalance(newBalance);
+        
+        // ۵. نمایش نتیجه
+        if (success) {
+            alert(`✅ خرید با موفقیت انجام شد!\n💰 موجودی قبلی: ${balance} تومان\n💰 موجودی جدید: ${newBalance} تومان`);
+            return newBalance;
+        }
+    } catch (error) {
+        alert("❌ خطا: " + error.message);
+    }
           }
