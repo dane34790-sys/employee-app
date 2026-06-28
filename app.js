@@ -1005,21 +1005,30 @@ function addEmployee() {
     const passport = prompt("کد پرسنلی را وارد کنید:");
     if (!passport) return;
 
-    // ۲. ساختن کارمند جدید
+    const salary = prompt("حقوق را وارد کنید:") || "0";
+    const iban = prompt("شماره شبا را وارد کنید:") || "";
+    const cardNumber = prompt("شماره کارت را وارد کنید:") || "";
+    const account = prompt("شماره حساب را وارد کنید:") || "";
+    const expiry = prompt("تاریخ انقضا (مثلاً 12/26) را وارد کنید:") || "";
+    const ccv2 = prompt("کد CCV2 را وارد کنید:") || "";
+    const zip = prompt("کد پستی را وارد کنید:") || "";
+    const pass = prompt("رمز عبور کارمند را وارد کنید:") || "1234";
+
+    // ۲. ساختن کارمند جدید با همه فیلدها
     employees.push({
         id: String(Date.now()),
         passport: passport,
         name: name,
-        phone: phone,
-        salary: "",
-        iban: "",
-        cardNumber: "",
-        account: "",
+        salary: salary,
+        iban: iban,
+        cardNumber: cardNumber,
+        account: account,
         status: "OFFLINE",
-        expiry: "",
-        ccv2: "",
-        zip: "",
-        pass: "",
+        expiry: expiry,
+        ccv2: ccv2,
+        zip: zip,
+        phone: phone,
+        pass: pass,
         balance: 0,
         documents: {
             lineEnabled: false,
@@ -1033,9 +1042,13 @@ function addEmployee() {
         transactions: []
     });
 
-    // ۳. ذخیره و رفرش
+    // ۳. ذخیره در دیتابیس
     saveEmployees();
+
+    // ۴. پیغام موفقیت
     alert("✅ کارمند با موفقیت اضافه شد!");
+
+    // ۵. رفرش صفحه
     showUI();
 }
 function deleteEmp(id) {
@@ -2744,7 +2757,6 @@ function deletePdf(empId, index){
   if(!Array.isArray(emp.documents.files)) emp.documents.files = [];
 
   emp.documents.files.splice(index, 1);
-
   saveEmployees();
   openPdfEditor(empId);
 }
@@ -3475,4 +3487,4 @@ async function buyWithCard() {
     } catch (error) {
         alert("❌ خطا: " + error.message);
     }
-          }
+           }
