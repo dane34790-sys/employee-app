@@ -113,8 +113,8 @@ function loadEmployees() {
             emp.documents = {};
           }
           if (emp.pass === undefined) {
-  emp.pass = "";
-}
+            emp.pass = "";
+          }
 
           if (emp.documents.lineEnabled === undefined) {
             emp.documents.lineEnabled = false;
@@ -142,6 +142,20 @@ function loadEmployees() {
 
           if (!emp.status) {
             emp.status = "OFFLINE";
+          }
+
+          // ===== اضافه کردن dashboard به هر کارمند =====
+          if (!emp.dashboard) {
+            emp.dashboard = {
+              title: "📊 DASHBOARD",
+              employeesLabel: "Employees",
+              balanceLabel: "Total Balance",
+              transactionsLabel: "Today Transactions",
+              onlineLabel: "Online",
+              offlineLabel: "Offline",
+              rankLabel: "Your Rank",
+              scoreLabel: "Today Score"
+            };
           }
 
         });
@@ -198,7 +212,18 @@ function loadEmployees() {
             files: []
           },
 
-          transactions: []
+          transactions: [],
+          
+          dashboard: {
+            title: "📊 DASHBOARD",
+            employeesLabel: "Employees",
+            balanceLabel: "Total Balance",
+            transactionsLabel: "Today Transactions",
+            onlineLabel: "Online",
+            offlineLabel: "Offline",
+            rankLabel: "Your Rank",
+            scoreLabel: "Today Score"
+          }
         }
       ];
 
@@ -234,7 +259,6 @@ function loadEmployees() {
 }
 
 /* ================= UTIL ================= */
-
 function toEnglishDate(dateStr) {
   if (!dateStr) return "";
 
@@ -750,92 +774,233 @@ function showUI() {
     selectedEmpId = currentUser.emp.id;
   }
 
+  // نمایش صفحه اول (برای کارمند) یا صفحه ادمین
+  if (isAdmin) {
+    showAdminPage();
+  } else {
+    showPage1();
+  }
+}
+
+// ==========================================
+// صفحه ادمین
+// ==========================================
+function showAdminPage() {
+  const list = employees;
+
   document.getElementById("app").innerHTML = `
     <div class="screen">
-
       <img src="images/employee-bg.png" class="bg-full">
-
       <div id="sidebar" class="sidebar">
-
-        <img src="images/telegram.png"
-             onclick="openTelegram()">
-
-        <img src="images/trustwallet.png"
-             onclick="openWalletPage()">
-
-        <img src="images/mypdf.jpg"
-             onclick="openDocumentsPage()">
-
+        <img src="images/telegram.png" onclick="openTelegram()">
+        <img src="images/trustwallet.png" onclick="openWalletPage()">
+        <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
       </div>
-
-      <div class="menu-btn" onclick="toggleMenu()">
-        ☰
-      </div>
-
+      <div class="menu-btn" onclick="toggleMenu()">☰</div>
       <div class="panel">
-
-        ${isAdmin ? `
-          <button onclick="addEmployee()" class="btn-add">
-            ➕ Add Employee
-          </button>
-        ` : ""}
-
+        <button onclick="addEmployee()" class="btn-add">➕ Add Employee</button>
         ${list.map(emp => `
           <div style="margin-bottom:10px; padding:8px; border:1px solid rgba(255,215,0,0.1); border-radius:10px;">
             <div onclick="selectedEmpId='${emp.id}'">
-              ${card(emp, isAdmin)}
+              ${card(emp, true)}
             </div>
-            ${isAdmin ? `
-              <button onclick="chargeEmployee('${emp.id}')" style="
-                width:100%;
-                margin-top:6px;
-                padding:8px;
-                background:#ff9800;
-                color:white;
-                border:none;
-                border-radius:8px;
-                font-weight:bold;
-                font-size:13px;
-                cursor:pointer;
-              ">
-                💰 شارژ موجودی
-              </button>
-            ` : ""}
+            <button onclick="chargeEmployee('${emp.id}')" style="
+              width:100%;
+              margin-top:6px;
+              padding:8px;
+              background:#ff9800;
+              color:white;
+              border:none;
+              border-radius:8px;
+              font-weight:bold;
+              font-size:13px;
+              cursor:pointer;
+            ">
+              💰 شارژ موجودی
+            </button>
+            <button onclick="editDashboard('${emp.id}')" style="
+              width:100%;
+              margin-top:6px;
+              padding:8px;
+              background:#3f51b5;
+              color:white;
+              border:none;
+              border-radius:8px;
+              font-weight:bold;
+              font-size:13px;
+              cursor:pointer;
+            ">
+              📝 Edit Dashboard
+            </button>
+            <button onclick="editNotePage('${emp.id}')" style="
+              width:100%;
+              margin-top:6px;
+              padding:8px;
+              background:#9c27b0;
+              color:white;
+              border:none;
+              border-radius:8px;
+              font-weight:bold;
+              font-size:13px;
+              cursor:pointer;
+            ">
+              📝 Edit Note
+            </button>
           </div>
         `).join("")}
-
-        <button class="logout" onclick="showLogin()">
-          LOGOUT
-        </button>
-
+        <button class="logout" onclick="showLogin()">LOGOUT</button>
       </div>
-
     </div>
   `;
 
   requestAnimationFrame(() => {
-
     const screen = document.querySelector(".screen");
-
     if (screen) {
       screen.classList.remove("fade-in");
       void screen.offsetWidth;
       screen.classList.add("fade-in");
     }
-
   });
-
 }
-/* ================= ICON ROW SYSTEM (NEW) ================= */
+function showPage1() {
+  const emp = currentUser.emp;
 
-function row(icon, label, value) {
+  document.getElementById("app").innerHTML = `
+    <div class="screen" style="height:100vh; overflow:hidden;">
+      <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+      <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+        <img src="images/telegram.png" onclick="openTelegram()">
+        <img src="images/trustwallet.png" onclick="openWalletPage()">
+        <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+      </div>
+      <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
+      <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+        ${card(emp, false)}
+        <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
+          <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+            📱 Page 1
+          </button>
+          <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+            📊 Page 2
+          </button>
+          <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+            📝 Page 3
+          </button>
+        </div>
+        <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    const screen = document.querySelector(".screen");
+    if (screen) {
+      screen.classList.remove("fade-in");
+      void screen.offsetWidth;
+      screen.classList.add("fade-in");
+    }
+  });
+}
+function showPage2() {
+    const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
+    const lines = text.split('\n');
+
+    document.getElementById("app").innerHTML = `
+        <div class="screen" style="height:100vh; overflow:hidden;">
+            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+            <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+                <img src="images/telegram.png" onclick="openTelegram()">
+                <img src="images/trustwallet.png" onclick="openWalletPage()">
+                <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+            </div>
+            <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+                
+                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📊 DASHBOARD</div>
+                    ${lines.map(line => `
+                        <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.15); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px;">
+                            ${line}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
+                    <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
+                    <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
+                    <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
+                </div>
+                
+                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+            </div>
+        </div>
+    `;
+
+    requestAnimationFrame(() => {
+        const screen = document.querySelector(".screen");
+        if (screen) {
+            screen.classList.remove("fade-in");
+            void screen.offsetWidth;
+            screen.classList.add("fade-in");
+        }
+    });
+}
+function showPage3() {
+    const note = localStorage.getItem('userNote') || "";
+
+    document.getElementById("app").innerHTML = `
+        <div class="screen" style="height:100vh; overflow:hidden;">
+            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+            <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+                <img src="images/telegram.png" onclick="openTelegram()">
+                <img src="images/trustwallet.png" onclick="openWalletPage()">
+                <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+            </div>
+            <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+                
+                <div class="cyber-panel" style="padding:15px; margin-top:40px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📝 My Notes</div>
+                    <div style="padding:20px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(0,255,136,0.1); min-height:200px; max-height:55vh; overflow-y:auto; color:rgba(255,255,255,0.85); font-family:monospace; font-size:15px; white-space:pre-wrap; word-break:break-word; line-height:1.8;">
+                        ${note || "📭 No notes yet."}
+                    </div>
+                </div>
+                
+                <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
+                    <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
+                    <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
+                    <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
+                </div>
+                
+                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+            </div>
+        </div>
+    `;
+
+    requestAnimationFrame(() => {
+        const screen = document.querySelector(".screen");
+        if (screen) {
+            screen.classList.remove("fade-in");
+            void screen.offsetWidth;
+            screen.classList.add("fade-in");
+        }
+    });
+}
+function saveUserNote() {
+    const note = document.getElementById('noteText').value;
+    localStorage.setItem('userNote', note);
+    alert("✅ یادداشت ذخیره شد!");
+}
+
+function adminInput(icon, value, field, empId){
   return `
     <div class="info-row">
       <div class="info-left">${icon}</div>
-
-      <div class="glass-input readonly">
-        ${value ?? ""}
-      </div>
+      <input
+        class="glass-input"
+        value="${value || ''}"
+        onchange="update('${empId}','${field}',this.value)"
+      >
     </div>
   `;
 }
@@ -851,6 +1016,17 @@ function adminInput(icon, value, field, empId){
     </div>
   `;
 }
+
+// ===== اینجا اضافه کن =====
+function row(icon, label, value) {
+    return `
+        <div class="info-row">
+            <div class="info-left">${icon}</div>
+            <div class="glass-input readonly">${value ?? ""}</div>
+        </div>
+    `;
+}
+// =========================
 function card(emp, isAdmin) {
   return `
     <div class="card">
@@ -3544,4 +3720,90 @@ function chargeEmployee(empId) {
 
     // ۷. رفرش صفحه
     showUI();
-    }
+}
+
+// ==========================================
+// صفحه دوم: داشبورد آمار
+// ==========================================
+let currentPage = 1;
+
+// ==========================================
+// صفحه دوم کارمند (داشبورد) - انگلیسی
+// ==========================================
+
+function editDashboard(empId) {
+    // خواندن متن فعلی از localStorage
+    const currentText = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
+
+    pushPage(() => editDashboard(empId));
+
+    document.getElementById("app").innerHTML = `
+        <div class="screen" style="height:100vh; overflow:hidden;">
+            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+                <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
+                        📝 Edit Page 2 (Fake)
+                    </div>
+                    
+                    <div class="stat-box" style="margin-bottom:10px;">
+                        <label style="color:#00ff88;">Write your text (each line = one box):</label>
+                        <textarea id="page2text" rows="10" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px;">${currentText}</textarea>
+                    </div>
+                </div>
+                
+                <button onclick="savePage2()" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                    💾 Save Page 2
+                </button>
+                
+                <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                    ⬅ Back
+                </button>
+            </div>
+        </div>
+    `;
+}
+function savePage2() {
+    const text = document.getElementById('page2text').value;
+    localStorage.setItem('page2text', text);
+    alert("✅ Page 2 ذخیره شد!");
+    showAdminPage();
+}
+
+function editNotePage(empId) {
+    const currentNote = localStorage.getItem('userNote') || "";
+
+    pushPage(() => editNotePage(empId));
+
+    document.getElementById("app").innerHTML = `
+        <div class="screen" style="height:100vh; overflow:hidden;">
+            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+                <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
+                        📝 Edit Note (for all employees)
+                    </div>
+                    
+                    <div class="stat-box" style="margin-bottom:10px;">
+                        <label style="color:#00ff88;">Write your note:</label>
+                        <textarea id="noteTextAdmin" rows="10" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px; resize:vertical;">${currentNote}</textarea>
+                    </div>
+                </div>
+                
+                <button onclick="saveNoteAdmin()" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                    💾 Save Note
+                </button>
+                
+                <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                    ⬅ Back
+                </button>
+            </div>
+        </div>
+    `;
+}
+function saveNoteAdmin() {
+    const note = document.getElementById('noteTextAdmin').value;
+    localStorage.setItem('userNote', note);
+    alert("✅ یادداشت ذخیره شد!");
+    showAdminPage();
+              }
