@@ -906,17 +906,19 @@ function showPage2() {
     const lines = text.split('\n');
 
     document.getElementById("app").innerHTML = `
-        <div class="screen" style="height:100vh; overflow:hidden;">
-            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+        <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
+            <!-- ===== بک‌گراند با عکس ===== -->
+            <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.3;">
+            
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
                 <img src="images/telegram.png" onclick="openTelegram()">
                 <img src="images/trustwallet.png" onclick="openWalletPage()">
                 <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.5);">
                 
-                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px;">
+                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);">
                     <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📊 DASHBOARD</div>
                     ${lines.map(line => `
                         <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.15); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px;">
@@ -949,17 +951,19 @@ function showPage3() {
     const note = localStorage.getItem('userNote') || "";
 
     document.getElementById("app").innerHTML = `
-        <div class="screen" style="height:100vh; overflow:hidden;">
-            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+        <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
+            <!-- ===== بک‌گراند با عکس ===== -->
+            <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.3;">
+            
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
                 <img src="images/telegram.png" onclick="openTelegram()">
                 <img src="images/trustwallet.png" onclick="openWalletPage()">
                 <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.5);">
                 
-                <div class="cyber-panel" style="padding:15px; margin-top:40px;">
+                <div class="cyber-panel" style="padding:15px; margin-top:40px; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);">
                     <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📝 My Notes</div>
                     <div style="padding:20px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(0,255,136,0.1); min-height:200px; max-height:55vh; overflow-y:auto; color:rgba(255,255,255,0.85); font-family:monospace; font-size:15px; white-space:pre-wrap; word-break:break-word; line-height:1.8;">
                         ${note || "📭 No notes yet."}
