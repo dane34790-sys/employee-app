@@ -953,7 +953,56 @@ function showPage2() {
     });
 }
 function showPage3() {
-    const note = localStorage.getItem('userNote') || "";
+    let currentLang = localStorage.getItem('noteLang') || 'fa';
+    
+    const adminNote = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
+    const hasAdminNote = adminNote && adminNote.trim() !== '';
+
+    window.changeNoteLanguage = async function(lang) {
+        const noteBox = document.getElementById('noteContent');
+        if (!noteBox) return;
+        
+        localStorage.setItem('noteLang', lang);
+        
+        const originalText = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
+        
+        if (lang === 'fa') {
+            noteBox.textContent = originalText;
+            updateButtons(lang);
+            return;
+        }
+        
+        try {
+            // نمایش "در حال ترجمه..."
+            noteBox.textContent = "⏳ ترجمه...";
+            const translated = await translateText(originalText, lang);
+            noteBox.textContent = translated;
+        } catch (error) {
+            noteBox.textContent = originalText;
+        }
+        
+        updateButtons(lang);
+    };
+
+    function updateButtons(lang) {
+        document.querySelectorAll('.lang-btn').forEach(btn => {
+            btn.style.background = 'rgba(255,255,255,0.1)';
+        });
+        const activeBtn = document.querySelector(`.lang-btn[data-lang="${lang}"]`);
+        if (activeBtn) {
+            activeBtn.style.background = '#00c853';
+        }
+    }
+
+    let displayText = adminNote;
+    if (currentLang !== 'fa') {
+        translateText(adminNote, currentLang).then(translated => {
+            const noteBox = document.getElementById('noteContent');
+            if (noteBox) {
+                noteBox.textContent = translated;
+            }
+        });
+    }
 
     document.getElementById("app").innerHTML = `
         <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
@@ -966,19 +1015,30 @@ function showPage3() {
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
-            <!-- ===== پنل با اسکرول ===== -->
             <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:100px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
                 
                 <div class="cyber-panel" style="padding:15px; margin-top:40px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+                    
+                    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center;">
+                        <button class="lang-btn" data-lang="fa" onclick="changeNoteLanguage('fa')" style="background:${currentLang === 'fa' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇮🇷 فارسی</button>
+                        <button class="lang-btn" data-lang="en" onclick="changeNoteLanguage('en')" style="background:${currentLang === 'en' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇬🇧 English</button>
+                        <button class="lang-btn" data-lang="ru" onclick="changeNoteLanguage('ru')" style="background:${currentLang === 'ru' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇷🇺 Русский</button>
+                        <button class="lang-btn" data-lang="ar" onclick="changeNoteLanguage('ar')" style="background:${currentLang === 'ar' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇸🇦 العربية</button>
+                    </div>
+                    
                     <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📝 My Notes</div>
                     
-                    <!-- ===== باکس نوت با ارتفاع کمتر ===== -->
-                    <div style="padding:15px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); min-height:120px; max-height:35vh; overflow-y:auto; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:14px; white-space:pre-wrap; word-break:break-word; line-height:1.6;">
-                        ${note || "📭 No notes yet."}
+                    <div id="noteContent" style="padding:15px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); min-height:120px; max-height:35vh; overflow-y:auto; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:14px; white-space:pre-wrap; word-break:break-word; line-height:1.6;">
+                        ${displayText}
                     </div>
+                    
+                    ${hasAdminNote ? `
+                        <div style="margin-top:10px; font-size:12px; color:rgba(255,255,255,0.4); text-align:center;">
+                            📌 Admin Note
+                        </div>
+                    ` : ''}
                 </div>
                 
-                <!-- ===== دکمه‌ها با فاصله ===== -->
                 <div style="display:flex; gap:10px; margin-top:15px; margin-bottom:10px; flex-wrap:wrap;">
                     <button onclick="showPage1()" style="flex:1; min-width:60px; background:rgba(0,200,83,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📱 Page 1</button>
                     <button onclick="showPage2()" style="flex:1; min-width:60px; background:rgba(255,152,0,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📊 Page 2</button>
@@ -999,24 +1059,24 @@ function showPage3() {
         }
     });
 }
+function clearAllData() {
+    localStorage.removeItem('userNote');
+    localStorage.removeItem('noteLang');
+    alert("✅ همه چیز پاک شد!");
+    showPage3();
+}
 function saveUserNote() {
     const note = document.getElementById('noteText').value;
     localStorage.setItem('userNote', note);
     alert("✅ یادداشت ذخیره شد!");
 }
-
-function adminInput(icon, value, field, empId){
-  return `
-    <div class="info-row">
-      <div class="info-left">${icon}</div>
-      <input
-        class="glass-input"
-        value="${value || ''}"
-        onchange="update('${empId}','${field}',this.value)"
-      >
-    </div>
-  `;
+function clearNote() {
+    localStorage.removeItem('userNote');
+    localStorage.removeItem('noteLang');
+    alert("✅ یادداشت و تنظیمات زبان پاک شد!");
+    showPage3();
 }
+
 function adminInput(icon, value, field, empId){
   return `
     <div class="info-row">
@@ -3819,4 +3879,63 @@ function saveNoteAdmin() {
     localStorage.setItem('userNote', note);
     alert("✅ یادداشت ذخیره شد!");
     showAdminPage();
+}
+
+// ==========================================
+// تابع ترجمه با MyMemory API (کامل‌تر)
+// ==========================================
+async function translateText(text, targetLang) {
+    try {
+        // کدهای زبان برای MyMemory
+        const langMap = {
+            'fa': 'fa',
+            'en': 'en',
+            'ru': 'ru',
+            'ar': 'ar'
+        };
+        
+        const lang = langMap[targetLang] || 'en';
+        
+        // MyMemory میتونه متن‌های بلند رو بهتر ترجمه کنه
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=fa|${lang}&de=demo@example.com`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.responseStatus === 200 && data.responseData) {
+            return data.responseData.translatedText || text;
+        } else {
+            // اگر MyMemory جواب نداد، از Google Translate استفاده کن
+            return await translateWithGoogle(text, targetLang);
+        }
+    } catch (error) {
+        console.error("خطا در ترجمه:", error);
+        return text;
+    }
+}
+
+// ==========================================
+// تابع پشتیبان: Google Translate
+// ==========================================
+async function translateWithGoogle(text, targetLang) {
+    try {
+        const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=fa&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data && data[0]) {
+            // استخراج تمام بخش‌های ترجمه
+            let fullText = '';
+            for (const part of data[0]) {
+                if (part[0]) {
+                    fullText += part[0];
+                }
             }
+            return fullText || text;
+        }
+        return text;
+    } catch (error) {
+        console.error("خطا در ترجمه گوگل:", error);
+        return text;
+    }
+    }
