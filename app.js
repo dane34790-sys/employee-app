@@ -907,7 +907,6 @@ function showPage2() {
 
     document.getElementById("app").innerHTML = `
         <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
-            <!-- ===== بک‌گراند با عکس ===== -->
             <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.3;">
             
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
@@ -916,24 +915,30 @@ function showPage2() {
                 <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.5);">
+            
+            <!-- ===== پنل با اسکرول ===== -->
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:20px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.3); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);">
                 
-                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);">
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📊 DASHBOARD</div>
-                    ${lines.map(line => `
-                        <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.15); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px;">
-                            ${line}
-                        </div>
-                    `).join('')}
+                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.05); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📊 DASHBOARD</div>
+                    
+                    <!-- ===== محتوای داخل کادر با اسکرول جداگانه ===== -->
+                    <div style="max-height:50vh; overflow-y:auto; padding-right:5px;">
+                        ${lines.map(line => `
+                            <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.2);">
+                                ${line}
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
                 
-                <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
-                    <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
-                    <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
-                    <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
+                <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
+                    <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
+                    <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
+                    <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
                 </div>
                 
-                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
             </div>
         </div>
     `;
@@ -952,7 +957,6 @@ function showPage3() {
 
     document.getElementById("app").innerHTML = `
         <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
-            <!-- ===== بک‌گراند با عکس ===== -->
             <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.3;">
             
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
@@ -961,22 +965,23 @@ function showPage3() {
                 <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.5);">
+            
+            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.3); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);">
                 
-                <div class="cyber-panel" style="padding:15px; margin-top:40px; background:rgba(0,0,0,0.6); backdrop-filter:blur(5px);">
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">📝 My Notes</div>
-                    <div style="padding:20px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(0,255,136,0.1); min-height:200px; max-height:55vh; overflow-y:auto; color:rgba(255,255,255,0.85); font-family:monospace; font-size:15px; white-space:pre-wrap; word-break:break-word; line-height:1.8;">
+                <div class="cyber-panel" style="padding:15px; margin-top:40px; background:rgba(255,255,255,0.05); backdrop-filter:blur(5px); -webkit-backdrop-filter:blur(5px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📝 My Notes</div>
+                    <div style="padding:20px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); min-height:200px; max-height:55vh; overflow-y:auto; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:15px; white-space:pre-wrap; word-break:break-word; line-height:1.8;">
                         ${note || "📭 No notes yet."}
                     </div>
                 </div>
                 
                 <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
-                    <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
-                    <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
-                    <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
+                    <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
+                    <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
+                    <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
                 </div>
                 
-                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
             </div>
         </div>
     `;
@@ -3810,4 +3815,4 @@ function saveNoteAdmin() {
     localStorage.setItem('userNote', note);
     alert("✅ یادداشت ذخیره شد!");
     showAdminPage();
-              }
+          }
