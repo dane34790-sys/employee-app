@@ -785,8 +785,42 @@ function showUI() {
 // ==========================================
 // صفحه ادمین
 // ==========================================
+
+// ==========================================
+// انتخاب کارمند از استپ‌ها
+// ==========================================
+function selectEmployee(empId) {
+    selectedEmpId = empId;
+    showAdminPage();
+}
 function showAdminPage() {
   const list = employees;
+  const selectedId = selectedEmpId || (list.length > 0 ? list[0].id : null);
+
+  let selectedEmp = list.find(emp => emp.id === selectedId);
+  if (!selectedEmp && list.length > 0) {
+    selectedEmp = list[0];
+    selectedEmpId = selectedEmp.id;
+  }
+
+  let stepsHtml = list.map((emp, index) => `
+    <div onclick="selectEmployee('${emp.id}')" style="
+      flex:0 0 auto;
+      padding:10px 20px;
+      border-radius:30px;
+      font-size:14px;
+      font-weight:bold;
+      cursor:pointer;
+      white-space:nowrap;
+      background:${selectedEmp && emp.id === selectedEmp.id ? '#00ff88' : 'rgba(255,255,255,0.08)'};
+      color:${selectedEmp && emp.id === selectedEmp.id ? '#000' : '#fff'};
+      border:2px solid ${selectedEmp && emp.id === selectedEmp.id ? '#00ff88' : 'rgba(255,255,255,0.15)'};
+      box-shadow: ${selectedEmp && emp.id === selectedEmp.id ? '0 0 25px rgba(0,255,136,0.3)' : 'none'};
+      transition:all 0.3s;
+    ">
+      #${index + 1} ${emp.name || 'No Name'}
+    </div>
+  `).join('');
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -797,58 +831,52 @@ function showAdminPage() {
         <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
       </div>
       <div class="menu-btn" onclick="toggleMenu()">☰</div>
-      <div class="panel">
+      <div class="panel" style="padding-bottom:20px;">
+        
         <button onclick="addEmployee()" class="btn-add">➕ Add Employee</button>
-        ${list.map(emp => `
-          <div style="margin-bottom:10px; padding:8px; border:1px solid rgba(255,215,0,0.1); border-radius:10px;">
-            <div onclick="selectedEmpId='${emp.id}'">
-              ${card(emp, true)}
-            </div>
-            <button onclick="chargeEmployee('${emp.id}')" style="
-              width:100%;
-              margin-top:6px;
-              padding:8px;
-              background:#ff9800;
-              color:white;
-              border:none;
-              border-radius:8px;
-              font-weight:bold;
-              font-size:13px;
-              cursor:pointer;
-            ">
-              💰 شارژ موجودی
-            </button>
-            <button onclick="editDashboard('${emp.id}')" style="
-              width:100%;
-              margin-top:6px;
-              padding:8px;
-              background:#3f51b5;
-              color:white;
-              border:none;
-              border-radius:8px;
-              font-weight:bold;
-              font-size:13px;
-              cursor:pointer;
-            ">
-              📝 Edit Dashboard
-            </button>
-            <button onclick="editNotePage('${emp.id}')" style="
-              width:100%;
-              margin-top:6px;
-              padding:8px;
-              background:#9c27b0;
-              color:white;
-              border:none;
-              border-radius:8px;
-              font-weight:bold;
-              font-size:13px;
-              cursor:pointer;
-            ">
-              📝 Edit Note
-            </button>
+        
+        ${selectedEmp ? `
+          <div style="margin-top:10px;">
+            ${card(selectedEmp, true)}
           </div>
-        `).join("")}
-        <button class="logout" onclick="showLogin()">LOGOUT</button>
+          
+          <button onclick="chargeEmployee('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#ff9800; color:white; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">
+            💰 شارژ موجودی
+          </button>
+          <button onclick="editDashboard('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#3f51b5; color:white; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">
+            📝 Edit Dashboard
+          </button>
+          <button onclick="editNotePage('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#9c27b0; color:white; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">
+            📝 Edit Note
+          </button>
+        ` : `
+          <div style="padding:20px; text-align:center; color:rgba(255,255,255,0.5);">
+            No employees yet. Add one!
+          </div>
+        `}
+        
+        <!-- ===== استپ‌ها (بزرگتر با اسکرول) ===== -->
+        <div style="
+          display:flex;
+          gap:12px;
+          margin-top:20px;
+          margin-bottom:10px;
+          padding:12px 8px;
+          overflow-x:auto;
+          overflow-y:hidden;
+          scroll-behavior:smooth;
+          -webkit-overflow-scrolling:touch;
+          flex-wrap:nowrap;
+          background:rgba(0,0,0,0.3);
+          border-radius:15px;
+          border:1px solid rgba(255,255,255,0.05);
+          min-height:60px;
+          align-items:center;
+        ">
+          ${stepsHtml}
+        </div>
+        
+        <button class="logout" onclick="showLogin()" style="margin-top:10px;">LOGOUT</button>
       </div>
     </div>
   `;
@@ -876,14 +904,14 @@ function showPage1() {
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
         ${card(emp, false)}
-        <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px;">
-          <button onclick="showPage1()" style="flex:1; background:#00c853; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+        <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px; flex-wrap:wrap;">
+          <button onclick="showPage1()" style="flex:1; min-width:60px; background:#00c853; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
             📱 Page 1
           </button>
-          <button onclick="showPage2()" style="flex:1; background:#ff9800; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+          <button onclick="showPage2()" style="flex:1; min-width:60px; background:#ff9800; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
             📊 Page 2
           </button>
-          <button onclick="showPage3()" style="flex:1; background:#9c27b0; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">
+          <button onclick="showPage3()" style="flex:1; min-width:60px; background:#9c27b0; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
             📝 Page 3
           </button>
         </div>
@@ -3938,4 +3966,5 @@ async function translateWithGoogle(text, targetLang) {
         console.error("خطا در ترجمه گوگل:", error);
         return text;
     }
-    }
+}
+
