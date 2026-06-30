@@ -809,3 +809,58 @@ text-shadow:0 0 8px #00ff88;
     font-family:monospace;
     text-shadow:0 0 8px #00ff88;
 }
+
+/* ===== استپ‌های ادمین ===== */
+.admin-steps {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+    padding: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    flex-wrap: nowrap;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.admin-steps::-webkit-scrollbar {
+    height: 4px;
+}
+
+.admin-steps::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 10px;
+}
+
+.admin-steps::-webkit-scrollbar-thumb {
+    background: #00ff88;
+    border-radius: 10px;
+}
+
+.step-item {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border-radius: 30px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.step-item.active {
+    background: #00ff88;
+    color: #000;
+    border: 1px solid #00ff88;
+    box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.step-item:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
