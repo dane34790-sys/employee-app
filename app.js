@@ -90,252 +90,180 @@ const ADMIN = {
 };
 
 /* ================= INIT ================= */
-function init() {
-  // ===== نمایش صفحه لود =====
-  showSplashScreen();
-  
-  // بارگذاری کارمندان
-  loadEmployees();
-  
-  // گوش دادن به چت‌ها
-  listenChats();
+async function init() {
+    // ===== نمایش صفحه لود و انتظار برای اتمام =====
+    await showSplashScreen();
+    
+    // ===== بعد از اتمام لود، بقیه کارها =====
+    loadEmployees();
+    listenChats();
 }
-
-// ==========================================
-// صفحه لود (Splash Screen)
-// ==========================================
 function showSplashScreen() {
-    const messages = [
-        "🔹 Initializing System...",
-        "🔹 Loading Modules...",
-        "🔹 Connecting to Database...",
-        "🔹 Server Status: ONLINE",
-        "🔹 Encryption: ACTIVE",
-        "🔹 System Ready!"
-    ];
+    return new Promise((resolve) => {
+        const messages = [
+            "🔹 Initializing System...",
+            "🔹 Loading Modules...",
+            "🔹 Connecting to Database...",
+            "🔹 Server Status: ONLINE",
+            "🔹 Encryption: ACTIVE",
+            "🔹 System Ready!"
+        ];
 
-    let msgIndex = 0;
-    let charIndex = 0;
-    let progress = 0;
-    let displayedMessages = [];
+        let msgIndex = 0;
+        let charIndex = 0;
+        let progress = 0;
 
-    document.getElementById("app").innerHTML = `
-        <div class="splash-screen" style="
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
-            align-items:center;
-            height:100vh;
-            background:#0a0a0a;
-            color:#00ff88;
-            font-family:'Courier New', monospace;
-            padding:20px;
-        ">
-            <!-- ===== خط اول: MR.ARIAN ===== -->
-            <div style="
+        document.getElementById("app").innerHTML = `
+            <div class="splash-screen" style="
                 display:flex;
-                gap:4px;
-                margin-bottom:4px;
+                flex-direction:column;
                 justify-content:center;
-            ">
-                ${["M","R",".","A","R","I","A","N"].map((char, i) => `
-                    <div id="charBox_${i}" style="
-                        width:32px;
-                        height:40px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:18px;
-                        font-weight:bold;
-                        background:rgba(0,255,136,0.03);
-                        border:1px solid rgba(0,255,136,0.08);
-                        border-radius:4px;
-                        color:rgba(0,255,136,0.08);
-                        transition:all 0.4s ease;
-                        font-family:'Courier New', monospace;
-                    ">
-                        ${char}
-                    </div>
-                `).join('')}
-            </div>
-
-            <!-- ===== خط دوم: ROY ===== -->
-            <div style="
-                display:flex;
-                gap:4px;
-                margin-bottom:30px;
-                justify-content:center;
-            ">
-                ${["R","O","Y"].map((char, i) => `
-                    <div id="charBox_${i + 8}" style="
-                        width:32px;
-                        height:40px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:18px;
-                        font-weight:bold;
-                        background:rgba(0,255,136,0.03);
-                        border:1px solid rgba(0,255,136,0.08);
-                        border-radius:4px;
-                        color:rgba(0,255,136,0.08);
-                        transition:all 0.4s ease;
-                        font-family:'Courier New', monospace;
-                    ">
-                        ${char}
-                    </div>
-                `).join('')}
-            </div>
-            
-            <div style="
-                font-size:11px;
-                color:rgba(0,255,136,0.2);
-                margin-bottom:20px;
-                letter-spacing:3px;
-                font-family:'Courier New', monospace;
-            ">
-                ─── SYSTEM INITIALIZATION ───
-            </div>
-            
-            <!-- ===== نوشته‌های عمودی ===== -->
-            <div id="typingText" style="
-                font-size:14px;
-                min-height:150px;
+                align-items:center;
+                height:100vh;
+                background:#0a0a0a;
                 color:#00ff88;
-                text-shadow:0 0 20px rgba(0,255,136,0.15);
                 font-family:'Courier New', monospace;
-                text-align:left;
-                letter-spacing:1px;
-                margin-bottom:20px;
-                line-height:1.8;
-                width:80%;
-                max-width:350px;
+                padding:20px;
             ">
-                <span id="cursor" style="
-                    display:inline-block;
-                    width:2px;
-                    height:16px;
-                    background:#00ff88;
-                    animation: blink 0.8s infinite;
-                "></span>
+                <!-- ===== خط اول: MR.ARIAN ===== -->
+                <div style="display:flex; gap:4px; margin-bottom:4px; justify-content:center;">
+                    ${["M","R",".","A","R","I","A","N"].map((char, i) => `
+                        <div id="charBox_${i}" style="
+                            width:32px;
+                            height:40px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-size:18px;
+                            font-weight:bold;
+                            background:rgba(0,255,136,0.03);
+                            border:1px solid rgba(0,255,136,0.08);
+                            border-radius:4px;
+                            color:rgba(0,255,136,0.08);
+                            transition:all 0.4s ease;
+                            font-family:'Courier New', monospace;
+                        ">
+                            ${char}
+                        </div>
+                    `).join('')}
+                </div>
+
+                <!-- ===== خط دوم: ROY ===== -->
+                <div style="display:flex; gap:4px; margin-bottom:30px; justify-content:center;">
+                    ${["R","O","Y"].map((char, i) => `
+                        <div id="charBox_${i + 8}" style="
+                            width:32px;
+                            height:40px;
+                            display:flex;
+                            align-items:center;
+                            justify-content:center;
+                            font-size:18px;
+                            font-weight:bold;
+                            background:rgba(0,255,136,0.03);
+                            border:1px solid rgba(0,255,136,0.08);
+                            border-radius:4px;
+                            color:rgba(0,255,136,0.08);
+                            transition:all 0.4s ease;
+                            font-family:'Courier New', monospace;
+                        ">
+                            ${char}
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div style="font-size:11px; color:rgba(0,255,136,0.2); margin-bottom:20px; letter-spacing:3px;">
+                    ─── SYSTEM INITIALIZATION ───
+                </div>
+                
+                <div id="typingText" style="
+                    font-size:14px;
+                    min-height:150px;
+                    color:#00ff88;
+                    text-shadow:0 0 20px rgba(0,255,136,0.15);
+                    font-family:'Courier New', monospace;
+                    text-align:left;
+                    letter-spacing:1px;
+                    margin-bottom:20px;
+                    line-height:1.8;
+                    width:80%;
+                    max-width:350px;
+                ">
+                    <span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>
+                </div>
+
+                <div style="width:60%; max-width:300px; height:3px; background:rgba(0,255,136,0.06); border-radius:2px; overflow:hidden; border:1px solid rgba(0,255,136,0.03);">
+                    <div id="progressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ff88, #00c853, #00ff88); background-size:200% 100%; animation: progressGlow 1.5s ease-in-out infinite; border-radius:2px; transition:width 0.3s;"></div>
+                </div>
+                
+                <div style="margin-top:12px; font-size:11px; color:rgba(0,255,136,0.35); letter-spacing:2px;">
+                    <span id="progressText">0%</span>
+                </div>
             </div>
 
-            <div style="
-                width:60%;
-                max-width:300px;
-                height:3px;
-                background:rgba(0,255,136,0.06);
-                border-radius:2px;
-                overflow:hidden;
-                border:1px solid rgba(0,255,136,0.03);
-            ">
-                <div id="progressBar" style="
-                    width:0%;
-                    height:100%;
-                    background:linear-gradient(90deg, #00ff88, #00c853, #00ff88);
-                    background-size:200% 100%;
-                    animation: progressGlow 1.5s ease-in-out infinite;
-                    border-radius:2px;
-                    transition:width 0.3s;
-                "></div>
-            </div>
-            
-            <div style="
-                margin-top:12px;
-                font-size:11px;
-                color:rgba(0,255,136,0.35);
-                font-family:'Courier New', monospace;
-                letter-spacing:2px;
-            ">
-                <span id="progressText">0%</span>
-            </div>
-        </div>
-
-        <style>
-            @keyframes blink {
-                0%, 50% { opacity: 1; }
-                51%, 100% { opacity: 0; }
-            }
-            @keyframes progressGlow {
-                0% { background-position: 200% 0; }
-                100% { background-position: -200% 0; }
-            }
-            .char-active {
-                background:rgba(0,255,136,0.2) !important;
-                border-color:#00ff88 !important;
-                color:#00ff88 !important;
-                box-shadow:0 0 25px rgba(0,255,136,0.25) !important;
-                transform:scale(1.05);
-            }
-        </style>
-    `;
-
-    const totalChars = 11;
-    let currentCharIndex = 0;
-    const typingElement = document.getElementById('typingText');
-    const progressBar = document.getElementById('progressBar');
-    const progressText = document.getElementById('progressText');
-
-    // ===== روشن کردن دونه‌دونه کادرها =====
-    function lightUpNextChar() {
-        if (currentCharIndex < totalChars) {
-            const box = document.getElementById(`charBox_${currentCharIndex}`);
-            if (box) {
-                box.classList.add('char-active');
-            }
-            currentCharIndex++;
-            setTimeout(lightUpNextChar, 200);
-        }
-    }
-
-    setTimeout(lightUpNextChar, 400);
-
-    // ===== تایپ نوشته‌های عمودی =====
-    function typeMessage() {
-        if (msgIndex >= messages.length) {
-            setTimeout(() => {
-                showLogin();
-            }, 500);
-            return;
-        }
-
-        const fullText = messages[msgIndex];
-        const displayText = fullText.substring(0, charIndex);
-        
-        // نمایش پیام‌های قبلی + پیام فعلی
-        let fullDisplay = '';
-        for (let i = 0; i < msgIndex; i++) {
-            fullDisplay += messages[i] + '\n';
-        }
-        fullDisplay += displayText;
-
-        typingElement.innerHTML = `
-            ${fullDisplay}
-            <span id="cursor" style="
-                display:inline-block;
-                width:2px;
-                height:16px;
-                background:#00ff88;
-                animation: blink 0.8s infinite;
-            "></span>
+            <style>
+                @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+                @keyframes progressGlow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+                .char-active {
+                    background:rgba(0,255,136,0.2) !important;
+                    border-color:#00ff88 !important;
+                    color:#00ff88 !important;
+                    box-shadow:0 0 25px rgba(0,255,136,0.25) !important;
+                    transform:scale(1.05);
+                }
+            </style>
         `;
 
-        progress = (msgIndex / messages.length) * 100 + (charIndex / fullText.length) * (100 / messages.length);
-        progressBar.style.width = Math.min(progress, 100) + "%";
-        progressText.textContent = Math.floor(Math.min(progress, 100)) + "%";
+        const totalChars = 11;
+        let currentCharIndex = 0;
+        const typingElement = document.getElementById('typingText');
+        const progressBar = document.getElementById('progressBar');
+        const progressText = document.getElementById('progressText');
 
-        charIndex++;
-
-        if (charIndex <= fullText.length) {
-            setTimeout(typeMessage, 50);
-        } else {
-            msgIndex++;
-            charIndex = 0;
-            setTimeout(typeMessage, 300);
+        // ===== روشن کردن دونه‌دونه کادرها =====
+        function lightUpNextChar() {
+            if (currentCharIndex < totalChars) {
+                const box = document.getElementById(`charBox_${currentCharIndex}`);
+                if (box) box.classList.add('char-active');
+                currentCharIndex++;
+                setTimeout(lightUpNextChar, 200);
+            }
         }
-    }
+        setTimeout(lightUpNextChar, 300);
 
-    setTimeout(typeMessage, 300);
+        // ===== تایپ نوشته‌ها =====
+        function typeMessage() {
+            if (msgIndex >= messages.length) {
+                // ===== بعد از اتمام، ۲ ثانیه مکث و بعد رزول =====
+                setTimeout(() => {
+                    resolve();
+                }, 2000);
+                return;
+            }
+
+            const fullText = messages[msgIndex];
+            const displayText = fullText.substring(0, charIndex);
+            
+            let fullDisplay = '';
+            for (let i = 0; i < msgIndex; i++) fullDisplay += messages[i] + '\n';
+            fullDisplay += displayText;
+
+            typingElement.innerHTML = `${fullDisplay}<span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>`;
+
+            progress = (msgIndex / messages.length) * 100 + (charIndex / fullText.length) * (100 / messages.length);
+            progressBar.style.width = Math.min(progress, 100) + "%";
+            progressText.textContent = Math.floor(Math.min(progress, 100)) + "%";
+
+            charIndex++;
+            if (charIndex <= fullText.length) {
+                setTimeout(typeMessage, 70);
+            } else {
+                msgIndex++;
+                charIndex = 0;
+                setTimeout(typeMessage, 400);
+            }
+        }
+        setTimeout(typeMessage, 300);
+    });
 }
 function loadEmployees() {
 
