@@ -763,9 +763,7 @@ function showUI() {
   const list = isAdmin ? employees : [currentUser.emp];
 
   // ===== کم کردن ۱ تومان به ازای هر بار ورود (فقط برای کارمندان) =====
-  if (!isAdmin && currentUser.emp) {
-    chargeForLogin(currentUser.emp);
-  }
+  // ===== حذف شد تا فقط در صفحه تراکنش انجام بشه =====
   // ==========================================
 
   pushPage(() => showUI());
@@ -781,14 +779,6 @@ function showUI() {
     showPage1();
   }
 }
-
-// ==========================================
-// صفحه ادمین
-// ==========================================
-
-// ==========================================
-// انتخاب کارمند از استپ‌ها
-// ==========================================
 function selectEmployee(empId) {
     selectedEmpId = empId;
     showAdminPage();
@@ -2562,6 +2552,13 @@ function openTransactions(empId) {
         return;
     }
 
+    // ===== کم کردن ۱ تومان فقط در صفحه تراکنش =====
+    const isAdmin = currentUser && currentUser.type === "admin";
+    if (!isAdmin && emp) {
+        chargeForLogin(emp);
+    }
+    // ==========================================
+
     pushPage(() => openTransactions(empId));
 
     let txArray = [];
@@ -2572,7 +2569,6 @@ function openTransactions(empId) {
     }
 
     const txs = txArray.slice(-10).reverse();
-    const isAdmin = currentUser && currentUser.type === "admin";
 
     document.getElementById("app").innerHTML = `
         <div class="screen">
