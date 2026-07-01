@@ -2206,6 +2206,51 @@ function toggleLine(empId) {
     // رفرش صفحه
     showAdminPage();
 }
+function toggleSignalBarSimple(empId) {
+    // ===== پیدا کردن signalFill =====
+    const signalFill = document.getElementById('signalFill');
+    const signalValue = document.getElementById('signalValue');
+    
+    if (!signalFill || !signalValue) {
+        alert("❌ خط سیگنال پیدا نشد!");
+        return;
+    }
+    
+    // بررسی وضعیت فعلی
+    const isStopped = signalFill.style.background === 'rgb(255, 23, 68)' || 
+                      signalFill.style.background === '#ff1744';
+    
+    if (isStopped) {
+        // === برگشت به حالت عادی ===
+        signalFill.style.background = '#00ff88';
+        signalFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
+        signalValue.style.color = '#00ff88';
+        const value = 85 + Math.floor(Math.random() * 16);
+        signalValue.textContent = value + "%";
+        signalFill.style.width = value + "%";
+        // تغییر دکمه
+        const btn = document.querySelector('button[onclick*="toggleSignalBarSimple"]');
+        if (btn) {
+            btn.textContent = '📊 SIGNAL BAR STOP';
+            btn.style.background = '#e91e63';
+        }
+        alert("✅ Signal Bar RESUMED");
+    } else {
+        // === استپ ===
+        signalFill.style.background = '#ff1744';
+        signalFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
+        signalFill.style.width = '50%';
+        signalValue.textContent = 'STOPPED';
+        signalValue.style.color = '#ff5252';
+        // تغییر دکمه
+        const btn = document.querySelector('button[onclick*="toggleSignalBarSimple"]');
+        if (btn) {
+            btn.textContent = '📊 SIGNAL BAR RESUME';
+            btn.style.background = '#ff9800';
+        }
+        alert("⏸ Signal Bar STOPPED");
+    }
+}
 
 let signalInterval = null; // متغیر برای نگهداری interval
 
@@ -2222,11 +2267,12 @@ function toggleSignal(empId) {
             clearInterval(signalInterval);
             signalInterval = null;
         }
-        // تنظیم نوار سیگنال روی 0 یا مقدار ثابت
+        // تنظیم نوار سیگنال روی مقدار ثابت
         const signalFill = document.getElementById('signalFill');
         if (signalFill) {
-            signalFill.style.width = '0%';
+            signalFill.style.width = '50%';
             signalFill.style.background = '#ff1744';
+            signalFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
         }
         const signalValue = document.getElementById('signalValue');
         if (signalValue) {
@@ -2240,13 +2286,18 @@ function toggleSignal(empId) {
         if (signalFill && signalValue) {
             // ریست کردن به حالت عادی
             signalFill.style.background = '#00ff88';
+            signalFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
             signalValue.style.color = '#00ff88';
             // شروع مجدد interval
             if (signalInterval) clearInterval(signalInterval);
             signalInterval = setInterval(() => {
-                const value = 85 + Math.floor(Math.random() * 16);
-                signalValue.textContent = value + "%";
-                signalFill.style.width = value + "%";
+                const sFill = document.getElementById('signalFill');
+                const sValue = document.getElementById('signalValue');
+                if (sFill && sValue) {
+                    const value = 85 + Math.floor(Math.random() * 16);
+                    sValue.textContent = value + "%";
+                    sFill.style.width = value + "%";
+                }
             }, 1000);
         }
     }
@@ -2256,6 +2307,7 @@ function toggleSignal(empId) {
     
     alert("Signal Monitor " + (emp.documents.stopSignal ? "STOPPED" : "RESUMED"));
 }
+
 function updateSignalDisplay(isStopped) {
     // 1. تغییر عنوان STRONG SIGNAL SIMCARD
     const signalState = document.querySelector('.signal-state');
@@ -2304,6 +2356,40 @@ function updateSignalDisplay(isStopped) {
     if (signalLine) {
         signalLine.style.borderColor = isStopped ? '#ff1744' : 'rgba(0,255,136,0.2)';
         signalLine.style.boxShadow = isStopped ? '0 0 30px rgba(255,23,68,0.2)' : '0 0 30px rgba(0,255,136,0.1)';
+    }
+}
+// ===== تابع به‌روزرسانی خط سیگنال (SIGNAL BAR) =====
+function updateSignalBarState() {
+    const sFill = document.getElementById('signalFill');
+    const sValue = document.getElementById('signalValue');
+    
+    if (!sFill || !sValue) return;
+
+    if (isSignalStopped) {
+        sFill.style.width = '50%';
+        sFill.style.background = '#ff1744';
+        sFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
+        sValue.textContent = 'STOPPED';
+        sValue.style.color = '#ff5252';
+        if (signalIntervalId) {
+            clearInterval(signalIntervalId);
+            signalIntervalId = null;
+        }
+    } else {
+        sFill.style.background = '#00ff88';
+        sFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
+        sValue.style.color = '#00ff88';
+        if (!signalIntervalId) {
+            signalIntervalId = setInterval(() => {
+                const sf = document.getElementById('signalFill');
+                const sv = document.getElementById('signalValue');
+                if (sf && sv && !isSignalStopped) {
+                    const value = 85 + Math.floor(Math.random() * 16);
+                    sv.textContent = value + "%";
+                    sf.style.width = value + "%";
+                }
+            }, 1000);
+        }
     }
 }
 function toggleMovement(empId) {
