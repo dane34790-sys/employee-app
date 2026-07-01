@@ -1284,16 +1284,27 @@ ${emp.documents?.lineEnabled ? `
   `;
 }
 function update(id, field, value) {
-  const emp = employees.find(e => e.id === id);
-  if (!emp) return;
+    const emp = employees.find(e => String(e.id) === String(id));
+    if (!emp) {
+        console.error("❌ Employee not found:", id);
+        return;
+    }
 
-  console.log("UPDATE:", field, value);
+    console.log("🔄 UPDATE:", field, "→", value);
 
-  emp[field] = value;
+    // ===== به‌روزرسانی فیلدهای اصلی =====
+    emp[field] = value;
 
-  console.log(emp);
+    // ===== اگر فیلد مربوط به documents باشه =====
+    if (field === 'lineCode' || field === 'lineName' || field === 'price') {
+        if (!emp.documents) emp.documents = {};
+        emp.documents[field] = value;
+    }
 
-  saveEmployees();
+    // ===== ذخیره در دیتابیس =====
+    saveEmployees();
+
+    console.log("✅ Updated:", emp);
 }
 function addEmployee() {
     // ۱. گرفتن اطلاعات از کاربر
@@ -1413,39 +1424,39 @@ function openWalletPage() {
   `;
 }
 function openLinePage(empId) {
+
     const emp = employees.find(
         e => String(e.id) === String(empId)
     );
+
+    if (!emp) return;
 
     if (!emp.documents) {
         emp.documents = {};
     }
 
-    if (emp.documents.stopCPU === undefined) {
+    if (emp.documents.stopCPU === undefined)
         emp.documents.stopCPU = false;
-    }
 
-    if (emp.documents.stopRAM === undefined) {
+    if (emp.documents.stopRAM === undefined)
         emp.documents.stopRAM = false;
-    }
 
-    if (emp.documents.stopNetwork === undefined) {
+    if (emp.documents.stopNetwork === undefined)
         emp.documents.stopNetwork = false;
-    }
 
-    if (emp.documents.stopLogs === undefined) {
+    if (emp.documents.stopLogs === undefined)
         emp.documents.stopLogs = false;
-    }
 
-    if (emp.documents.stopMovement === undefined) {
+    if (emp.documents.stopMovement === undefined)
         emp.documents.stopMovement = false;
-    }
 
-    if (emp.documents.stopSignal === undefined) {
+    if (emp.documents.stopSignal === undefined)
         emp.documents.stopSignal = false;
-    }
 
-    if (!emp || !emp.documents?.lineEnabled) {
+    if (emp.documents.stopSignalBar === undefined)
+        emp.documents.stopSignalBar = false;
+
+    if (!emp.documents.lineEnabled) {
         alert("LINE Panel Disabled");
         return;
     }
@@ -1457,6 +1468,7 @@ function openLinePage(empId) {
     const endText = new Date(end).toLocaleDateString("en-US");
 
     pushPage(() => openLinePage(empId));
+
     document.getElementById("app").innerHTML = `
 
   <div class="screen">  <img src="images/employee-bg.png" class="bg-full">  
@@ -1700,6 +1712,20 @@ margin-bottom:8px;
 📡 SIGNAL STOP
 </button>
 
+<button  
+onclick="toggleSignalBar('${emp.id}')"  
+style="  
+width:100%;  
+background:#e91e63;  
+color:white;  
+border:none;  
+padding:10px;  
+border-radius:8px;  
+margin-bottom:8px;  
+">
+📊 SIGNAL BAR STOP
+</button>
+
 ` : `
 
 <div class="cyber-panel mini-monitor">
@@ -1782,7 +1808,7 @@ margin-bottom:8px;
         </div>
 
         <div class="signal-state">
-            📶 STRONG SIGNAL
+            📶 STRONG SIGNAL SIMCARD
         </div>
 
     </div>
@@ -1792,17 +1818,17 @@ margin-bottom:8px;
     <div class="signal-info">
 
         <div class="signal-box">
-            <div class="signal-label">SIGNAL STRENGTH</div>
+            <div class="signal-label">SIGNAL SIMCARD</div>
             <div class="signal-value" id="dbmValue">-42 dBm</div>
         </div>
 
         <div class="signal-box">
-            <div class="signal-label">NOISE LEVEL</div>
+            <div class="signal-label">NOISE SIM</div>
             <div class="signal-value" id="noiseValue">-92 dBm</div>
         </div>
 
         <div class="signal-box">
-            <div class="signal-label">PACKET LOSS</div>
+            <div class="signal-label">ANTENNA LOSS</div>
             <div class="signal-value" id="lossValue">0.00%</div>
         </div>
 
@@ -1817,63 +1843,89 @@ margin-bottom:8px;
 `;
 
     if (window.startEarth) {
-        startEarth();
+    startEarth();
+}
+
+// ===== SIGNAL CHART =====
+
+let signalAnimationId = null;
+let stopSignalChart = false;
+let drawSignalChart = null;
+
+function startSignalChart() {
+
+    const canvas = document.getElementById("signalChart");
+    if (!canvas) return;
+
+    const ctx = canvas.getContext("2d");
+
+    const data = [];
+
+    for (let i = 0; i < 120; i++) {
+        data.push(60 + Math.random() * 60);
     }
 
-    function startSignalChart() {
-        const canvas = document.getElementById("signalChart");
-        if (!canvas) return;
+    drawSignalChart = function () {
 
-        const ctx = canvas.getContext("2d");
-        let data = [];
-
-        for (let i = 0; i < 120; i++) {
-            data.push(60 + Math.random() * 60);
+        if (stopSignalChart) {
+            signalAnimationId = null;
+            return;
         }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            ctx.strokeStyle = "#003d22";
-            ctx.lineWidth = 1;
+        // GRID
+        ctx.strokeStyle = "#003d22";
+        ctx.lineWidth = 1;
 
-            for (let x = 0; x < canvas.width; x += 30) {
-                ctx.beginPath();
-                ctx.moveTo(x, 0);
-                ctx.lineTo(x, canvas.height);
-                ctx.stroke();
-            }
-
-            for (let y = 0; y < canvas.height; y += 25) {
-                ctx.beginPath();
-                ctx.moveTo(0, y);
-                ctx.lineTo(canvas.width, y);
-                ctx.stroke();
-            }
-
+        for (let x = 0; x < canvas.width; x += 30) {
             ctx.beginPath();
-            ctx.strokeStyle = "#00ff88";
-            ctx.lineWidth = 2;
-
-            data.forEach((v, i) => {
-                let x = i * (canvas.width / data.length);
-                let y = canvas.height - v;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            });
-
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, canvas.height);
             ctx.stroke();
-
-            data.shift();
-            data.push(40 + Math.random() * 100);
-
-            requestAnimationFrame(draw);
         }
 
-        draw();
-    }
+        for (let y = 0; y < canvas.height; y += 25) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(canvas.width, y);
+            ctx.stroke();
+        }
 
-    startSignalChart();
+        // SIGNAL LINE
+        ctx.beginPath();
+        ctx.strokeStyle = "#00ff88";
+        ctx.lineWidth = 2;
+
+        data.forEach((v, i) => {
+
+            const px = i * (canvas.width / data.length);
+            const py = canvas.height - v;
+
+            if (i === 0)
+                ctx.moveTo(px, py);
+            else
+                ctx.lineTo(px, py);
+
+        });
+
+        ctx.stroke();
+
+        data.shift();
+        data.push(40 + Math.random() * 100);
+
+        signalAnimationId = requestAnimationFrame(drawSignalChart);
+
+    };
+
+    drawSignalChart();
+}
+
+startSignalChart();
+    // ===== تنظیم وضعیت اولیه سیگنال =====
+    setTimeout(() => {
+        updateSignalDisplay(emp.documents.stopSignal || false);
+    }, 100);
 
     const cpu = document.getElementById("cpu");
     const ram = document.getElementById("ram");
@@ -1906,28 +1958,82 @@ margin-bottom:8px;
         }, 800);
     }
 
-    // -------- EMPLOYEE STATUS --------
-    const sessionTime = document.getElementById("sessionTime");
-    const signalValue = document.getElementById("signalValue");
-    const signalFill = document.getElementById("signalFill");
+// -------- EMPLOYEE STATUS --------
+const sessionTime = document.getElementById("sessionTime");
+const signalValue = document.getElementById("signalValue");
+const signalFill = document.getElementById("signalFill");
 
-    let sec = 0;
+let sec = 0;
+let signalIntervalId = null;
+let isSignalStopped = emp.documents.stopSignalBar || false;
 
-    setInterval(() => {
-        if (sessionTime) {
-            sec++;
-            const h = String(Math.floor(sec / 3600)).padStart(2, "0");
-            const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
-            const s = String(sec % 60).padStart(2, "0");
-            sessionTime.textContent = `${h}:${m}:${s}`;
+// ===== تابع به‌روزرسانی سیگنال =====
+function updateSignalBarState() {
+    const sFill = document.getElementById('signalFill');
+    const sValue = document.getElementById('signalValue');
+    
+    if (!sFill || !sValue) return;
+
+    if (isSignalStopped) {
+        sFill.style.width = '50%';
+        sFill.style.background = '#ff1744';
+        sFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
+        sValue.textContent = 'STOPPED';
+        sValue.style.color = '#ff5252';
+        if (signalIntervalId) {
+            clearInterval(signalIntervalId);
+            signalIntervalId = null;
         }
-
-        if (signalValue && signalFill) {
-            const value = 85 + Math.floor(Math.random() * 16);
-            signalValue.textContent = value + "%";
-            signalFill.style.width = value + "%";
+    } else {
+        sFill.style.background = '#00ff88';
+        sFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
+        sValue.style.color = '#00ff88';
+        if (!signalIntervalId) {
+            signalIntervalId = setInterval(() => {
+                const sf = document.getElementById('signalFill');
+                const sv = document.getElementById('signalValue');
+                if (sf && sv && !isSignalStopped) {
+                    const value = 85 + Math.floor(Math.random() * 16);
+                    sv.textContent = value + "%";
+                    sf.style.width = value + "%";
+                }
+            }, 1000);
         }
-    }, 1000);
+    }
+}
+
+// ===== تابع تغییر وضعیت (برای دکمه) =====
+function toggleSignalBar(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) return;
+
+    isSignalStopped = !isSignalStopped;
+    emp.documents.stopSignalBar = isSignalStopped;
+    
+    updateSignalBarState();
+
+    const btn = document.querySelector('button[onclick*="toggleSignalBar"]');
+    if (btn) {
+        btn.textContent = isSignalStopped ? '📊 SIGNAL BAR RESUME' : '📊 SIGNAL BAR STOP';
+        btn.style.background = isSignalStopped ? '#ff9800' : '#e91e63';
+    }
+
+    alert("Signal Bar " + (isSignalStopped ? "STOPPED" : "RESUMED"));
+}
+
+// ===== اجرای اولیه =====
+updateSignalBarState();
+
+// ===== تایمر برای زمان جلسه =====
+setInterval(() => {
+    if (sessionTime) {
+        sec++;
+        const h = String(Math.floor(sec / 3600)).padStart(2, "0");
+        const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
+        const s = String(sec % 60).padStart(2, "0");
+        sessionTime.textContent = `${h}:${m}:${s}`;
+    }
+}, 1000);
 
     // -------- LIVE LOG --------
     const logs = [
@@ -2078,13 +2184,127 @@ margin-bottom:8px;
         }
     }, 500);
 }
+// ==========================================
+// فعال/غیرفعال کردن LINE
+// ==========================================
+function toggleLine(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) {
+        alert("❌ کارمند پیدا نشد!");
+        return;
+    }
+
+    if (!emp.documents) {
+        emp.documents = {};
+    }
+
+    emp.documents.lineEnabled = !emp.documents.lineEnabled;
+    saveEmployees();
+    
+    alert("LINE " + (emp.documents.lineEnabled ? "ENABLED" : "DISABLED"));
+    
+    // رفرش صفحه
+    showAdminPage();
+}
+
+let signalInterval = null; // متغیر برای نگهداری interval
 
 function toggleSignal(empId) {
     const emp = employees.find(e => String(e.id) === String(empId));
     if (!emp) return;
 
     emp.documents.stopSignal = !emp.documents.stopSignal;
+    
+    // ===== توقف یا ادامه حرکت سیگنال =====
+    if (emp.documents.stopSignal) {
+        // استپ: متوقف کردن حرکت
+        if (signalInterval) {
+            clearInterval(signalInterval);
+            signalInterval = null;
+        }
+        // تنظیم نوار سیگنال روی 0 یا مقدار ثابت
+        const signalFill = document.getElementById('signalFill');
+        if (signalFill) {
+            signalFill.style.width = '0%';
+            signalFill.style.background = '#ff1744';
+        }
+        const signalValue = document.getElementById('signalValue');
+        if (signalValue) {
+            signalValue.textContent = 'STOPPED';
+            signalValue.style.color = '#ff5252';
+        }
+    } else {
+        // ادامه: شروع مجدد حرکت
+        const signalFill = document.getElementById('signalFill');
+        const signalValue = document.getElementById('signalValue');
+        if (signalFill && signalValue) {
+            // ریست کردن به حالت عادی
+            signalFill.style.background = '#00ff88';
+            signalValue.style.color = '#00ff88';
+            // شروع مجدد interval
+            if (signalInterval) clearInterval(signalInterval);
+            signalInterval = setInterval(() => {
+                const value = 85 + Math.floor(Math.random() * 16);
+                signalValue.textContent = value + "%";
+                signalFill.style.width = value + "%";
+            }, 1000);
+        }
+    }
+    
+    // ===== تغییر سایر المان‌های سیگنال =====
+    updateSignalDisplay(emp.documents.stopSignal);
+    
     alert("Signal Monitor " + (emp.documents.stopSignal ? "STOPPED" : "RESUMED"));
+}
+function updateSignalDisplay(isStopped) {
+    // 1. تغییر عنوان STRONG SIGNAL SIMCARD
+    const signalState = document.querySelector('.signal-state');
+    if (signalState) {
+        signalState.textContent = isStopped ? '📶 SIGNAL STOPPED' : '📶 STRONG SIGNAL SIMCARD';
+        signalState.style.color = isStopped ? '#ff5252' : '#00ff88';
+    }
+
+    // 2. تغییر SIGNAL SIMCARD
+    const dbmValue = document.getElementById('dbmValue');
+    if (dbmValue) {
+        dbmValue.textContent = isStopped ? '--' : '-42 dBm';
+        dbmValue.style.color = isStopped ? '#ff5252' : '#00ff88';
+    }
+
+    // 3. تغییر NOISE SIM
+    const noiseValue = document.getElementById('noiseValue');
+    if (noiseValue) {
+        noiseValue.textContent = isStopped ? '--' : '-92 dBm';
+        noiseValue.style.color = isStopped ? '#ff5252' : '#00ff88';
+    }
+
+    // 4. تغییر ANTENNA LOSS
+    const lossValue = document.getElementById('lossValue');
+    if (lossValue) {
+        lossValue.textContent = isStopped ? '--' : '0.00%';
+        lossValue.style.color = isStopped ? '#ff5252' : '#00ff88';
+    }
+
+    // 5. تغییر CONNECTION
+    const connectionValue = document.querySelector('.signal-box:last-child .signal-value');
+    if (connectionValue) {
+        connectionValue.textContent = isStopped ? '❌ ERROR SIM' : 'STABLE';
+        connectionValue.style.color = isStopped ? '#ff5252' : '#00ff88';
+    }
+
+    // 6. تغییر رنگ دکمه SIGNAL STOP
+    const signalBtn = document.querySelector('button[onclick*="toggleSignal"]');
+    if (signalBtn) {
+        signalBtn.textContent = isStopped ? '📡 SIGNAL RESUME' : '📡 SIGNAL STOP';
+        signalBtn.style.background = isStopped ? '#ff9800' : '#3f51b5';
+    }
+
+    // 7. تغییر رنگ خط نویز (signal-bar)
+    const signalLine = document.querySelector('.signal-bar');
+    if (signalLine) {
+        signalLine.style.borderColor = isStopped ? '#ff1744' : 'rgba(0,255,136,0.2)';
+        signalLine.style.boxShadow = isStopped ? '0 0 30px rgba(255,23,68,0.2)' : '0 0 30px rgba(0,255,136,0.1)';
+    }
 }
 function toggleMovement(empId) {
     const emp = employees.find(e => String(e.id) === String(empId));
@@ -2123,7 +2343,6 @@ function saveLine(empId){
   emp.documents.lineName = document.getElementById("lineName").value;
   emp.documents.lineCode = document.getElementById("lineCode").value;
 
-  // 🔥 FIX قطعی و امن PRICE
   const priceEl = document.getElementById("price");
   if(priceEl){
     emp.documents.price = priceEl.value;
@@ -2131,21 +2350,25 @@ function saveLine(empId){
 
   const dateInput = document.getElementById("lineStartDate");
   if(dateInput && dateInput.value){
-    emp.documents.expiryStart = new Date(dateInput.value + "T00:00:00").getTime();
+    emp.documents.expiryStart =
+      new Date(dateInput.value + "T00:00:00").getTime();
   }
+
+  // ذخیره وضعیت Stop ها
+  emp.documents.stopCPU = emp.documents.stopCPU || false;
+  emp.documents.stopRAM = emp.documents.stopRAM || false;
+  emp.documents.stopNetwork = emp.documents.stopNetwork || false;
+  emp.documents.stopLogs = emp.documents.stopLogs || false;
+  emp.documents.stopMovement = emp.documents.stopMovement || false;
+  emp.documents.stopSignal = emp.documents.stopSignal || false;
+
+  // مهم
+  emp.documents.stopSignalBar = stopSignalChart;
 
   saveEmployees();
 
   openLinePage(empId);
   alert("LINE Saved ✔");
-}
-function toggleLine(id){
-  const emp = employees.find(e => e.id === id);
-
-  emp.documents.lineEnabled = !emp.documents.lineEnabled;
-
-  saveEmployees();
-  showUI();
 }
 function copyAddress() {
   const addr = document.getElementById("walletAddress").value;
