@@ -930,12 +930,47 @@ function showPage1() {
   });
 }
 function showPage2() {
-    const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
-    const lines = text.split('\n');
+    const emp = currentUser.emp;
+    if (!emp) return;
 
+    // ===== خواندن از Firebase =====
+    db.ref("employees/" + emp.id + "/dashboard").once("value")
+        .then(snapshot => {
+            const d = snapshot.val();
+            
+            // اگر دیتا توی Firebase نبود، از localStorage استفاده کن
+            if (!d) {
+                const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
+                const lines = text.split('\n');
+                renderPage2(lines);
+                return;
+            }
+
+            // ساخت متن از دیتای Firebase
+            const lines = [
+                d.title || "📊 DASHBOARD",
+                `${d.employeesLabel || "Employees"}: ${employees.length}`,
+                `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} IRR`,
+                `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+                `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
+                `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
+                `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+                `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
+            ];
+            renderPage2(lines);
+        })
+        .catch(err => {
+            console.error("❌ خطا در خواندن dashboard:", err);
+            // اگر خطا بود، از localStorage استفاده کن
+            const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
+            const lines = text.split('\n');
+            renderPage2(lines);
+        });
+}
+
+function renderPage2(lines) {
     document.getElementById("app").innerHTML = `
         <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
-            <!-- ===== بک‌گراند روشن‌تر ===== -->
             <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
             
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
@@ -945,7 +980,6 @@ function showPage2() {
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
-            <!-- ===== پنل با شفافیت بیشتر ===== -->
             <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:20px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
                 
                 <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
@@ -1094,9 +1128,32 @@ function clearAllData() {
     showPage3();
 }
 function saveUserNote() {
+    const emp = currentUser.emp;
+    if (!emp) return;
+    
     const note = document.getElementById('noteText').value;
-    localStorage.setItem('userNote', note);
-    alert("✅ یادداشت ذخیره شد!");
+    
+    // ===== ذخیره در Firebase =====
+    db.ref("employees/" + emp.id + "/note").set(note)
+        .then(() => {
+            alert("✅ یادداشت ذخیره شد!");
+        })
+        .catch(err => {
+            alert("❌ خطا در ذخیره: " + err.message);
+        });
+}
+function saveNoteAdmin(empId) {
+    const note = document.getElementById('noteTextAdmin').value;
+    
+    // ===== ذخیره در Firebase برای هر کارمند =====
+    db.ref("employees/" + empId + "/note").set(note)
+        .then(() => {
+            alert("✅ یادداشت ذخیره شد!");
+            showAdminPage();
+        })
+        .catch(err => {
+            alert("❌ خطا در ذخیره: " + err.message);
+        });
 }
 function clearNote() {
     localStorage.removeItem('userNote');
@@ -1119,6 +1176,35 @@ function adminInput(icon, value, field, empId){
 }
 
 // ===== اینجا اضافه کن =====
+function saveDashboard(empId) {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (!emp) {
+        alert("❌ کارمند پیدا نشد!");
+        return;
+    }
+
+    const dashboardData = {
+        title: document.getElementById('dashTitle').value || "📊 DASHBOARD",
+        employeesLabel: document.getElementById('dashEmployees').value || "Employees",
+        balanceLabel: document.getElementById('dashBalance').value || "Total Balance",
+        transactionsLabel: document.getElementById('dashTransactions').value || "Today Transactions",
+        onlineLabel: document.getElementById('dashOnline').value || "Online",
+        offlineLabel: document.getElementById('dashOffline').value || "Offline",
+        rankLabel: document.getElementById('dashRank').value || "Your Rank",
+        scoreLabel: document.getElementById('dashScore').value || "Today Score"
+    };
+
+    // ===== ذخیره در Firebase برای هر کارمند =====
+    db.ref("employees/" + empId + "/dashboard").set(dashboardData)
+        .then(() => {
+            alert("✅ Dashboard ذخیره شد!");
+            showAdminPage();
+        })
+        .catch(err => {
+            alert("❌ خطا در ذخیره: " + err.message);
+        });
+}
+
 function row(icon, label, value) {
     return `
         <div class="info-row">
