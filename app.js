@@ -544,7 +544,7 @@ function login() {
       showLoadingScreen();
     })
     .catch((error) => {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         auth.createUserWithEmailAndPassword(email, pass)
           .then(() => {
             const emp = employees.find(e => e.id === id) || { id, type: "employee" };
@@ -4479,4 +4479,4 @@ async function translateWithGoogle(text, targetLang) {
         return text;
     }
 }
-
+  
