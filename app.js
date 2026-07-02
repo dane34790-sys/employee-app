@@ -299,55 +299,25 @@ function startSplashAnimation(resolve) {
     setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
-
   db.ref("employees").once("value")
     .then((snapshot) => {
-
       const data = snapshot.val();
 
       // ================== LOAD FROM FIREBASE ==================
-      if (Array.isArray(data) && data.length > 0) {
-
-        employees = data;
+      if (data && typeof data === "object") {
+        // ===== تبدیل Object به Array =====
+        employees = Object.values(data);
 
         employees.forEach(emp => {
-
-          if (!emp.documents) {
-            emp.documents = {};
-          }
-          if (emp.pass === undefined) {
-            emp.pass = "";
-          }
-
-          if (emp.documents.lineEnabled === undefined) {
-            emp.documents.lineEnabled = false;
-          }
-
-          if (!emp.documents.lineName) {
-            emp.documents.lineName = "";
-          }
-
-          if (!emp.documents.lineCode) {
-            emp.documents.lineCode = "";
-          }
-
-          if (!emp.documents.expiryStart) {
-            emp.documents.expiryStart = Date.now();
-          }
-
-          if (!emp.documents.files) {
-            emp.documents.files = [];
-          }
-
-          if (!emp.transactions) {
-            emp.transactions = [];
-          }
-
-          if (!emp.status) {
-            emp.status = "OFFLINE";
-          }
-
-          // ===== اضافه کردن dashboard به هر کارمند =====
+          if (!emp.documents) emp.documents = {};
+          if (emp.pass === undefined) emp.pass = "";
+          if (emp.documents.lineEnabled === undefined) emp.documents.lineEnabled = false;
+          if (!emp.documents.lineName) emp.documents.lineName = "";
+          if (!emp.documents.lineCode) emp.documents.lineCode = "";
+          if (!emp.documents.expiryStart) emp.documents.expiryStart = Date.now();
+          if (!emp.documents.files) emp.documents.files = [];
+          if (!emp.transactions) emp.transactions = [];
+          if (!emp.status) emp.status = "OFFLINE";
           if (!emp.dashboard) {
             emp.dashboard = {
               title: "📊 DASHBOARD",
@@ -360,105 +330,76 @@ function loadEmployees() {
               scoreLabel: "Today Score"
             };
           }
-
         });
 
-        // بکاپ داخل localStorage
-        localStorage.setItem(
-          "employees",
-          JSON.stringify(employees)
-        );
-
+        localStorage.setItem("employees", JSON.stringify(employees));
         showLogin();
         return;
       }
 
       // ================== FIREBASE EMPTY ==================
-
       const saved = localStorage.getItem("employees");
-
       if (saved) {
-
         try {
-
           employees = JSON.parse(saved);
-
           showLogin();
           return;
-
         } catch (e) {}
-
       }
 
-      // اگر هیچ داده‌ای نبود
-      employees = [
-        {
-          id: "1",
-          passport: "A123",
-          name: "Ali",
-          salary: "2500",
-          iban: "DE123",
-          cardNumber: "1111",
-          account: "ACC1",
-          status: "ONLINE",
-          expiry: "12/26",
-          ccv2: "123",
-          zip: "1000",
-          phone: "0912",
-          balance: 1000,
-
-          documents: {
-            lineEnabled: true,
-            lineName: "Line Hanover 5690",
-            lineCode: "12GF65SK98E53BD0",
-            expiryStart: Date.now(),
-            files: []
-          },
-
-          transactions: [],
-          
-          dashboard: {
-            title: "📊 DASHBOARD",
-            employeesLabel: "Employees",
-            balanceLabel: "Total Balance",
-            transactionsLabel: "Today Transactions",
-            onlineLabel: "Online",
-            offlineLabel: "Offline",
-            rankLabel: "Your Rank",
-            scoreLabel: "Today Score"
-          }
+      // ================== DEFAULT DATA ==================
+      employees = [{
+        id: "1",
+        passport: "A123",
+        name: "Ali",
+        salary: "2500",
+        iban: "DE123",
+        cardNumber: "1111",
+        account: "ACC1",
+        status: "ONLINE",
+        expiry: "12/26",
+        ccv2: "123",
+        zip: "1000",
+        phone: "0912",
+        balance: 1000,
+        documents: {
+          lineEnabled: true,
+          lineName: "Line Hanover 5690",
+          lineCode: "12GF65SK98E53BD0",
+          expiryStart: Date.now(),
+          files: []
+        },
+        transactions: [],
+        dashboard: {
+          title: "📊 DASHBOARD",
+          employeesLabel: "Employees",
+          balanceLabel: "Total Balance",
+          transactionsLabel: "Today Transactions",
+          onlineLabel: "Online",
+          offlineLabel: "Offline",
+          rankLabel: "Your Rank",
+          scoreLabel: "Today Score"
         }
-      ];
+      }];
 
       saveEmployees();
       showLogin();
 
     })
     .catch((err) => {
-
       console.error(err);
-
-      // اگر Firebase خطا داد از localStorage استفاده کن
       const saved = localStorage.getItem("employees");
-
       if (saved) {
-
         try {
           employees = JSON.parse(saved);
         } catch (e) {
           employees = [];
         }
-
       } else {
-
         employees = [];
-
       }
-
       showLogin();
-
     });
-
 }
 
 /* ================= UTIL ================= */
