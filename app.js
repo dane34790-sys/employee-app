@@ -296,25 +296,15 @@ function startSplashAnimation(resolve) {
     setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
-  // اول auth_users رو میخونیم (عمومی، نیاز به auth نداره)
-  db.ref("auth_users").once("value")
-    .then((snapshot) => {
-      const authData = snapshot.val();
-      window.authUsers = authData || {}; // ذخیره برای اعتبارسنجی
-      
-      // حالا employees رو میخونیم
-      return db.ref("employees").once("value");
-    })
+  // مستقیم employees رو از Firebase میخونیم
+  db.ref("employees").once("value")
     .then((snapshot) => {
       const data = snapshot.val();
 
       if (data && typeof data === "object") {
-        // اطلاعات employees رو با پسورد از auth_users ترکیب کن
         employees = Object.keys(data).map(key => ({
           id: key,
-          ...data[key],
-          // پسورد رو از auth_users میگیریم
-          pass: window.authUsers?.[key]?.pass || ''
+          ...data[key]
         }));
       } else {
         employees = [];
@@ -324,7 +314,6 @@ function loadEmployees() {
     })
     .catch((err) => {
       console.error("❌ Firebase Error:", err);
-      // اگر خطا بود، از localStorage استفاده کن
       const saved = localStorage.getItem("employees");
       if (saved) {
         try {
@@ -527,31 +516,51 @@ function login() {
     return;
   }
 
-  // ===== اعتبارسنجی از auth_users (عمومی) =====
-  const authEmp = window.authUsers ? Object.values(window.authUsers).find(u =>
-    u.id === id && u.pass === pass && u.phone === mobile
-  ) : null;
-  
-  if (!authEmp) return alert("❌ اطلاعات وارد شده اشتباه است");
-
-  // ===== ورود به Firebase Auth =====
+  // ===== ورود کارمند - فقط با Firebase Auth =====
   const email = id + "@employee-app.com";
   
   auth.signInWithEmailAndPassword(email, pass)
-    .then(() => {
-      const emp = employees.find(e => e.id === id) || { id, type: "employee" };
+    .then((userCredential) => {
+      // لاگین موفق - حالا اطلاعات کارمند رو از دیتابیس بگیر
+      return db.ref("employees/" + id).once("value");
+    })
+    .then((snapshot) => {
+      const empData = snapshot.val();
+      
+      if (!empData) {
+        // کارمند توی دیتابیس نیست، یه پروفایل پیش‌فرض بساز
+        const defaultEmp = {
+          id: id,
+          name: id,
+          phone: mobile,
+          type: "employee",
+          balance: 0
+        };
+        
+        return db.ref("employees/" + id).set(defaultEmp).then(() => defaultEmp);
+      }
+      
+      // چک کردن تلفن
+      if (empData.phone && empData.phone !== mobile) {
+        auth.signOut();
+        return alert("❌ شماره تلفن اشتباه است");
+      }
+      
+      return empData;
+    })
+    .then((emp) => {
       currentUser = { type: emp.type || "employee", emp };
       showLoadingScreen();
     })
     .catch((error) => {
-      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
-        auth.createUserWithEmailAndPassword(email, pass)
-          .then(() => {
-            const emp = employees.find(e => e.id === id) || { id, type: "employee" };
-            currentUser = { type: emp.type || "employee", emp };
-            showLoadingScreen();
-          })
-          .catch(err => alert("❌ خطا: " + err.message));
+      if (error.code === 'auth/user-not-found') {
+        alert("❌ کاربری با این مشخصات یافت نشد");
+      } else if (error.code === 'auth/wrong-password') {
+        alert("❌ رمز عبور اشتباه است");
+      } else if (error.code === 'auth/weak-password') {
+        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد");
+      } else if (error.code === 'auth/invalid-email') {
+        alert("❌ شناسه کاربری نامعتبر است");
       } else {
         alert("❌ خطا: " + error.message);
       }
@@ -1440,96 +1449,79 @@ function addEmployee() {
     const expiry = prompt("تاریخ انقضا (مثلاً 12/26) را وارد کنید:") || "";
     const ccv2 = prompt("کد CCV2 را وارد کنید:") || "";
     const zip = prompt("کد پستی را وارد کنید:") || "";
-    const pass = prompt("رمز عبور کارمند را وارد کنید:") || "1234";
+    const pass = prompt("رمز عبور (حداقل ۶ کاراکتر) را وارد کنید:") || "123456";
 
-    // ۲. ساختن کارمند جدید با همه فیلدها
+    // ۲. چک کردن طول رمز
+    if (pass.length < 6) {
+        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد!");
+        return;
+    }
+
     const newId = String(Date.now());
-    const newEmployee = {
-        id: newId,
-        passport: passport,
-        name: name,
-        salary: salary,
-        iban: iban,
-        cardNumber: cardNumber,
-        account: account,
-        status: "OFFLINE",
-        expiry: expiry,
-        ccv2: ccv2,
-        zip: zip,
-        phone: phone,
-        pass: pass,
-        balance: 0,
-        documents: {
-            lineEnabled: false,
-            lineName: "",
-            lineCode: "",
-            expiryStart: Date.now(),
-            files: [],
-            price: ""
-        },
-        sidebarMedia: { images: [] },
-        transactions: []
-    };
 
-    // ۳. اضافه کردن به آرایه محلی
-    employees.push(newEmployee);
-
-    // ۴. ذخیره در Firebase - auth_users (عمومی - برای لاگین)
-    db.ref("auth_users/" + newId).set({
-        id: newId,
-        pass: pass,
-        phone: phone
-    }).then(() => {
-        console.log("✅ auth_users ذخیره شد");
-    }).catch(err => {
-        console.error("❌ خطا در auth_users:", err);
-    });
-
-    // ۵. ذخیره در Firebase - employees (برای کاربران لاگین شده)
-    db.ref("employees/" + newId).set({
-        passport: passport,
-        name: name,
-        salary: salary,
-        iban: iban,
-        cardNumber: cardNumber,
-        account: account,
-        status: "OFFLINE",
-        expiry: expiry,
-        ccv2: ccv2,
-        zip: zip,
-        phone: phone,
-        balance: 0,
-        documents: {
-            lineEnabled: false,
-            lineName: "",
-            lineCode: "",
-            expiryStart: Date.now(),
-            files: [],
-            price: ""
-        },
-        sidebarMedia: { images: [] },
-        transactions: []
-    }).then(() => {
-        console.log("✅ employees ذخیره شد");
-    }).catch(err => {
-        console.error("❌ خطا در employees:", err);
-    });
-
-    // ۶. ذخیره در localStorage (پشتیبان)
-    saveEmployees();
-
-    // ۷. ساختن کاربر در Firebase Auth
+    // ۳. اول کاربر رو توی Firebase Auth می‌سازیم
     const email = newId + "@employee-app.com";
+    
     auth.createUserWithEmailAndPassword(email, pass)
-        .then(() => {
+        .then((userCredential) => {
             console.log("✅ Firebase Auth user created");
+            
+            // ۴. حالا اطلاعات رو توی دیتابیس ذخیره می‌کنیم
+            const newEmployee = {
+                id: newId,
+                passport: passport,
+                name: name,
+                salary: salary,
+                iban: iban,
+                cardNumber: cardNumber,
+                account: account,
+                status: "OFFLINE",
+                expiry: expiry,
+                ccv2: ccv2,
+                zip: zip,
+                phone: phone,
+                balance: 0,
+                documents: {
+                    lineEnabled: false,
+                    lineName: "",
+                    lineCode: "",
+                    expiryStart: Date.now(),
+                    files: [],
+                    price: ""
+                },
+                sidebarMedia: { images: [] },
+                transactions: []
+            };
+
+            // ۵. ذخیره در Firebase Database
+            return db.ref("employees/" + newId).set(newEmployee);
+        })
+        .then(() => {
+            // ۶. اضافه به آرایه محلی
+            employees.push({
+                id: newId,
+                passport: passport,
+                name: name,
+                phone: phone,
+                balance: 0
+            });
+            
+            // ۷. ذخیره در localStorage
+            localStorage.setItem("employees", JSON.stringify(employees));
+            
             alert("✅ کارمند با موفقیت اضافه شد!");
             showUI();
         })
-        .catch((err) => {
-            console.log("Auth error:", err);
-            alert("✅ کارمند در دیتابیس اضافه شد اما Firebase Auth خطا داد:\n" + err.message);
-            showUI();
+        .catch((error) => {
+            console.error("❌ خطا:", error);
+            
+            if (error.code === 'auth/email-already-in-use') {
+                alert("❌ این کاربر قبلاً ثبت شده است");
+            } else if (error.code === 'auth/weak-password') {
+                alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد");
+            } else {
+                alert("❌ خطا در ساخت کاربر: " + error.message);
+            }
         });
 }
 function deleteEmp(id) {
