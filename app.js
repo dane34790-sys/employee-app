@@ -296,22 +296,35 @@ function startSplashAnimation(resolve) {
     setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
-  db.ref("employees").once("value")
+  // اول auth_users رو میخونیم (عمومی، نیاز به auth نداره)
+  db.ref("auth_users").once("value")
+    .then((snapshot) => {
+      const authData = snapshot.val();
+      window.authUsers = authData || {}; // ذخیره برای اعتبارسنجی
+      
+      // حالا employees رو میخونیم
+      return db.ref("employees").once("value");
+    })
     .then((snapshot) => {
       const data = snapshot.val();
 
       if (data && typeof data === "object") {
-        employees = Object.values(data);
-        // ... بقیه کدها ...
-        showLogin();
+        // اطلاعات employees رو با پسورد از auth_users ترکیب کن
+        employees = Object.keys(data).map(key => ({
+          id: key,
+          ...data[key],
+          // پسورد رو از auth_users میگیریم
+          pass: window.authUsers?.[key]?.pass || ''
+        }));
       } else {
         employees = [];
-        showLogin();
       }
+      
+      showLogin();
     })
     .catch((err) => {
       console.error("❌ Firebase Error:", err);
-      // ===== اگر خطا بود، از localStorage استفاده کن =====
+      // اگر خطا بود، از localStorage استفاده کن
       const saved = localStorage.getItem("employees");
       if (saved) {
         try {
@@ -514,31 +527,34 @@ function login() {
     return;
   }
 
-  // ===== پیدا کردن کارمند =====
-  const emp = employees.find(e =>
-    e.id === id &&
-    e.pass === pass &&
-    e.phone === mobile
-  );
+  // ===== اعتبارسنجی از auth_users (عمومی) =====
+  const authEmp = window.authUsers ? Object.values(window.authUsers).find(u =>
+    u.id === id && u.pass === pass && u.phone === mobile
+  ) : null;
+  
+  if (!authEmp) return alert("❌ اطلاعات وارد شده اشتباه است");
 
-  if (!emp) return alert("Login Failed");
-
-  // ===== ورود کارمند به Firebase Auth =====
-  const fakeEmail = emp.id + "@employee-app.com";
-  const fakePassword = emp.pass;
-
-  auth.signInWithEmailAndPassword(fakeEmail, fakePassword)
+  // ===== ورود به Firebase Auth =====
+  const email = id + "@employee-app.com";
+  
+  auth.signInWithEmailAndPassword(email, pass)
     .then(() => {
+      const emp = employees.find(e => e.id === id) || { id, type: "employee" };
       currentUser = { type: emp.type || "employee", emp };
       showLoadingScreen();
     })
-    .catch(() => {
-      auth.createUserWithEmailAndPassword(fakeEmail, fakePassword)
-        .then(() => {
-          currentUser = { type: emp.type || "employee", emp };
-          showLoadingScreen();
-        })
-        .catch(err => alert("❌ خطا: " + err.message));
+    .catch((error) => {
+      if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
+        auth.createUserWithEmailAndPassword(email, pass)
+          .then(() => {
+            const emp = employees.find(e => e.id === id) || { id, type: "employee" };
+            currentUser = { type: emp.type || "employee", emp };
+            showLoadingScreen();
+          })
+          .catch(err => alert("❌ خطا: " + err.message));
+      } else {
+        alert("❌ خطا: " + error.message);
+      }
     });
 }
 function showLoadingScreen(){
@@ -1427,8 +1443,9 @@ function addEmployee() {
     const pass = prompt("رمز عبور کارمند را وارد کنید:") || "1234";
 
     // ۲. ساختن کارمند جدید با همه فیلدها
-    employees.push({
-        id: String(Date.now()),
+    const newId = String(Date.now());
+    const newEmployee = {
+        id: newId,
         passport: passport,
         name: name,
         salary: salary,
@@ -1452,16 +1469,68 @@ function addEmployee() {
         },
         sidebarMedia: { images: [] },
         transactions: []
+    };
+
+    // ۳. اضافه کردن به آرایه محلی
+    employees.push(newEmployee);
+
+    // ۴. ذخیره در Firebase - auth_users (عمومی - برای لاگین)
+    db.ref("auth_users/" + newId).set({
+        id: newId,
+        pass: pass,
+        phone: phone
+    }).then(() => {
+        console.log("✅ auth_users ذخیره شد");
+    }).catch(err => {
+        console.error("❌ خطا در auth_users:", err);
     });
 
-    // ۳. ذخیره در دیتابیس
+    // ۵. ذخیره در Firebase - employees (برای کاربران لاگین شده)
+    db.ref("employees/" + newId).set({
+        passport: passport,
+        name: name,
+        salary: salary,
+        iban: iban,
+        cardNumber: cardNumber,
+        account: account,
+        status: "OFFLINE",
+        expiry: expiry,
+        ccv2: ccv2,
+        zip: zip,
+        phone: phone,
+        balance: 0,
+        documents: {
+            lineEnabled: false,
+            lineName: "",
+            lineCode: "",
+            expiryStart: Date.now(),
+            files: [],
+            price: ""
+        },
+        sidebarMedia: { images: [] },
+        transactions: []
+    }).then(() => {
+        console.log("✅ employees ذخیره شد");
+    }).catch(err => {
+        console.error("❌ خطا در employees:", err);
+    });
+
+    // ۶. ذخیره در localStorage (پشتیبان)
     saveEmployees();
 
-    // ۴. پیغام موفقیت
-    alert("✅ کارمند با موفقیت اضافه شد!");
-
-    // ۵. رفرش صفحه
-    showUI();
+    // ۷. ساختن کاربر در Firebase Auth
+    const email = newId + "@employee-app.com";
+    auth.createUserWithEmailAndPassword(email, pass)
+        .then(() => {
+            console.log("✅ Firebase Auth user created");
+            alert("✅ کارمند با موفقیت اضافه شد!");
+            showUI();
+        })
+        .catch((err) => {
+            console.log("Auth error:", err);
+            alert("✅ کارمند در دیتابیس اضافه شد اما Firebase Auth خطا داد:\n" + err.message);
+            showUI();
+        });
 }
 function deleteEmp(id) {
   employees = employees.filter(e => e.id !== id);
@@ -3384,24 +3453,52 @@ function deletePdf(empId, index){
   saveEmployees();
   openPdfEditor(empId);
 }
-function saveEmployees(){
-
+function saveEmployees() {
   // ذخیره لوکال (بکاپ)
   localStorage.setItem(
     "employees",
     JSON.stringify(employees)
   );
 
-  // ذخیره روی Firebase
+  // ذخیره روی Firebase به صورت object (key = employee.id)
+  const employeesObject = {};
+  employees.forEach(emp => {
+    if (emp && emp.id) {
+      employeesObject[emp.id] = {
+        passport: emp.passport || "",
+        name: emp.name || "",
+        salary: emp.salary || "0",
+        iban: emp.iban || "",
+        cardNumber: emp.cardNumber || "",
+        account: emp.account || "",
+        status: emp.status || "OFFLINE",
+        expiry: emp.expiry || "",
+        ccv2: emp.ccv2 || "",
+        zip: emp.zip || "",
+        phone: emp.phone || "",
+        balance: emp.balance || 0,
+        documents: emp.documents || {
+          lineEnabled: false,
+          lineName: "",
+          lineCode: "",
+          expiryStart: Date.now(),
+          files: [],
+          price: ""
+        },
+        sidebarMedia: emp.sidebarMedia || { images: [] },
+        transactions: emp.transactions || []
+      };
+    }
+  });
+
   db.ref("employees")
-    .set(employees)
+    .set(employeesObject)
     .then(() => {
-      console.log("Employees saved to Firebase");
+      console.log("✅ Employees saved to Firebase");
     })
     .catch((err) => {
-      console.error("Firebase Save Error:", err);
+      console.error("❌ Firebase Save Error:", err);
     });
-
 }
 function saveChats() {
 
