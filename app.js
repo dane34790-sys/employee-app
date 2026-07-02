@@ -24,6 +24,19 @@ console.log("Firebase Ready");
 // 👇 امن‌ترین حالت برای جلوگیری از کرش
 console.log("currentUser =", window.currentUser);
 
+let employees = [];
+let currentUser = null;
+let currentChatEmpId = null;
+let selectedEmpId = null;
+let otpCode = "";
+let chats = JSON.parse(localStorage.getItem("chats") || "{}");
+
+const ADMIN = {
+  id: "dani",
+  pass: "19831983",
+  mobile: "123456789"
+};
+
 const pageStack = [];
 
 function pushPage(fn) {
@@ -64,22 +77,6 @@ function formatNumber(n){
   n = String(n || "0");
   return n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
-
-let employees = [];
-let currentUser = null;
-let currentChatEmpId = null; // 👈 این خط را اضافه کن
-
-let otpCode = "";
-
-let chats = JSON.parse(
-  localStorage.getItem("chats") || "{}"
-);
-
-const ADMIN = {
-  id: "dani",
-  pass: "19831983",
-  mobile: "123456789"
-};
 
 /* ================= INIT ================= */
 async function init() {
@@ -534,7 +531,8 @@ function login() {
   // ===== ورود ادمین =====
   if (id === ADMIN.id && pass === ADMIN.pass && mobile === ADMIN.mobile) {
     currentUser = { type: "admin" };
-    return showOTP();
+    showLoadingScreen(); // ← لود اسکرین
+    return;
   }
 
   // ===== پیدا کردن کارمند =====
@@ -547,72 +545,8 @@ function login() {
   if (!emp) return alert("Login Failed");
 
   currentUser = { type: emp.type || "employee", emp };
-  showOTP();
+  showLoadingScreen(); // ← لود اسکرین
 }
-function showOTP() {
-  otpCode = String(Math.floor(100000 + Math.random() * 900000));
-  alert("OTP: " + otpCode);
-
-  document.getElementById("app").innerHTML = `
-  <div class="screen">
-
-    <img src="images/login-bg.png" class="bg-full">
-
-    <div class="overlay">
-      <input id="otp" placeholder="OTP">
-      <button onclick="verifyOTP()">VERIFY</button>
-    </div>
-
-  </div>
-`;
-}
-function verifyOTP() {
-
-  if (v("otp") !== otpCode)
-    return alert("Wrong OTP");
-
-  showLoadingScreen();
-
-}
-
-/* ================= UI ================= */
-
-const loadingStyle = document.createElement("style");
-
-loadingStyle.innerHTML = `
-@keyframes spin{
-  from{transform:rotate(0deg);}
-  to{transform:rotate(360deg);}
-}
-
-@keyframes pulse{
-
-  0%{
-    box-shadow:
-    0 0 20px #ffd700,
-    0 0 50px #ffd700;
-  }
-
-  50%{
-    box-shadow:
-    0 0 40px #ffd700,
-    0 0 100px #ffd700,
-    0 0 160px rgba(255,215,0,.8);
-  }
-
-  100%{
-    box-shadow:
-    0 0 20px #ffd700,
-    0 0 50px #ffd700;
-  }
-
-}
-`;
-
-document.head.appendChild(loadingStyle);
-
-let selectedEmpId = null;
-
 function showLoadingScreen(){
 
   document.getElementById("app").innerHTML = `
@@ -851,9 +785,7 @@ setTimeout(() => {
   }, 30);
 
 }
-
 function showUI() {
-
   console.log("SHOWUI CALLED", currentUser);
 
   if (!currentUser) {
@@ -865,17 +797,12 @@ function showUI() {
   const isAdmin = currentUser.type === "admin";
   const list = isAdmin ? employees : [currentUser.emp];
 
-  // ===== کم کردن ۱ تومان به ازای هر بار ورود (فقط برای کارمندان) =====
-  // ===== حذف شد تا فقط در صفحه تراکنش انجام بشه =====
-  // ==========================================
-
   pushPage(() => showUI());
 
   if (!isAdmin) {
     selectedEmpId = currentUser.emp.id;
   }
 
-  // نمایش صفحه اول (برای کارمند) یا صفحه ادمین
   if (isAdmin) {
     showAdminPage();
   } else {
