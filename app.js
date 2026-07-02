@@ -1,8 +1,8 @@
 console.log("APP JS LOADED");
 
-// 👇 امن‌ترین حالت برای جلوگیری از کرش
-console.log("currentUser =", window.currentUser);
-
+// ==========================================
+// ===== مقداردهی Firebase =====
+// ==========================================
 const firebaseConfig = {
   apiKey: "AIzaSyAYsu4Ji-eFHx55ARX6_4PRb5SRfx-jrhw",
   authDomain: "employee-app-b7215.firebaseapp.com",
@@ -13,21 +13,24 @@ const firebaseConfig = {
   appId: "1:103868866433:web:b3d9773c2c0759845ad280"
 };
 
-// 🔥 Firebase init (compat mode)
 if (!firebase.apps.length) {
   firebase.initializeApp(firebaseConfig);
 }
 
 const db = firebase.database();
+const auth = firebase.auth();
 
 console.log("Firebase Ready");
+console.log("Auth available:", !!auth);
+
+// 👇 امن‌ترین حالت برای جلوگیری از کرش
+console.log("currentUser =", window.currentUser);
 
 const pageStack = [];
 
 function pushPage(fn) {
   pageStack.push(fn);
 
-  // state واقعی برای جلوگیری از خروج اشتباه
   history.pushState(
     { index: pageStack.length },
     "",
@@ -35,29 +38,20 @@ function pushPage(fn) {
   );
 }
 
-/* 👇 BACK SAFE HANDLER */
 window.addEventListener("popstate", () => {
-
-  // اگر فقط یک صفحه داریم → برگرد به هوم امن
   if (pageStack.length <= 1) {
     pageStack.length = 0;
-
-    // ❌ history.back() ممنوع چون اپ رو می‌بنده
     openMainPage();
     return;
   }
 
-  // حذف صفحه فعلی
   pageStack.pop();
-
   const prev = pageStack[pageStack.length - 1];
-
   if (typeof prev === "function") {
     prev();
   }
 });
 
-/* 👇 SAFE INIT */
 document.addEventListener("DOMContentLoaded", () => {
   try {
     if (typeof init === "function") {
@@ -597,25 +591,58 @@ function login() {
   const pass = v("pass");
   const mobile = v("mobile");
 
+  // ===== ورود ادمین =====
   if (id === ADMIN.id && pass === ADMIN.pass && mobile === ADMIN.mobile) {
-    currentUser = { type: "admin" };
-    return showOTP();
+    const adminEmail = "admin@employee-app.com";
+    const adminPass = "Admin@123456";
+    
+    auth.signInWithEmailAndPassword(adminEmail, adminPass)
+      .then(() => {
+        currentUser = { type: "admin" };
+        showOTP();
+      })
+      .catch(() => {
+        auth.createUserWithEmailAndPassword(adminEmail, adminPass)
+          .then(() => {
+            currentUser = { type: "admin" };
+            showOTP();
+          })
+          .catch(err => alert("❌ خطا در ورود ادمین: " + err.message));
+      });
+    return;
   }
 
+  // ===== پیدا کردن کارمند =====
   const emp = employees.find(e =>
-  e.id === id &&
-  e.pass === pass &&
-  e.phone === mobile
-);
+    e.id === id &&
+    e.pass === pass &&
+    e.phone === mobile
+  );
 
   if (!emp) return alert("Login Failed");
 
-  currentUser = { type: "employee", emp };
-  showOTP();
+  // ===== ساخت ایمیل ساختگی برای کارمند =====
+  const fakeEmail = emp.id + "@employee-app.com";
+  const fakePassword = emp.pass;
+
+  // ===== ورود به Firebase Auth =====
+  auth.signInWithEmailAndPassword(fakeEmail, fakePassword)
+    .then(() => {
+      currentUser = { type: emp.type || "employee", emp };
+      showOTP();
+    })
+    .catch(() => {
+      // اگر کاربر در Auth نبود، بسازش
+      auth.createUserWithEmailAndPassword(fakeEmail, fakePassword)
+        .then(() => {
+          currentUser = { type: emp.type || "employee", emp };
+          showOTP();
+        })
+        .catch(err => {
+          alert("❌ خطا در ورود: " + err.message);
+        });
+    });
 }
-
-/* ================= OTP ================= */
-
 function showOTP() {
   otpCode = String(Math.floor(100000 + Math.random() * 900000));
   alert("OTP: " + otpCode);
