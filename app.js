@@ -299,6 +299,9 @@ function startSplashAnimation(resolve) {
     setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
+  // ===== اول از همه، localStorage رو پاک کن تا دیتای قدیمی نیاد =====
+  localStorage.removeItem("employees");
+  
   db.ref("employees").once("value")
     .then((snapshot) => {
       const data = snapshot.val();
@@ -338,56 +341,13 @@ function loadEmployees() {
       }
 
       // ================== FIREBASE EMPTY ==================
-      const saved = localStorage.getItem("employees");
-      if (saved) {
-        try {
-          employees = JSON.parse(saved);
-          showLogin();
-          return;
-        } catch (e) {}
-      }
-
-      // ================== DEFAULT DATA ==================
-      employees = [{
-        id: "1",
-        passport: "A123",
-        name: "Ali",
-        salary: "2500",
-        iban: "DE123",
-        cardNumber: "1111",
-        account: "ACC1",
-        status: "ONLINE",
-        expiry: "12/26",
-        ccv2: "123",
-        zip: "1000",
-        phone: "0912",
-        balance: 1000,
-        documents: {
-          lineEnabled: true,
-          lineName: "Line Hanover 5690",
-          lineCode: "12GF65SK98E53BD0",
-          expiryStart: Date.now(),
-          files: []
-        },
-        transactions: [],
-        dashboard: {
-          title: "📊 DASHBOARD",
-          employeesLabel: "Employees",
-          balanceLabel: "Total Balance",
-          transactionsLabel: "Today Transactions",
-          onlineLabel: "Online",
-          offlineLabel: "Offline",
-          rankLabel: "Your Rank",
-          scoreLabel: "Today Score"
-        }
-      }];
-
-      saveEmployees();
+      employees = [];
       showLogin();
 
     })
     .catch((err) => {
-      console.error(err);
+      console.error("❌ Firebase Error:", err);
+      // ===== اگر Firebase خطا داد، از localStorage استفاده کن =====
       const saved = localStorage.getItem("employees");
       if (saved) {
         try {
