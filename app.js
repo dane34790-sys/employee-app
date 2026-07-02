@@ -18,6 +18,7 @@ if (!firebase.apps.length) {
 }
 
 const db = firebase.database();
+const auth = firebase.auth(); // ← اضافه شد
 
 console.log("Firebase Ready");
 
@@ -38,7 +39,6 @@ const ADMIN = {
 };
 
 const pageStack = [];
-
 function pushPage(fn) {
   pageStack.push(fn);
 
@@ -296,55 +296,22 @@ function startSplashAnimation(resolve) {
     setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
-  // ===== اول از همه، localStorage رو پاک کن تا دیتای قدیمی نیاد =====
-  localStorage.removeItem("employees");
-  
   db.ref("employees").once("value")
     .then((snapshot) => {
       const data = snapshot.val();
 
-      // ================== LOAD FROM FIREBASE ==================
       if (data && typeof data === "object") {
-        // ===== تبدیل Object به Array =====
         employees = Object.values(data);
-
-        employees.forEach(emp => {
-          if (!emp.documents) emp.documents = {};
-          if (emp.pass === undefined) emp.pass = "";
-          if (emp.documents.lineEnabled === undefined) emp.documents.lineEnabled = false;
-          if (!emp.documents.lineName) emp.documents.lineName = "";
-          if (!emp.documents.lineCode) emp.documents.lineCode = "";
-          if (!emp.documents.expiryStart) emp.documents.expiryStart = Date.now();
-          if (!emp.documents.files) emp.documents.files = [];
-          if (!emp.transactions) emp.transactions = [];
-          if (!emp.status) emp.status = "OFFLINE";
-          if (!emp.dashboard) {
-            emp.dashboard = {
-              title: "📊 DASHBOARD",
-              employeesLabel: "Employees",
-              balanceLabel: "Total Balance",
-              transactionsLabel: "Today Transactions",
-              onlineLabel: "Online",
-              offlineLabel: "Offline",
-              rankLabel: "Your Rank",
-              scoreLabel: "Today Score"
-            };
-          }
-        });
-
-        localStorage.setItem("employees", JSON.stringify(employees));
+        // ... بقیه کدها ...
         showLogin();
-        return;
+      } else {
+        employees = [];
+        showLogin();
       }
-
-      // ================== FIREBASE EMPTY ==================
-      employees = [];
-      showLogin();
-
     })
     .catch((err) => {
       console.error("❌ Firebase Error:", err);
-      // ===== اگر Firebase خطا داد، از localStorage استفاده کن =====
+      // ===== اگر خطا بود، از localStorage استفاده کن =====
       const saved = localStorage.getItem("employees");
       if (saved) {
         try {
@@ -358,8 +325,6 @@ function loadEmployees() {
       showLogin();
     });
 }
-
-/* ================= UTIL ================= */
 function toEnglishDate(dateStr) {
   if (!dateStr) return "";
 
@@ -530,8 +495,22 @@ function login() {
 
   // ===== ورود ادمین =====
   if (id === ADMIN.id && pass === ADMIN.pass && mobile === ADMIN.mobile) {
-    currentUser = { type: "admin" };
-    showLoadingScreen(); // ← لود اسکرین
+    const adminEmail = "admin@employee-app.com";
+    const adminPass = "Admin@123456";
+    
+    auth.signInWithEmailAndPassword(adminEmail, adminPass)
+      .then(() => {
+        currentUser = { type: "admin" };
+        showLoadingScreen();
+      })
+      .catch(() => {
+        auth.createUserWithEmailAndPassword(adminEmail, adminPass)
+          .then(() => {
+            currentUser = { type: "admin" };
+            showLoadingScreen();
+          })
+          .catch(err => alert("❌ خطا: " + err.message));
+      });
     return;
   }
 
@@ -544,8 +523,23 @@ function login() {
 
   if (!emp) return alert("Login Failed");
 
-  currentUser = { type: emp.type || "employee", emp };
-  showLoadingScreen(); // ← لود اسکرین
+  // ===== ورود کارمند به Firebase Auth =====
+  const fakeEmail = emp.id + "@employee-app.com";
+  const fakePassword = emp.pass;
+
+  auth.signInWithEmailAndPassword(fakeEmail, fakePassword)
+    .then(() => {
+      currentUser = { type: emp.type || "employee", emp };
+      showLoadingScreen();
+    })
+    .catch(() => {
+      auth.createUserWithEmailAndPassword(fakeEmail, fakePassword)
+        .then(() => {
+          currentUser = { type: emp.type || "employee", emp };
+          showLoadingScreen();
+        })
+        .catch(err => alert("❌ خطا: " + err.message));
+    });
 }
 function showLoadingScreen(){
 
