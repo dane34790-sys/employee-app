@@ -18,10 +18,8 @@ if (!firebase.apps.length) {
 }
 
 const db = firebase.database();
-const auth = firebase.auth();
 
 console.log("Firebase Ready");
-console.log("Auth available:", !!auth);
 
 // 👇 امن‌ترین حالت برای جلوگیری از کرش
 console.log("currentUser =", window.currentUser);
@@ -92,172 +90,213 @@ async function init() {
     loadEmployees();
     listenChats();
 }
+
 function showSplashScreen() {
     return new Promise((resolve) => {
-        const messages = [
-            "🔹 Initializing System...",
-            "🔹 Loading Modules...",
-            "🔹 Connecting to Database...",
-            "🔹 Server Status: ONLINE",
-            "🔹 Encryption: ACTIVE",
-            "🔹 System Ready!"
-        ];
-
-        let msgIndex = 0;
-        let charIndex = 0;
-        let progress = 0;
-
-        document.getElementById("app").innerHTML = `
-            <div class="splash-screen" style="
-                display:flex;
-                flex-direction:column;
-                justify-content:center;
-                align-items:center;
-                height:100vh;
-                background:#0a0a0a;
-                color:#00ff88;
-                font-family:'Courier New', monospace;
-                padding:20px;
-            ">
-                <!-- ===== خط اول: MR.ARIAN ===== -->
-                <div style="display:flex; gap:4px; margin-bottom:4px; justify-content:center;">
-                    ${["M","R",".","A","R","I","A","N"].map((char, i) => `
-                        <div id="charBox_${i}" style="
-                            width:32px;
-                            height:40px;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            font-size:18px;
+        // ===== چک کردن اتصال به Firebase =====
+        const connectedRef = firebase.database().ref(".info/connected");
+        
+        connectedRef.on("value", (snap) => {
+            if (snap.val() === true) {
+                // ===== اتصال برقرار است، صفحه لود رو نشون بده =====
+                startSplashAnimation(resolve);
+            } else {
+                // ===== بدون اتصال، پیغام خطا نشون بده =====
+                document.getElementById("app").innerHTML = `
+                    <div class="splash-screen" style="
+                        display:flex;
+                        flex-direction:column;
+                        justify-content:center;
+                        align-items:center;
+                        height:100vh;
+                        background:#0a0a0a;
+                        color:#00ff88;
+                        font-family:'Courier New', monospace;
+                        padding:20px;
+                    ">
+                        <div style="font-size:24px; margin-bottom:20px;">📡</div>
+                        <div style="font-size:18px; color:#ff5252; margin-bottom:10px;">NO INTERNET CONNECTION</div>
+                        <div style="font-size:14px; color:rgba(255,255,255,0.4);">Please check your connection and try again.</div>
+                        <button onclick="showSplashScreen()" style="
+                            margin-top:30px;
+                            padding:12px 30px;
+                            background:#00ff88;
+                            color:#000;
+                            border:none;
+                            border-radius:8px;
                             font-weight:bold;
-                            background:rgba(0,255,136,0.03);
-                            border:1px solid rgba(0,255,136,0.08);
-                            border-radius:4px;
-                            color:rgba(0,255,136,0.08);
-                            transition:all 0.4s ease;
-                            font-family:'Courier New', monospace;
+                            cursor:pointer;
                         ">
-                            ${char}
-                        </div>
-                    `).join('')}
-                </div>
+                            🔄 RETRY
+                        </button>
+                    </div>
+                `;
+            }
+        });
+    });
+}
 
-                <!-- ===== خط دوم: ROY ===== -->
-                <div style="display:flex; gap:4px; margin-bottom:30px; justify-content:center;">
-                    ${["R","O","Y"].map((char, i) => `
-                        <div id="charBox_${i + 8}" style="
-                            width:32px;
-                            height:40px;
-                            display:flex;
-                            align-items:center;
-                            justify-content:center;
-                            font-size:18px;
-                            font-weight:bold;
-                            background:rgba(0,255,136,0.03);
-                            border:1px solid rgba(0,255,136,0.08);
-                            border-radius:4px;
-                            color:rgba(0,255,136,0.08);
-                            transition:all 0.4s ease;
-                            font-family:'Courier New', monospace;
-                        ">
-                            ${char}
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div style="font-size:11px; color:rgba(0,255,136,0.2); margin-bottom:20px; letter-spacing:3px;">
-                    ─── SYSTEM INITIALIZATION ───
-                </div>
-                
-                <div id="typingText" style="
-                    font-size:14px;
-                    min-height:150px;
-                    color:#00ff88;
-                    text-shadow:0 0 20px rgba(0,255,136,0.15);
-                    font-family:'Courier New', monospace;
-                    text-align:left;
-                    letter-spacing:1px;
-                    margin-bottom:20px;
-                    line-height:1.8;
-                    width:80%;
-                    max-width:350px;
-                ">
-                    <span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>
-                </div>
+function startSplashAnimation(resolve) {
+    const messages = [
+        "🔹 Initializing System...",
+        "🔹 Loading Modules...",
+        "🔹 Connecting to Database...",
+        "🔹 Server Status: ONLINE",
+        "🔹 Encryption: ACTIVE",
+        "🔹 System Ready!"
+    ];
 
-                <div style="width:60%; max-width:300px; height:3px; background:rgba(0,255,136,0.06); border-radius:2px; overflow:hidden; border:1px solid rgba(0,255,136,0.03);">
-                    <div id="progressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ff88, #00c853, #00ff88); background-size:200% 100%; animation: progressGlow 1.5s ease-in-out infinite; border-radius:2px; transition:width 0.3s;"></div>
-                </div>
-                
-                <div style="margin-top:12px; font-size:11px; color:rgba(0,255,136,0.35); letter-spacing:2px;">
-                    <span id="progressText">0%</span>
-                </div>
+    let msgIndex = 0;
+    let charIndex = 0;
+    let progress = 0;
+
+    document.getElementById("app").innerHTML = `
+        <div class="splash-screen" style="
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            height:100vh;
+            background:#0a0a0a;
+            color:#00ff88;
+            font-family:'Courier New', monospace;
+            padding:20px;
+        ">
+            <!-- ===== خط اول: MR.ARIAN ===== -->
+            <div style="display:flex; gap:4px; margin-bottom:4px; justify-content:center;">
+                ${["M","R",".","A","R","I","A","N"].map((char, i) => `
+                    <div id="charBox_${i}" style="
+                        width:32px;
+                        height:40px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:18px;
+                        font-weight:bold;
+                        background:rgba(0,255,136,0.03);
+                        border:1px solid rgba(0,255,136,0.08);
+                        border-radius:4px;
+                        color:rgba(0,255,136,0.08);
+                        transition:all 0.4s ease;
+                        font-family:'Courier New', monospace;
+                    ">
+                        ${char}
+                    </div>
+                `).join('')}
             </div>
 
-            <style>
-                @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
-                @keyframes progressGlow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-                .char-active {
-                    background:rgba(0,255,136,0.2) !important;
-                    border-color:#00ff88 !important;
-                    color:#00ff88 !important;
-                    box-shadow:0 0 25px rgba(0,255,136,0.25) !important;
-                    transform:scale(1.05);
-                }
-            </style>
-        `;
-
-        const totalChars = 11;
-        let currentCharIndex = 0;
-        const typingElement = document.getElementById('typingText');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-
-        // ===== روشن کردن دونه‌دونه کادرها =====
-        function lightUpNextChar() {
-            if (currentCharIndex < totalChars) {
-                const box = document.getElementById(`charBox_${currentCharIndex}`);
-                if (box) box.classList.add('char-active');
-                currentCharIndex++;
-                setTimeout(lightUpNextChar, 200);
-            }
-        }
-        setTimeout(lightUpNextChar, 300);
-
-        // ===== تایپ نوشته‌ها =====
-        function typeMessage() {
-            if (msgIndex >= messages.length) {
-                // ===== بعد از اتمام، ۲ ثانیه مکث و بعد رزول =====
-                setTimeout(() => {
-                    resolve();
-                }, 2000);
-                return;
-            }
-
-            const fullText = messages[msgIndex];
-            const displayText = fullText.substring(0, charIndex);
+            <!-- ===== خط دوم: ROY ===== -->
+            <div style="display:flex; gap:4px; margin-bottom:30px; justify-content:center;">
+                ${["R","O","Y"].map((char, i) => `
+                    <div id="charBox_${i + 8}" style="
+                        width:32px;
+                        height:40px;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        font-size:18px;
+                        font-weight:bold;
+                        background:rgba(0,255,136,0.03);
+                        border:1px solid rgba(0,255,136,0.08);
+                        border-radius:4px;
+                        color:rgba(0,255,136,0.08);
+                        transition:all 0.4s ease;
+                        font-family:'Courier New', monospace;
+                    ">
+                        ${char}
+                    </div>
+                `).join('')}
+            </div>
             
-            let fullDisplay = '';
-            for (let i = 0; i < msgIndex; i++) fullDisplay += messages[i] + '\n';
-            fullDisplay += displayText;
+            <div style="font-size:11px; color:rgba(0,255,136,0.2); margin-bottom:20px; letter-spacing:3px;">
+                ─── SYSTEM INITIALIZATION ───
+            </div>
+            
+            <div id="typingText" style="
+                font-size:14px;
+                min-height:150px;
+                color:#00ff88;
+                text-shadow:0 0 20px rgba(0,255,136,0.15);
+                font-family:'Courier New', monospace;
+                text-align:left;
+                letter-spacing:1px;
+                margin-bottom:20px;
+                line-height:1.8;
+                width:80%;
+                max-width:350px;
+            ">
+                <span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>
+            </div>
 
-            typingElement.innerHTML = `${fullDisplay}<span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>`;
+            <div style="width:60%; max-width:300px; height:3px; background:rgba(0,255,136,0.06); border-radius:2px; overflow:hidden; border:1px solid rgba(0,255,136,0.03);">
+                <div id="progressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ff88, #00c853, #00ff88); background-size:200% 100%; animation: progressGlow 1.5s ease-in-out infinite; border-radius:2px; transition:width 0.3s;"></div>
+            </div>
+            
+            <div style="margin-top:12px; font-size:11px; color:rgba(0,255,136,0.35); letter-spacing:2px;">
+                <span id="progressText">0%</span>
+            </div>
+        </div>
 
-            progress = (msgIndex / messages.length) * 100 + (charIndex / fullText.length) * (100 / messages.length);
-            progressBar.style.width = Math.min(progress, 100) + "%";
-            progressText.textContent = Math.floor(Math.min(progress, 100)) + "%";
-
-            charIndex++;
-            if (charIndex <= fullText.length) {
-                setTimeout(typeMessage, 70);
-            } else {
-                msgIndex++;
-                charIndex = 0;
-                setTimeout(typeMessage, 400);
+        <style>
+            @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+            @keyframes progressGlow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+            .char-active {
+                background:rgba(0,255,136,0.2) !important;
+                border-color:#00ff88 !important;
+                color:#00ff88 !important;
+                box-shadow:0 0 25px rgba(0,255,136,0.25) !important;
+                transform:scale(1.05);
             }
+        </style>
+    `;
+
+    const totalChars = 11;
+    let currentCharIndex = 0;
+    const typingElement = document.getElementById('typingText');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+
+    function lightUpNextChar() {
+        if (currentCharIndex < totalChars) {
+            const box = document.getElementById(`charBox_${currentCharIndex}`);
+            if (box) box.classList.add('char-active');
+            currentCharIndex++;
+            setTimeout(lightUpNextChar, 200);
         }
-        setTimeout(typeMessage, 300);
-    });
+    }
+    setTimeout(lightUpNextChar, 300);
+
+    function typeMessage() {
+        if (msgIndex >= messages.length) {
+            setTimeout(() => {
+                resolve();
+            }, 2000);
+            return;
+        }
+
+        const fullText = messages[msgIndex];
+        const displayText = fullText.substring(0, charIndex);
+        
+        let fullDisplay = '';
+        for (let i = 0; i < msgIndex; i++) fullDisplay += messages[i] + '\n';
+        fullDisplay += displayText;
+
+        typingElement.innerHTML = `${fullDisplay}<span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>`;
+
+        progress = (msgIndex / messages.length) * 100 + (charIndex / fullText.length) * (100 / messages.length);
+        progressBar.style.width = Math.min(progress, 100) + "%";
+        progressText.textContent = Math.floor(Math.min(progress, 100)) + "%";
+
+        charIndex++;
+        if (charIndex <= fullText.length) {
+            setTimeout(typeMessage, 70);
+        } else {
+            msgIndex++;
+            charIndex = 0;
+            setTimeout(typeMessage, 400);
+        }
+    }
+    setTimeout(typeMessage, 300);
 }
 function loadEmployees() {
 
@@ -593,23 +632,8 @@ function login() {
 
   // ===== ورود ادمین =====
   if (id === ADMIN.id && pass === ADMIN.pass && mobile === ADMIN.mobile) {
-    const adminEmail = "admin@employee-app.com";
-    const adminPass = "Admin@123456";
-    
-    auth.signInWithEmailAndPassword(adminEmail, adminPass)
-      .then(() => {
-        currentUser = { type: "admin" };
-        showOTP();
-      })
-      .catch(() => {
-        auth.createUserWithEmailAndPassword(adminEmail, adminPass)
-          .then(() => {
-            currentUser = { type: "admin" };
-            showOTP();
-          })
-          .catch(err => alert("❌ خطا در ورود ادمین: " + err.message));
-      });
-    return;
+    currentUser = { type: "admin" };
+    return showOTP();
   }
 
   // ===== پیدا کردن کارمند =====
@@ -621,27 +645,8 @@ function login() {
 
   if (!emp) return alert("Login Failed");
 
-  // ===== ساخت ایمیل ساختگی برای کارمند =====
-  const fakeEmail = emp.id + "@employee-app.com";
-  const fakePassword = emp.pass;
-
-  // ===== ورود به Firebase Auth =====
-  auth.signInWithEmailAndPassword(fakeEmail, fakePassword)
-    .then(() => {
-      currentUser = { type: emp.type || "employee", emp };
-      showOTP();
-    })
-    .catch(() => {
-      // اگر کاربر در Auth نبود، بسازش
-      auth.createUserWithEmailAndPassword(fakeEmail, fakePassword)
-        .then(() => {
-          currentUser = { type: emp.type || "employee", emp };
-          showOTP();
-        })
-        .catch(err => {
-          alert("❌ خطا در ورود: " + err.message);
-        });
-    });
+  currentUser = { type: emp.type || "employee", emp };
+  showOTP();
 }
 function showOTP() {
   otpCode = String(Math.floor(100000 + Math.random() * 900000));
