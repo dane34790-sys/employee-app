@@ -540,11 +540,11 @@ function login() {
         return db.ref("employees/" + id).set(defaultEmp).then(() => defaultEmp);
       }
       
-      // چک کردن تلفن
-      if (empData.phone && empData.phone !== mobile) {
-        auth.signOut();
-        return alert("❌ شماره تلفن اشتباه است");
-      }
+      // چک کردن تلفن - موقتاً غیرفعال
+      // if (empData.phone && empData.phone !== mobile) {
+      //   auth.signOut();
+      //   return alert("❌ شماره تلفن اشتباه است");
+      // }
       
       return empData;
     })
