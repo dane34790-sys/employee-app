@@ -532,13 +532,13 @@ function login() {
           type: data?.type || "employee",
           emp: data || { id: id, name: id, phone: mobile }
         };
-        showLoadingScreen();
+        showOTP();
       }).catch(() => {
         currentUser = {
           type: "employee",
           emp: { id: id, name: id, phone: mobile }
         };
-        showLoadingScreen();
+        showOTP();
       });
     })
     .catch((error) => {
@@ -550,6 +550,199 @@ function login() {
         alert("❌ خطا: " + error.message);
       }
     });
+}
+
+let otpTimer;
+let otpSeconds;
+
+function showOTP() {
+  otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  otpSeconds = 30;
+  
+  // Show OTP to employee
+  alert("📱 Your OTP Code: " + otpCode);
+
+  document.getElementById("app").innerHTML = `
+  <div class="screen">
+    <img src="images/login-bg.png" class="bg-full">
+    <div class="overlay">
+      <h3 style="color:white; text-align:center; margin-bottom:5px; font-size:16px;">📱 Enter OTP Code</h3>
+      <p style="color:rgba(255,255,255,0.6); text-align:center; font-size:11px; margin-bottom:8px;">
+        Code sent to your Employee ID
+      </p>
+      
+      <!-- تایمر شیشه‌ای -->
+      <div id="otpTimerBox" style="
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:6px;
+        margin-bottom:18px;
+        padding:8px 15px;
+        border-radius:25px;
+        border:1px solid rgba(255,255,255,0.15);
+        background:rgba(255,255,255,0.04);
+        backdrop-filter:blur(15px);
+        -webkit-backdrop-filter:blur(15px);
+        width:fit-content;
+        margin-left:auto;
+        margin-right:auto;
+      ">
+        <span style="font-size:13px; color:rgba(255,255,255,0.5);">⏱</span>
+        <span id="otpCountdown" style="
+          font-size:14px;
+          font-weight:bold;
+          color:#00ff88;
+          text-shadow:0 0 10px rgba(0,255,136,0.4);
+          min-width:25px;
+          text-align:center;
+        ">60</span>
+        <span style="font-size:11px; color:rgba(255,255,255,0.4);">sec</span>
+      </div>
+      
+      <input id="otp" placeholder="6-digit code" type="number" maxlength="6" style="
+        font-size:16px;
+        text-align:center;
+        letter-spacing:6px;
+        padding:10px 15px;
+        width:70%;
+        max-width:200px;
+        margin:0 auto;
+        display:block;
+        border-radius:10px;
+        border:1px solid rgba(255,255,255,0.2);
+        background:rgba(255,255,255,0.05);
+        backdrop-filter:blur(10px);
+        -webkit-backdrop-filter:blur(10px);
+        color:white;
+        outline:none;
+      ">
+      <button onclick="verifyOTP()" style="
+        margin-top:15px;
+        padding:8px 25px;
+        font-size:13px;
+        border-radius:20px;
+        border:1px solid rgba(255,255,255,0.2);
+        background:rgba(255,255,255,0.08);
+        backdrop-filter:blur(10px);
+        -webkit-backdrop-filter:blur(10px);
+        color:white;
+        cursor:pointer;
+        letter-spacing:2px;
+      ">VERIFY</button>
+      
+      <button id="resendBtn" onclick="resendOTP()" disabled style="
+        margin-top:12px;
+        padding:6px 18px;
+        font-size:11px;
+        border-radius:15px;
+        border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.03);
+        backdrop-filter:blur(10px);
+        -webkit-backdrop-filter:blur(10px);
+        color:rgba(255,255,255,0.3);
+        cursor:not-allowed;
+        letter-spacing:1px;
+      ">Resend Code</button>
+    </div>
+  </div>
+`;
+  
+  // شروع تایمر
+  startOTPTimer();
+}
+
+function startOTPTimer() {
+  clearInterval(otpTimer);
+  
+  otpTimer = setInterval(() => {
+    otpSeconds--;
+    
+    const countdownEl = document.getElementById("otpCountdown");
+    const resendBtn = document.getElementById("resendBtn");
+    const timerBox = document.getElementById("otpTimerBox");
+    
+    if (countdownEl) {
+      countdownEl.textContent = otpSeconds;
+      
+      // تغییر رنگ تایمر نزدیک به صفر
+      if (otpSeconds <= 10) {
+        countdownEl.style.color = "#ff5252";
+        countdownEl.style.textShadow = "0 0 10px rgba(255,82,82,0.6)";
+      }
+    }
+    
+    if (otpSeconds <= 0) {
+      clearInterval(otpTimer);
+      
+      if (countdownEl) {
+        countdownEl.textContent = "0";
+        countdownEl.style.color = "#ff5252";
+      }
+      
+      if (resendBtn) {
+        resendBtn.disabled = false;
+        resendBtn.style.color = "white";
+        resendBtn.style.cursor = "pointer";
+        resendBtn.style.border = "1px solid rgba(255,255,255,0.3)";
+        resendBtn.style.background = "rgba(255,255,255,0.1)";
+      }
+      
+      if (timerBox) {
+        timerBox.style.border = "1px solid rgba(255,82,82,0.3)";
+      }
+    }
+  }, 1000);
+}
+
+function resendOTP() {
+  otpCode = String(Math.floor(100000 + Math.random() * 900000));
+  otpSeconds = 30;
+  
+  alert("📱 Your New OTP Code: " + otpCode);
+  
+  // ریست تایمر
+  const countdownEl = document.getElementById("otpCountdown");
+  const resendBtn = document.getElementById("resendBtn");
+  const timerBox = document.getElementById("otpTimerBox");
+  
+  if (countdownEl) {
+    countdownEl.textContent = "30";
+    countdownEl.style.color = "#00ff88";
+    countdownEl.style.textShadow = "0 0 10px rgba(0,255,136,0.4)";
+  }
+  
+  if (resendBtn) {
+    resendBtn.disabled = true;
+    resendBtn.style.color = "rgba(255,255,255,0.3)";
+    resendBtn.style.cursor = "not-allowed";
+    resendBtn.style.border = "1px solid rgba(255,255,255,0.1)";
+    resendBtn.style.background = "rgba(255,255,255,0.03)";
+  }
+  
+  if (timerBox) {
+    timerBox.style.border = "1px solid rgba(255,255,255,0.15)";
+  }
+  
+  // پاک کردن input
+  const otpInput = document.getElementById("otp");
+  if (otpInput) otpInput.value = "";
+  
+  clearInterval(otpTimer);
+  startOTPTimer();
+}
+
+function verifyOTP() {
+  const enteredOTP = v("otp");
+  
+  if (enteredOTP !== otpCode) {
+    return alert("❌ Wrong OTP Code");
+  }
+  
+  clearInterval(otpTimer);
+  
+  // OTP verified, go to loading screen
+  showLoadingScreen();
 }
 function showLoadingScreen(){
 
