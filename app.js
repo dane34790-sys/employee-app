@@ -559,6 +559,9 @@ function showOTP() {
   otpCode = String(Math.floor(100000 + Math.random() * 900000));
   otpSeconds = 30;
   
+  // ===== صدای OTP =====
+  playOTPSound();
+  
   // Show OTP to employee
   alert("📱 Your OTP Code: " + otpCode);
 
@@ -596,7 +599,7 @@ function showOTP() {
           text-shadow:0 0 10px rgba(0,255,136,0.4);
           min-width:25px;
           text-align:center;
-        ">60</span>
+        ">30</span>
         <span style="font-size:11px; color:rgba(255,255,255,0.4);">sec</span>
       </div>
       
@@ -652,6 +655,104 @@ function showOTP() {
   startOTPTimer();
 }
 
+// ===== صدای OTP =====
+function playOTPSound() {
+  try {
+    // ساخت صدای Beep با Web Audio API
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // صدای اول: Ding
+    const osc1 = audioCtx.createOscillator();
+    const gain1 = audioCtx.createGain();
+    osc1.connect(gain1);
+    gain1.connect(audioCtx.destination);
+    osc1.frequency.value = 800;
+    osc1.type = "sine";
+    gain1.gain.setValueAtTime(0.3, audioCtx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+    osc1.start(audioCtx.currentTime);
+    osc1.stop(audioCtx.currentTime + 0.3);
+    
+    // صدای دوم: Dong (بعد ۰.۲ ثانیه)
+    setTimeout(() => {
+      const osc2 = audioCtx.createOscillator();
+      const gain2 = audioCtx.createGain();
+      osc2.connect(gain2);
+      gain2.connect(audioCtx.destination);
+      osc2.frequency.value = 1000;
+      osc2.type = "sine";
+      gain2.gain.setValueAtTime(0.3, audioCtx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+      osc2.start(audioCtx.currentTime);
+      osc2.stop(audioCtx.currentTime + 0.4);
+    }, 200);
+    
+  } catch(e) {
+    console.log("صدا پخش نشد:", e);
+  }
+}
+
+// ===== انیمیشن اسم کارمند =====
+function showWelcomeAnimation() {
+  const empName = currentUser?.emp?.name || currentUser?.emp?.id || "Employee";
+  
+  document.getElementById("app").innerHTML = `
+  <div style="
+    height:100vh;
+    background:#000;
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-family:Consolas, monospace;
+  ">
+    <div id="welcomeBox" style="
+      text-align:center;
+      opacity:0;
+      transform:scale(0.5);
+      transition:all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    ">
+      <div style="font-size:40px; margin-bottom:10px;">👋</div>
+      <div style="
+        font-size:14px;
+        color:rgba(255,255,255,0.5);
+        letter-spacing:3px;
+        margin-bottom:15px;
+      ">WELCOME BACK</div>
+      <div style="
+        font-size:28px;
+        font-weight:bold;
+        color:#00ff88;
+        text-shadow:0 0 30px rgba(0,255,136,0.5);
+        letter-spacing:2px;
+      ">${empName}</div>
+      <div style="
+        margin-top:20px;
+        width:100px;
+        height:2px;
+        background:linear-gradient(90deg, transparent, #00ff88, transparent);
+        margin-left:auto;
+        margin-right:auto;
+      "></div>
+    </div>
+  </div>
+`;
+  
+  // انیمیشن
+  setTimeout(() => {
+    const box = document.getElementById("welcomeBox");
+    if (box) {
+      box.style.opacity = "1";
+      box.style.transform = "scale(1)";
+    }
+  }, 100);
+  
+  // بعد ۲.۵ ثانیه برو به صفحه اصلی
+  setTimeout(() => {
+  showLoadingScreen();
+}, 2500);
+}
+
 function startOTPTimer() {
   clearInterval(otpTimer);
   
@@ -665,7 +766,6 @@ function startOTPTimer() {
     if (countdownEl) {
       countdownEl.textContent = otpSeconds;
       
-      // تغییر رنگ تایمر نزدیک به صفر
       if (otpSeconds <= 10) {
         countdownEl.style.color = "#ff5252";
         countdownEl.style.textShadow = "0 0 10px rgba(255,82,82,0.6)";
@@ -699,9 +799,10 @@ function resendOTP() {
   otpCode = String(Math.floor(100000 + Math.random() * 900000));
   otpSeconds = 30;
   
+  playOTPSound();
+  
   alert("📱 Your New OTP Code: " + otpCode);
   
-  // ریست تایمر
   const countdownEl = document.getElementById("otpCountdown");
   const resendBtn = document.getElementById("resendBtn");
   const timerBox = document.getElementById("otpTimerBox");
@@ -724,7 +825,6 @@ function resendOTP() {
     timerBox.style.border = "1px solid rgba(255,255,255,0.15)";
   }
   
-  // پاک کردن input
   const otpInput = document.getElementById("otp");
   if (otpInput) otpInput.value = "";
   
@@ -741,8 +841,8 @@ function verifyOTP() {
   
   clearInterval(otpTimer);
   
-  // OTP verified, go to loading screen
-  showLoadingScreen();
+  // نمایش انیمیشن خوش‌آمدگویی
+  showWelcomeAnimation();
 }
 function showLoadingScreen(){
 
