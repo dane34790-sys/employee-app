@@ -516,51 +516,32 @@ function login() {
     return;
   }
 
-  // ===== ورود کارمند - فقط با Firebase Auth =====
+  // ===== ورود کارمند =====
   const email = id + "@employee-app.com";
   
   auth.signInWithEmailAndPassword(email, pass)
-    .then((userCredential) => {
-      // لاگین موفق - حالا اطلاعات کارمند رو از دیتابیس بگیر
-      return db.ref("employees/" + id).once("value");
-    })
-    .then((snapshot) => {
-      const empData = snapshot.val();
-      
-      if (!empData) {
-        // کارمند توی دیتابیس نیست، یه پروفایل پیش‌فرض بساز
-        const defaultEmp = {
+    .then(() => {
+      // لاگین موفق
+      currentUser = {
+        type: "employee",
+        emp: {
           id: id,
           name: id,
           phone: mobile,
-          type: "employee",
           balance: 0
-        };
-        
-        return db.ref("employees/" + id).set(defaultEmp).then(() => defaultEmp);
-      }
-      
-      // چک کردن تلفن - موقتاً غیرفعال
-      // if (empData.phone && empData.phone !== mobile) {
-      //   auth.signOut();
-      //   return alert("❌ شماره تلفن اشتباه است");
-      // }
-      
-      return empData;
-    })
-    .then((emp) => {
-      currentUser = { type: emp.type || "employee", emp };
+        }
+      };
       showLoadingScreen();
     })
     .catch((error) => {
       if (error.code === 'auth/user-not-found') {
-        alert("❌ کاربری با این مشخصات یافت نشد");
+        alert("❌ کاربر یافت نشد. لطفاً با ادمین تماس بگیرید.");
       } else if (error.code === 'auth/wrong-password') {
-        alert("❌ رمز عبور اشتباه است");
+        alert("❌ رمز عبور اشتباه است.");
+      } else if (error.code === 'auth/invalid-credential') {
+        alert("❌ اطلاعات وارد شده نامعتبر است.");
       } else if (error.code === 'auth/weak-password') {
-        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد");
-      } else if (error.code === 'auth/invalid-email') {
-        alert("❌ شناسه کاربری نامعتبر است");
+        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد.");
       } else {
         alert("❌ خطا: " + error.message);
       }
