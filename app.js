@@ -90,49 +90,14 @@ async function init() {
 
 function showSplashScreen() {
     return new Promise((resolve) => {
-        // ===== چک کردن اتصال به Firebase =====
-        const connectedRef = firebase.database().ref(".info/connected");
-        
-        connectedRef.on("value", (snap) => {
-            if (snap.val() === true) {
-                // ===== اتصال برقرار است، صفحه لود رو نشون بده =====
-                startSplashAnimation(resolve);
-            } else {
-                // ===== بدون اتصال، پیغام خطا نشون بده =====
-                document.getElementById("app").innerHTML = `
-                    <div class="splash-screen" style="
-                        display:flex;
-                        flex-direction:column;
-                        justify-content:center;
-                        align-items:center;
-                        height:100vh;
-                        background:#0a0a0a;
-                        color:#00ff88;
-                        font-family:'Courier New', monospace;
-                        padding:20px;
-                    ">
-                        <div style="font-size:24px; margin-bottom:20px;">📡</div>
-                        <div style="font-size:18px; color:#ff5252; margin-bottom:10px;">NO INTERNET CONNECTION</div>
-                        <div style="font-size:14px; color:rgba(255,255,255,0.4);">Please check your connection and try again.</div>
-                        <button onclick="showSplashScreen()" style="
-                            margin-top:30px;
-                            padding:12px 30px;
-                            background:#00ff88;
-                            color:#000;
-                            border:none;
-                            border-radius:8px;
-                            font-weight:bold;
-                            cursor:pointer;
-                        ">
-                            🔄 RETRY
-                        </button>
-                    </div>
-                `;
-            }
-        });
+        try {
+            startSplashAnimation(resolve);
+        } catch(e) {
+            console.log("Splash error:", e);
+            resolve();
+        }
     });
 }
-
 function startSplashAnimation(resolve) {
     const messages = [
         "🔹 Initializing System...",
@@ -1207,9 +1172,548 @@ function showAdminPage() {
     }
   });
 }
-function showPage1() {
-  const emp = currentUser.emp;
+function showLiveBalance() {
+  const freshEmp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+  if (!freshEmp) return;
+  
+  const targetBalance = freshEmp.balance || 0;
+  const empName = freshEmp.name || freshEmp.id || "Employee";
+  const accountNumber = freshEmp.account || freshEmp.cardNumber || "XXXX-XXXX-XXXX-XXXX";
+  
+  document.getElementById("app").innerHTML = `
+  <div style="
+    height:100vh;
+    background:linear-gradient(135deg, #0a0a0a 0%, #0d1b0d 30%, #0a1a2e 70%, #000000 100%);
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+    font-family:Consolas, monospace;
+    position:relative;
+    overflow:hidden;
+  ">
+    <!-- ذرات پس‌زمینه -->
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none;">
+      <div style="position:absolute; top:10%; left:15%; width:150px; height:150px; background:radial-gradient(circle, rgba(0,255,136,0.06) 0%, transparent 70%); border-radius:50%;"></div>
+      <div style="position:absolute; top:60%; left:70%; width:200px; height:200px; background:radial-gradient(circle, rgba(0,255,136,0.04) 0%, transparent 70%); border-radius:50%;"></div>
+      <div style="position:absolute; top:30%; left:80%; width:100px; height:100px; background:radial-gradient(circle, rgba(255,215,0,0.04) 0%, transparent 70%); border-radius:50%;"></div>
+    </div>
+    
+    <div style="position:absolute; top:0; left:0; width:100%; height:100%; opacity:0.03; pointer-events:none;
+      background-image:linear-gradient(rgba(0,255,136,0.3) 1px, transparent 1px), linear-gradient(90deg, rgba(0,255,136,0.3) 1px, transparent 1px);
+      background-size:30px 30px;
+    "></div>
+    
+    <div style="
+      text-align:center;
+      padding:35px 25px;
+      border-radius:25px;
+      border:1px solid rgba(0,255,136,0.15);
+      background:rgba(0,0,0,0.6);
+      backdrop-filter:blur(25px);
+      -webkit-backdrop-filter:blur(25px);
+      box-shadow:0 0 60px rgba(0,255,136,0.08), inset 0 0 30px rgba(0,255,136,0.02);
+      position:relative;
+      z-index:1;
+      min-width:280px;
+    ">
+      <div style="font-size:11px; color:rgba(255,255,255,0.4); letter-spacing:4px; margin-bottom:12px;">
+        CURRENT BALANCE
+      </div>
+      
+      <div style="font-size:13px; color:rgba(255,255,255,0.5); margin-bottom:25px; letter-spacing:1px;">
+        ${empName}
+      </div>
+      
+      <div style="
+        padding:20px;
+        border-radius:18px;
+        border:1px solid rgba(0,255,136,0.2);
+        background:rgba(0,255,136,0.03);
+        box-shadow:0 0 30px rgba(0,255,136,0.05);
+        margin-bottom:15px;
+      ">
+        <div id="balanceDisplay" style="
+          font-size:42px;
+          font-weight:bold;
+          color:#00ff88;
+          text-shadow:0 0 40px rgba(0,255,136,0.6), 0 0 80px rgba(0,255,136,0.3);
+          letter-spacing:3px;
+          margin-bottom:5px;
+        ">0</div>
+        
+        <div style="font-size:18px; color:rgba(0,255,136,0.5); letter-spacing:2px; font-weight:bold;">€</div>
+      </div>
+      
+      <div id="balanceBar" style="
+        margin-top:5px;
+        width:200px;
+        height:3px;
+        background:rgba(255,255,255,0.05);
+        border-radius:2px;
+        overflow:hidden;
+        margin-left:auto;
+        margin-right:auto;
+        margin-bottom:15px;
+      ">
+        <div id="balanceFill" style="
+          width:0%;
+          height:100%;
+          background:linear-gradient(90deg, #00ff88, #00c853, #00ff88);
+          background-size:200% 100%;
+          animation:barGlow 1.5s ease-in-out infinite;
+          border-radius:2px;
+          transition:width 0.1s;
+        "></div>
+      </div>
+      
+      <div style="
+        padding:12px 20px;
+        border-radius:12px;
+        border:1px solid rgba(255,255,255,0.1);
+        background:rgba(255,255,255,0.03);
+        backdrop-filter:blur(10px);
+        -webkit-backdrop-filter:blur(10px);
+        margin-top:5px;
+      ">
+        <div style="font-size:9px; color:rgba(255,255,255,0.3); letter-spacing:2px; margin-bottom:5px;">
+          ACCOUNT
+        </div>
+        <div style="
+          font-size:13px;
+          color:rgba(255,255,255,0.7);
+          letter-spacing:2px;
+          font-family:Consolas, monospace;
+        ">${accountNumber}</div>
+      </div>
+    </div>
+    
+    <button onclick="showPage1()" style="
+      margin-top:25px;
+      padding:10px 30px;
+      border-radius:20px;
+      border:1px solid rgba(255,255,255,0.15);
+      background:rgba(255,255,255,0.05);
+      backdrop-filter:blur(10px);
+      -webkit-backdrop-filter:blur(10px);
+      color:rgba(255,255,255,0.6);
+      font-size:12px;
+      cursor:pointer;
+      letter-spacing:2px;
+      position:relative;
+      z-index:1;
+      transition:all 0.3s;
+    " onmouseover="this.style.background='rgba(255,255,255,0.1)'; this.style.color='white'" onmouseout="this.style.background='rgba(255,255,255,0.05)'; this.style.color='rgba(255,255,255,0.6)'">
+      ← BACK
+    </button>
+  </div>
+  
+  <style>
+    @keyframes barGlow {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+`;
+  
+  animateBalance(targetBalance);
+}
 
+function animateBalance(target) {
+  let current = 0;
+  const display = document.getElementById("balanceDisplay");
+  const fill = document.getElementById("balanceFill");
+  const step = Math.max(1, Math.floor(target / 100));
+  
+  // صدای چرتکه
+  playBalanceSound();
+  
+  const interval = setInterval(() => {
+    current += step;
+    
+    if (current >= target) {
+      current = target;
+      clearInterval(interval);
+      
+      // وقتی تموم شد، اعلان نشون بده
+      setTimeout(() => {
+        showBalanceNotification(current);
+      }, 500);
+    }
+    
+    if (display) {
+      display.textContent = formatNumber(current);
+    }
+    
+    if (fill && target > 0) {
+      fill.style.width = Math.min(100, (current / target) * 100) + "%";
+    }
+  }, 30);
+}
+
+function playBalanceSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // صدای تیک تیک سریع (مثل چرتکه)
+    for (let i = 0; i < 10; i++) {
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.frequency.value = 600 + Math.random() * 400;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.05);
+      }, i * 80);
+    }
+    
+    // صدای نهایی Ching!
+    setTimeout(() => {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.frequency.value = 1200;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+      osc.start(audioCtx.currentTime);
+      osc.stop(audioCtx.currentTime + 0.6);
+    }, 800);
+    
+  } catch(e) {
+    console.log("صدا پخش نشد:", e);
+  }
+}
+
+function showBalanceNotification(amount) {
+  // ساخت notification container اگه وجود نداره
+  let notifContainer = document.getElementById("notifContainer");
+  if (!notifContainer) {
+    notifContainer = document.createElement("div");
+    notifContainer.id = "notifContainer";
+    notifContainer.style.cssText = `
+      position:fixed;
+      top:20px;
+      left:50%;
+      transform:translateX(-50%);
+      z-index:9999;
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+      pointer-events:none;
+    `;
+    document.body.appendChild(notifContainer);
+  }
+  
+  // ساخت notification
+  const notif = document.createElement("div");
+  notif.style.cssText = `
+    padding:15px 25px;
+    border-radius:15px;
+    border:1px solid rgba(0,255,136,0.2);
+    background:rgba(0,0,0,0.8);
+    backdrop-filter:blur(20px);
+    -webkit-backdrop-filter:blur(20px);
+    color:white;
+    font-family:Consolas, monospace;
+    font-size:13px;
+    text-align:center;
+    box-shadow:0 10px 30px rgba(0,0,0,0.5), 0 0 20px rgba(0,255,136,0.1);
+    animation:slideDown 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    opacity:1;
+    transition:opacity 0.5s, transform 0.5s;
+  `;
+  
+  notif.innerHTML = `
+    <div style="font-size:20px; margin-bottom:5px;">💰</div>
+    <div style="color:#00ff88; font-weight:bold;">Balance Updated</div>
+    <div style="font-size:16px; margin-top:5px; color:#fff;">${formatNumber(amount)} €</div>
+  `;
+  
+  notifContainer.appendChild(notif);
+  
+  // حذف notification بعد ۳ ثانیه
+  setTimeout(() => {
+    notif.style.opacity = "0";
+    notif.style.transform = "translateY(-20px)";
+    setTimeout(() => {
+      notif.remove();
+    }, 500);
+  }, 3000);
+  
+  // اضافه کردن انیمیشن
+  const style = document.createElement("style");
+  style.textContent = `
+    @keyframes slideDown {
+      from {
+        opacity:0;
+        transform:translateY(-50px);
+      }
+      to {
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+  `;
+  document.head.appendChild(style);
+}
+function initGlobe() {
+  const canvas = document.getElementById("globeCanvas");
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext("2d");
+  
+  canvas.width = 200;
+  canvas.height = 200;
+  
+  const centerX = 100;
+  const centerY = 100;
+  const radius = 75;
+  
+  let rotationY = 0;
+  let rotationX = 0.3;
+  let animationId;
+  
+  // ===== رسم نقشه جهان با خطوط واقعی =====
+  // مختصات قاره‌ها (ساده شده)
+  const continents = [
+    // آمریکای شمالی
+    { lat: 40, lng: -100, size: 18 },
+    { lat: 50, lng: -120, size: 12 },
+    { lat: 30, lng: -90, size: 8 },
+    // آمریکای جنوبی
+    { lat: -10, lng: -60, size: 12 },
+    { lat: -20, lng: -50, size: 8 },
+    // اروپا
+    { lat: 50, lng: 10, size: 12 },
+    { lat: 45, lng: 20, size: 8 },
+    { lat: 55, lng: 0, size: 6 },
+    // آفریقا
+    { lat: 0, lng: 25, size: 14 },
+    { lat: -15, lng: 30, size: 10 },
+    { lat: 10, lng: 20, size: 8 },
+    // آسیا
+    { lat: 35, lng: 100, size: 20 },
+    { lat: 20, lng: 80, size: 10 },
+    { lat: 50, lng: 90, size: 12 },
+    { lat: 40, lng: 130, size: 8 },
+    // استرالیا
+    { lat: -25, lng: 135, size: 8 },
+  ];
+  
+  // نقاط ریز برای جزئیات
+  const dots = [];
+  for (let i = 0; i < 500; i++) {
+    dots.push({
+      lat: (Math.random() - 0.5) * Math.PI,
+      lng: Math.random() * Math.PI * 2,
+      size: Math.random() * 1.2 + 0.3,
+      brightness: Math.random() * 0.5 + 0.5
+    });
+  }
+  
+  // خطوط طول و عرض
+  const gridLines = [];
+  for (let lat = -75; lat <= 75; lat += 15) {
+    const points = [];
+    for (let lng = 0; lng <= 360; lng += 5) {
+      points.push({ lat: lat * Math.PI / 180, lng: lng * Math.PI / 180 });
+    }
+    gridLines.push(points);
+  }
+  for (let lng = 0; lng < 360; lng += 15) {
+    const points = [];
+    for (let lat = -75; lat <= 75; lat += 5) {
+      points.push({ lat: lat * Math.PI / 180, lng: lng * Math.PI / 180 });
+    }
+    gridLines.push(points);
+  }
+  
+  function project3D(lat, lng, rotY, rotX) {
+    // چرخش حول محور Y
+    const x1 = Math.cos(lat) * Math.sin(lng + rotY);
+    const y1 = Math.sin(lat);
+    const z1 = Math.cos(lat) * Math.cos(lng + rotY);
+    
+    // چرخش حول محور X
+    const y2 = y1 * Math.cos(rotX) - z1 * Math.sin(rotX);
+    const z2 = y1 * Math.sin(rotX) + z1 * Math.cos(rotX);
+    
+    return {
+      x: centerX + radius * x1,
+      y: centerY + radius * y2,
+      z: z2
+    };
+  }
+  
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // ===== اتمسفر بیرونی =====
+    const atmoGradient = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius * 1.15);
+    atmoGradient.addColorStop(0, "rgba(0, 255, 136, 0)");
+    atmoGradient.addColorStop(0.5, "rgba(0, 255, 136, 0.08)");
+    atmoGradient.addColorStop(0.8, "rgba(0, 200, 255, 0.06)");
+    atmoGradient.addColorStop(1, "rgba(0, 100, 255, 0)");
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius * 1.15, 0, Math.PI * 2);
+    ctx.fillStyle = atmoGradient;
+    ctx.fill();
+    
+    // ===== اقیانوس =====
+    const oceanGradient = ctx.createRadialGradient(centerX - 15, centerY - 15, radius * 0.1, centerX, centerY, radius);
+    oceanGradient.addColorStop(0, "rgba(0, 40, 80, 1)");
+    oceanGradient.addColorStop(0.6, "rgba(0, 30, 60, 1)");
+    oceanGradient.addColorStop(1, "rgba(0, 20, 40, 1)");
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = oceanGradient;
+    ctx.fill();
+    
+    // ===== خطوط شبکه =====
+    gridLines.forEach(line => {
+      ctx.beginPath();
+      let started = false;
+      let prevZ = null;
+      
+      for (let i = 0; i < line.length; i++) {
+        const projected = project3D(line[i].lat, line[i].lng, rotationY, rotationX);
+        
+        if (projected.z > 0) {
+          const opacity = Math.max(0.05, projected.z / radius) * 0.3;
+          
+          if (!started || prevZ <= 0) {
+            ctx.moveTo(projected.x, projected.y);
+            started = true;
+          } else {
+            ctx.lineTo(projected.x, projected.y);
+          }
+          prevZ = projected.z;
+        } else {
+          started = false;
+          prevZ = projected.z;
+        }
+      }
+      
+      ctx.strokeStyle = `rgba(0, 255, 136, 0.15)`;
+      ctx.lineWidth = 0.3;
+      ctx.stroke();
+    });
+    
+    // ===== قاره‌ها =====
+    continents.forEach(continent => {
+      const lat = continent.lat * Math.PI / 180;
+      const lng = continent.lng * Math.PI / 180;
+      const projected = project3D(lat, lng, rotationY, rotationX);
+      
+      if (projected.z > 0) {
+        const opacity = Math.max(0.2, projected.z / radius);
+        const size = continent.size * opacity;
+        
+        // درخشش قاره
+        const glow = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, size * 1.5);
+        glow.addColorStop(0, `rgba(0, 255, 136, ${opacity * 0.8})`);
+        glow.addColorStop(0.5, `rgba(0, 200, 100, ${opacity * 0.4})`);
+        glow.addColorStop(1, "rgba(0, 100, 50, 0)");
+        
+        ctx.beginPath();
+        ctx.arc(projected.x, projected.y, size * 1.5, 0, Math.PI * 2);
+        ctx.fillStyle = glow;
+        ctx.fill();
+        
+        // خود قاره
+        ctx.beginPath();
+        ctx.arc(projected.x, projected.y, size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(0, 180, 100, ${opacity * 0.9})`;
+        ctx.fill();
+      }
+    });
+    
+    // ===== نقاط ریز (شهرها) =====
+    dots.forEach(dot => {
+      const projected = project3D(dot.lat, dot.lng, rotationY, rotationX);
+      
+      if (projected.z > 0) {
+        const opacity = Math.max(0.1, projected.z / radius) * dot.brightness;
+        const size = dot.size * opacity;
+        
+        if (opacity > 0.15) {
+          // هاله نقطه
+          const dotGlow = ctx.createRadialGradient(projected.x, projected.y, 0, projected.x, projected.y, size * 4);
+          dotGlow.addColorStop(0, `rgba(0, 255, 136, ${opacity})`);
+          dotGlow.addColorStop(0.5, `rgba(0, 255, 136, ${opacity * 0.3})`);
+          dotGlow.addColorStop(1, "rgba(0, 255, 136, 0)");
+          
+          ctx.beginPath();
+          ctx.arc(projected.x, projected.y, size * 4, 0, Math.PI * 2);
+          ctx.fillStyle = dotGlow;
+          ctx.fill();
+          
+          // نقطه مرکزی
+          ctx.beginPath();
+          ctx.arc(projected.x, projected.y, size * 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+          ctx.fill();
+        }
+      }
+    });
+    
+    // ===== انعکاس نور خورشید =====
+    const sunReflection = ctx.createRadialGradient(centerX - 25, centerY - 30, 0, centerX, centerY, radius);
+    sunReflection.addColorStop(0, "rgba(255, 255, 255, 0.2)");
+    sunReflection.addColorStop(0.2, "rgba(255, 255, 255, 0.08)");
+    sunReflection.addColorStop(0.5, "rgba(255, 255, 255, 0.02)");
+    sunReflection.addColorStop(1, "rgba(0, 0, 0, 0)");
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = sunReflection;
+    ctx.fill();
+    
+    // ===== سایه لبه‌ها =====
+    const edgeShadow = ctx.createRadialGradient(centerX, centerY, radius * 0.85, centerX, centerY, radius);
+    edgeShadow.addColorStop(0, "rgba(0, 0, 0, 0)");
+    edgeShadow.addColorStop(0.7, "rgba(0, 0, 0, 0)");
+    edgeShadow.addColorStop(1, "rgba(0, 0, 0, 0.6)");
+    
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+    ctx.fillStyle = edgeShadow;
+    ctx.fill();
+    
+    // ===== چرخش =====
+    rotationY += 0.008;
+    
+    animationId = requestAnimationFrame(draw);
+  }
+  
+  draw();
+}
+
+function showPage1() {
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+// گرفتن اطلاعات تازه از آرایه
+const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+  
+  // پیدا کردن id واقعی کارمند
+  if (!emp.id && emp.phone) {
+    const found = employees.find(e => e.phone === emp.phone);
+    if (found) emp.id = found.id;
+  }
+  if (!emp.id) {
+    emp.id = employees.length > 0 ? employees[0].id : "";
+  }
+  
   document.getElementById("app").innerHTML = `
     <div class="screen" style="height:100vh; overflow:hidden;">
       <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
@@ -1220,8 +1724,55 @@ function showPage1() {
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+        
+        <!-- دکمه موجودی زنده -->
+        <button onclick="showLiveBalance()" style="
+          width:100%;
+          padding:15px;
+          margin-bottom:15px;
+          border-radius:15px;
+          border:1px solid rgba(0,255,136,0.2);
+          background:rgba(0,255,136,0.05);
+          backdrop-filter:blur(10px);
+          -webkit-backdrop-filter:blur(10px);
+          color:#00ff88;
+          font-size:14px;
+          font-weight:bold;
+          cursor:pointer;
+          letter-spacing:2px;
+          text-shadow:0 0 10px rgba(0,255,136,0.3);
+          transition:all 0.3s;
+        " onmouseover="this.style.background='rgba(0,255,136,0.15)'; this.style.boxShadow='0 0 30px rgba(0,255,136,0.3)'" onmouseout="this.style.background='rgba(0,255,136,0.05)'; this.style.boxShadow='none'">
+          💰 SHOW LIVE BALANCE
+        </button>
+        
         ${card(emp, false)}
-        <div style="display:flex; gap:10px; margin-top:20px; margin-bottom:10px; flex-wrap:wrap;">
+        
+        <!-- ===== کره زمین چرخان ===== -->
+        <div style="
+          width:100%;
+          display:flex;
+          justify-content:center;
+          margin:20px 0;
+        ">
+          <div id="globeWrapper" style="
+            width:180px;
+            height:180px;
+            border-radius:50%;
+            overflow:hidden;
+            box-shadow:
+              0 0 30px rgba(0,255,136,0.3),
+              0 0 60px rgba(0,255,136,0.15),
+              0 0 100px rgba(0,255,136,0.05),
+              inset 0 0 30px rgba(0,255,136,0.1);
+            border:1.5px solid rgba(0,255,136,0.2);
+            background:rgba(0,0,0,0.5);
+          ">
+            <canvas id="globeCanvas" style="width:100%; height:100%;"></canvas>
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
           <button onclick="showPage1()" style="flex:1; min-width:60px; background:#00c853; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
             📱 Page 1
           </button>
@@ -1244,7 +1795,22 @@ function showPage1() {
       void screen.offsetWidth;
       screen.classList.add("fade-in");
     }
+    
+    setTimeout(() => {
+      initGlobe();
+    }, 300);
   });
+  
+  // ===== اعلان کم شدن ۱ یورو بعد از برگشت از تراکنش =====
+  if (sessionStorage.getItem("justWithdrew")) {
+    sessionStorage.removeItem("justWithdrew");
+    setTimeout(() => {
+      const updatedEmp = employees.find(e => String(e.id) === String(emp.id));
+      if (updatedEmp) {
+        showWithdrawNotification();
+      }
+    }, 600);
+  }
 }
 function showPage2() {
     const emp = currentUser.emp;
@@ -1332,8 +1898,14 @@ function renderPage2(lines) {
     });
 }
 function showPage3() {
+    if (!currentUser || !currentUser.emp) {
+        showLogin();
+        return;
+    }
+    
     let currentLang = localStorage.getItem('noteLang') || 'fa';
     
+    // ... بقیه کد
     const adminNote = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
     const hasAdminNote = adminNote && adminNote.trim() !== '';
 
@@ -1625,10 +2197,23 @@ ${emp.documents?.lineEnabled ? `
           📄 View PDF
         </button>
 
-        <button onclick="openTransactions('${emp.id}')">
+       <button onclick="openTransactions('${emp.id}')">
           📊 Transactions
         </button>
 
+<button onclick="withdrawOneEuro()" style="
+  width:100%;
+  margin-top:6px;
+  padding:10px;
+  background:rgba(255,82,82,0.1);
+  border:1px solid rgba(255,82,82,0.3);
+  color:#ff5252;
+  border-radius:10px;
+  font-weight:bold;
+  cursor:pointer;
+">
+  💸 WITHDRAW 1 €
+</button>
       `}
 
       <!-- CHAT -->
@@ -2901,37 +3486,36 @@ function copyAddress() {
   alert("Address copied");
 }
 function openTransactions(empId) {
-    const emp = employees.find(e => String(e.id) === String(empId));
+    let emp = employees.find(e => String(e.id) === String(empId));
 
     if (!emp) {
         document.getElementById("app").innerHTML = `
             <div class="screen">
                 <div class="panel">
                     <div class="card" style="color:red">Employee not found</div>
-                    <button onclick="openMainPage()" class="logout">⬅ Back</button>
+                    <button onclick="showPage1()" class="logout">⬅ Back</button>
                 </div>
             </div>
         `;
         return;
     }
 
-    // ===== کم کردن ۱ تومان فقط در صفحه تراکنش =====
     const isAdmin = currentUser && currentUser.type === "admin";
-    if (!isAdmin && emp) {
+
+    // ===== کم کردن ۱ یورو برای کارمند =====
+    if (!isAdmin && emp && emp.balance > 0) {
         chargeForLogin(emp);
+        sessionStorage.setItem("justWithdrew", "true");
+        // دوباره بخون تا مقدار جدید رو داشته باشه
+        emp = employees.find(e => String(e.id) === String(empId));
     }
     // ==========================================
 
     pushPage(() => openTransactions(empId));
 
-    let txArray = [];
-    try {
-        txArray = Array.isArray(emp.transactions) ? emp.transactions : [];
-    } catch (e) {
-        txArray = [];
-    }
-
+    const txArray = Array.isArray(emp.transactions) ? emp.transactions : [];
     const txs = txArray.slice(-10).reverse();
+    const balance = emp.balance || 0;
 
     document.getElementById("app").innerHTML = `
         <div class="screen">
@@ -2939,22 +3523,20 @@ function openTransactions(empId) {
             <div class="panel">
 
                 ${isAdmin ? `
-                    <div style="display:flex; gap:8px; margin-bottom:15px; width:100%; box-sizing:border-box;">
+                    <div style="display:flex; gap:8px; margin-bottom:15px;">
                         <input id="txAccountName" value="${emp.accountName || emp.name || ''}" placeholder="Account Name" style="flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,.25); background:rgba(255,255,255,.08); color:#fff;">
                         <input id="txAccountNumber" value="${emp.accountNumber || emp.iban || ''}" placeholder="Account Number" style="flex:1; padding:12px; border-radius:12px; border:1px solid rgba(255,215,0,.25); background:rgba(255,255,255,.08); color:#fff;">
                     </div>
                     <button onclick="saveAccountHeader('${emp.id}')" style="width:100%; margin-bottom:15px; padding:10px; background:#00e676; border:none; border-radius:10px; color:#000; font-weight:bold;">💾 Save Account Info</button>
                 ` : ""}
 
-                <!-- ===== BALANCE DISPLAY (for everyone) ===== -->
-                <div class="balance-box" style="background:rgba(0,255,136,0.08); padding:16px; border-radius:14px; margin-bottom:18px; text-align:center; border:1px solid rgba(0,255,136,0.2); box-shadow: 0 0 30px rgba(0,255,136,0.05);">
-                    <span style="font-size:12px; opacity:0.6; letter-spacing:1px;">💰 موجودی کیف پول</span>
+                <div class="balance-box" style="background:rgba(0,255,136,0.08); padding:16px; border-radius:14px; margin-bottom:18px; text-align:center; border:1px solid rgba(0,255,136,0.2);">
+                    <span style="font-size:12px; opacity:0.6; letter-spacing:1px;">💰 Wallet Balance</span>
                     <br>
-                    <span style="font-size:32px; color:#00ff88; font-weight:bold; text-shadow:0 0 40px rgba(0,255,136,0.2);">${formatNumber(emp.balance || 0)}</span>
-                    <span style="font-size:13px; opacity:0.6;"> تومان</span>
+                    <span style="font-size:32px; color:#00ff88; font-weight:bold;">${formatNumber(balance)} €</span>
                 </div>
 
-                <h3 style="text-align:center; margin-bottom:10px; color:#fff; font-size:16px; opacity:0.8;">📋 ${emp.name} Transactions</h3>
+                <h3 style="text-align:center; margin-bottom:10px; color:#fff; font-size:16px;">📋 ${emp.name} Transactions</h3>
 
                 ${txs.length === 0 ? `
                     <div class="card" style="text-align:center; opacity:0.5; padding:20px;">No Transactions</div>
@@ -2969,7 +3551,7 @@ function openTransactions(empId) {
                     </div>
                 `).join("")}
 
-                <button onclick="openMainPage()" class="logout" style="margin-top:10px;">⬅ Back</button>
+                <button onclick="showPage1()" class="logout" style="margin-top:10px;">⬅ Back</button>
             </div>
         </div>
     `;
@@ -3105,40 +3687,35 @@ function saveTxChanges(empId){
   // رفرش صفحه
   openTxEditor(empId);
 }
-function saveTx(empId){
-
+function saveTx(empId) {
   const emp = employees.find(e => e.id === empId);
-  if(!emp) return;
+  if (!emp) return;
 
   const cards = document.querySelectorAll(".card");
-
   const txs = [];
 
   cards.forEach(card => {
-
     const inputs = card.querySelectorAll("input");
-    if(inputs.length < 5) return;
+    if (inputs.length < 5) return;
 
     const before = Number(inputs[2].value || 0);
     const amount = Number(inputs[3].value || 0);
 
     txs.push({
-      date: inputs[0].value,
-      type: inputs[1].value,
+      date: inputs[0].value || new Date().toLocaleDateString("en-US"),
+      time: new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+      type: inputs[1].value || "Manual",
       before: before,
       amount: amount,
       after: before + amount,
-      receipt: inputs[4].value
+      receipt: inputs[4].value || ("TXN-" + Date.now().toString().slice(-8))
     });
-
   });
 
   emp.transactions = txs;
-
   saveEmployees();
 
-  alert("Transactions Saved");
-
+  alert("✅ Transactions Saved!");
   openTxEditor(empId);
 }
 function formatMoney(num){
@@ -4608,6 +5185,109 @@ function chargeEmployee(empId) {
 // ==========================================
 // صفحه دوم: داشبورد آمار
 // ==========================================
+
+// ==========================================
+// تابع برداشت ۱ یورو
+// ==========================================
+function withdrawOneEuro() {
+    if (!currentUser || !currentUser.emp) return;
+    
+    let emp = employees.find(e => String(e.id) === String(currentUser.emp.id));
+    if (!emp) return alert("❌ Employee not found");
+    
+    if (!emp.balance || emp.balance < 1) {
+        return alert("❌ Insufficient balance");
+    }
+    
+    // کم کردن ۱ یورو
+    chargeForLogin(emp);
+    
+    // دوباره بخون
+    emp = employees.find(e => String(e.id) === String(currentUser.emp.id));
+    
+    // آپدیت Live Balance اگه باز باشه
+    const balanceDisplay = document.getElementById("balanceDisplay");
+    if (balanceDisplay) {
+        animateBalance(emp.balance);
+    }
+    
+    // اعلان
+    showBalanceNotification(emp.balance);
+    showWithdrawNotification();
+    
+    // آپدیت صفحه
+    showPage1();
+}
+
+function showWithdrawNotification() {
+    const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+    const balance = emp?.balance || 0;
+    
+    let notifContainer = document.getElementById("notifContainer");
+    if (!notifContainer) {
+        notifContainer = document.createElement("div");
+        notifContainer.id = "notifContainer";
+        notifContainer.style.cssText = `
+            position:fixed;
+            top:20px;
+            left:50%;
+            transform:translateX(-50%);
+            z-index:9999;
+            display:flex;
+            flex-direction:column;
+            gap:10px;
+            pointer-events:none;
+        `;
+        document.body.appendChild(notifContainer);
+    }
+    
+    const notif = document.createElement("div");
+    notif.style.cssText = `
+        padding:15px 25px;
+        border-radius:15px;
+        border:1px solid rgba(255,82,82,0.4);
+        background:rgba(0,0,0,0.9);
+        backdrop-filter:blur(20px);
+        -webkit-backdrop-filter:blur(20px);
+        color:white;
+        font-family:Consolas, monospace;
+        font-size:13px;
+        text-align:center;
+        box-shadow:0 10px 30px rgba(255,82,82,0.2);
+        animation:slideFromTop 0.5s ease-out;
+        opacity:1;
+        transition:opacity 0.5s, transform 0.5s;
+    `;
+    
+    notif.innerHTML = `
+        <div style="font-size:24px; margin-bottom:5px;">💸</div>
+        <div style="color:#ff5252; font-weight:bold; font-size:15px;">-1 € Withdrawn</div>
+        <div style="color:rgba(255,255,255,0.6); font-size:11px; margin-top:5px;">
+            Balance: ${formatNumber(balance)} €
+        </div>
+    `;
+    
+    notifContainer.appendChild(notif);
+    
+    // اضافه کردن انیمیشن
+    if (!document.getElementById("notifStyle")) {
+        const style = document.createElement("style");
+        style.id = "notifStyle";
+        style.textContent = `
+            @keyframes slideFromTop {
+                from { opacity:0; transform:translateX(-50%) translateY(-60px); }
+                to { opacity:1; transform:translateX(-50%) translateY(0); }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    setTimeout(() => {
+        notif.style.opacity = "0";
+        notif.style.transform = "translateX(-50%) translateY(-30px)";
+        setTimeout(() => notif.remove(), 500);
+    }, 3000);
+}
 let currentPage = 1;
 
 // ==========================================
