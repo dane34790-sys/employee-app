@@ -4471,4 +4471,31 @@ async function translateWithGoogle(text, targetLang) {
         return text;
     }
 }
+function testLogin() {
+  const testId = "1783035875011";
+  const testPass = "333333";
+  const testMobile = "333333333";
+  const testEmail = testId + "@employee-app.com";
+  
+  console.log("===== تست لاگین =====");
+  console.log("ایمیل:", testEmail);
+  console.log("رمز:", testPass);
+  console.log("تلفن:", testMobile);
+  
+  auth.signInWithEmailAndPassword(testEmail, testPass)
+    .then((user) => {
+      console.log("✅ Firebase Auth OK!", user.user.uid);
+      return db.ref("employees/" + testId).once("value");
+    })
+    .then((snap) => {
+      const data = snap.val();
+      console.log("✅ دیتابیس:", data);
+      console.log("تلفن دیتابیس:", data?.phone);
+      alert("✅ لاگین موفق! چک کن کنسول رو");
+    })
+    .catch((err) => {
+      console.log("❌ خطا:", err.code);
+      alert("❌ خطا: " + err.code);
+    });
+}
   
