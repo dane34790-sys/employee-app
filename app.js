@@ -495,7 +495,6 @@ function login() {
   const pass = v("pass");
   const mobile = v("mobile");
 
-  // ===== ورود ادمین =====
   if (id === ADMIN.id && pass === ADMIN.pass && mobile === ADMIN.mobile) {
     const adminEmail = "admin@employee-app.com";
     const adminPass = "Admin@123456";
@@ -516,32 +515,37 @@ function login() {
     return;
   }
 
-  // ===== ورود کارمند =====
   const email = id + "@employee-app.com";
   
   auth.signInWithEmailAndPassword(email, pass)
     .then(() => {
-      // لاگین موفق
-      currentUser = {
-        type: "employee",
-        emp: {
-          id: id,
-          name: id,
-          phone: mobile,
-          balance: 0
+      db.ref("employees/" + id).once("value").then((snap) => {
+        const data = snap.val();
+        
+        if (data && data.phone && data.phone !== mobile) {
+          auth.signOut();
+          alert("❌ شماره تلفن اشتباه است");
+          return;
         }
-      };
-      showLoadingScreen();
+        
+        currentUser = {
+          type: data?.type || "employee",
+          emp: data || { id: id, name: id, phone: mobile }
+        };
+        showLoadingScreen();
+      }).catch(() => {
+        currentUser = {
+          type: "employee",
+          emp: { id: id, name: id, phone: mobile }
+        };
+        showLoadingScreen();
+      });
     })
     .catch((error) => {
       if (error.code === 'auth/user-not-found') {
-        alert("❌ کاربر یافت نشد. لطفاً با ادمین تماس بگیرید.");
+        alert("❌ کاربر یافت نشد.");
       } else if (error.code === 'auth/wrong-password') {
         alert("❌ رمز عبور اشتباه است.");
-      } else if (error.code === 'auth/invalid-credential') {
-        alert("❌ اطلاعات وارد شده نامعتبر است.");
-      } else if (error.code === 'auth/weak-password') {
-        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد.");
       } else {
         alert("❌ خطا: " + error.message);
       }
