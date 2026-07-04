@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Widget</title>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    body {
+      background:#0a0a0a;
+      font-family:'Consolas', monospace;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      min-height:100vh;
+    }
+    .widget {
+      width:280px;
+      padding:20px;
+      border-radius:25px;
+      background:linear-gradient(145deg, #111, #0a0a0a);
+      border:2px solid rgba(0,255,136,0.2);
+      box-shadow:0 20px 50px rgba(0,0,0,0.5), 0 0 30px rgba(0,255,136,0.05);
+      text-align:center;
+      color:white;
+    }
+    .balance {
+      font-size:36px;
+      font-weight:bold;
+      color:#00ff88;
+      text-shadow:0 0 20px rgba(0,255,136,0.4);
+      margin-bottom:12px;
+    }
+    .row {
+      font-size:12px;
+      color:rgba(255,255,255,0.5);
+      margin-bottom:6px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      gap:6px;
+    }
+    .today { color:#ffd700; font-size:14px; font-weight:bold; }
+    .name { color:white; font-size:16px; font-weight:bold; letter-spacing:1px; }
+    .spin { color:#ff9800; font-size:12px; margin-top:5px; }
+    .bank {
+      margin-top:15px;
+      padding-top:10px;
+      border-top:1px solid rgba(255,255,255,0.1);
+      font-size:10px;
+      color:rgba(255,255,255,0.3);
+      letter-spacing:2px;
+    }
+    .owner { font-size:11px; color:rgba(255,215,0,0.5); letter-spacing:1px; margin-top:3px; }
+  </style>
+</head>
+<body>
+  <div class="widget">
+    <div class="balance" id="balance">💰 --- €</div>
+    <div class="row">📅 <span id="date">---</span></div>
+    <div class="row">🕐 <span id="time">---</span></div>
+    <div class="row today">📈 <span id="today">---</span></div>
+    <div class="name">⭐ <span id="empName">---</span></div>
+    <div class="spin">🎰 <span id="spinStatus">---</span></div>
+    <div class="bank">🏦 CommerzBank</div>
+    <div class="owner">👤 Arian Roy</div>
+  </div>
+
+  <script>
+    // Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyAYsu4Ji-eFHx55ARX6_4PRb5SRfx-jrhw",
+      authDomain: "employee-app-b7215.firebaseapp.com",
+      databaseURL: "https://employee-app-b7215-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "employee-app-b7215",
+      storageBucket: "employee-app-b7215.firebasestorage.app",
+      messagingSenderId: "103868866433",
+      appId: "1:103868866433:web:b3d9773c2c0759845ad280"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    function updateWidget() {
+      const lastUser = localStorage.getItem("lastWidgetUser");
+      if (!lastUser) {
+        document.getElementById("balance").textContent = "💰 --- €";
+        return;
+      }
+      
+      const user = JSON.parse(lastUser);
+      
+      db.ref("employees/" + user.id).once("value").then(snap => {
+        const data = snap.val();
+        if (!data) return;
+        
+        const now = new Date();
+        document.getElementById("balance").textContent = "💰 " + (data.balance || 0).toLocaleString() + " €";
+        document.getElementById("date").textContent = now.toLocaleDateString("en-US", { year:"numeric", month:"short", day:"numeric" });
+        document.getElementById("time").textContent = now.toLocaleTimeString("en-US", { hour:"2-digit", minute:"2-digit", second:"2-digit" });
+        document.getElementById("today").textContent = "Today: +" + ((data.transactions || []).filter(t => t.date === now.toLocaleDateString("en-US")).reduce((s,t) => s + (t.amount>0?t.amount:0), 0)) + "€";
+        document.getElementById("empName").textContent = data.name || user.id;
+        
+        const lastSpin = localStorage.getItem("lastSpin_" + user.id);
+        const canSpin = !lastSpin || (Date.now() - parseInt(lastSpin)) > 86400000;
+        document.getElementById("spinStatus").textContent = canSpin ? "Spin Ready" : "Wait...";
+      });
+    }
+    
+    updateWidget();
+    setInterval(updateWidget, 60000); // هر ۱ دقیقه آپدیت
+  </script>
+  
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+</body>
+</html>
