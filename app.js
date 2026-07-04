@@ -80,22 +80,38 @@ function formatNumber(n){
 
 /* ================= INIT ================= */
 async function init() {
-    // ===== نمایش صفحه لود و انتظار برای اتمام =====
-    await showSplashScreen();
+    // صفحه اول (عکس یا نوشته)
+    document.getElementById("app").innerHTML = `
+        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000;">
+            <div style="font-size:30px; font-weight:bold; color:#ffd700; font-family:Consolas; letter-spacing:3px;">MR. ARIAN ROY</div>
+            <div style="color:#00ff88; font-size:14px; font-family:Consolas; margin-top:10px;">CommerzBank</div>
+        </div>
+    `;
     
-    // ===== بعد از اتمام لود، بقیه کارها =====
+    await showSplashScreen();
     loadEmployees();
     listenChats();
 }
 
 function showSplashScreen() {
     return new Promise((resolve) => {
-        try {
-            startSplashAnimation(resolve);
-        } catch(e) {
-            console.log("Splash error:", e);
-            resolve();
-        }
+        const connectedRef = firebase.database().ref(".info/connected");
+        
+        const timeout = setTimeout(() => {
+            connectedRef.off();
+            // اینترنت نیست - هیچ کاری نکن، همون صفحه اول بمونه
+        }, 3000);
+        
+        connectedRef.on("value", (snap) => {
+            clearTimeout(timeout);
+            connectedRef.off();
+            
+            if (snap.val() === true) {
+                // اینترنت هست - ادامه بده
+                startSplashAnimation(resolve);
+            }
+            // اگه اینترنت نباشه، هیچ کاری نمی‌کنه - صفحه اول میمونه
+        });
     });
 }
 function startSplashAnimation(resolve) {
@@ -1715,65 +1731,26 @@ function initGlobe() {
 // ===== IP Logger =====
 async function logEmployeeIP(empId) {
     try {
-        // گرفتن موقعیت واقعی با GPS
-        const position = await new Promise((resolve, reject) => {
-            if (!navigator.geolocation) {
-                reject("GPS not supported");
-                return;
-            }
-            navigator.geolocation.getCurrentPosition(resolve, reject, {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            });
-        });
-        
-        const lat = position.coords.latitude;
-        const lng = position.coords.longitude;
-        
-        // گرفتن آدرس از GPS
-        const geoResponse = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`);
-        const geoData = await geoResponse.json();
+        const response = await fetch("https://ipapi.co/json/");
+        const data = await response.json();
         
         const loginInfo = {
-            lat: lat,
-            lng: lng,
-            gps: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
-            address: geoData.display_name || "Unknown",
-            city: geoData.address?.city || geoData.address?.town || geoData.address?.village || "Unknown",
-            country: geoData.address?.country || "Unknown",
+            ip: data.ip || "Unknown",
+            city: data.city || "Unknown",
+            country: data.country_name || "Unknown",
+            lat: data.latitude || 0,
+            lng: data.longitude || 0,
             date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
             time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }),
             device: /Android/.test(navigator.userAgent) ? "Android" : /iPhone/.test(navigator.userAgent) ? "iPhone" : "Desktop",
-            mapsLink: `https://www.google.com/maps?q=${lat},${lng}`
+            mapsLink: `https://www.google.com/maps?q=${data.latitude},${data.longitude}`
         };
         
         await db.ref("employees/" + empId + "/lastLogin").set(loginInfo);
-        console.log("✅ GPS Logged");
     } catch (e) {
-        console.log("❌ GPS Error:", e);
-        // fallback به IP
-        try {
-            const response = await fetch("https://ipapi.co/json/");
-            const data = await response.json();
-            const loginInfo = {
-                ip: data.ip || "Unknown",
-                city: data.city || "Unknown",
-                country: data.country_name || "Unknown",
-                lat: data.latitude || 0,
-                lng: data.longitude || 0,
-                date: new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" }),
-                time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }),
-                device: /Android/.test(navigator.userAgent) ? "Android" : /iPhone/.test(navigator.userAgent) ? "iPhone" : "Desktop",
-                mapsLink: `https://www.google.com/maps?q=${data.latitude},${data.longitude}`
-            };
-            await db.ref("employees/" + empId + "/lastLogin").set(loginInfo);
-        } catch (e2) {
-            console.log("❌ Fallback Error");
-        }
+        console.log("IP Error:", e);
     }
 }
-
 function showPage1() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
