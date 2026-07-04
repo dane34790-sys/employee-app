@@ -2529,6 +2529,10 @@ function row(icon, label, value) {
 }
 // =========================
 function card(emp, isAdmin) {
+  // استخراج اطلاعات
+  const docs = emp.documents || {};
+  const transactions = emp.transactions || [];
+
   return `
     <div class="card">
 
@@ -2584,9 +2588,38 @@ function card(emp, isAdmin) {
 
       ${isAdmin ? `<button onclick="deleteEmp('${emp.id}')" style="width:100%; margin-top:10px; background:#f44336; color:white; border:none; padding:10px; border-radius:10px;">🗑 Delete</button>` : ""}
 
+      <!-- ===== نمایش Documents (فقط اگر داده داشته باشه) ===== -->
+      ${docs && (docs.lineName || docs.lineCode || docs.price || (docs.files && docs.files.length > 0)) ? `
+        <div style="margin-top:15px; padding:12px; background:rgba(255,215,0,0.05); border-radius:12px; border:1px solid rgba(255,215,0,0.1);">
+          <div style="color:#ffd700; font-size:13px; font-weight:bold; margin-bottom:8px;">📄 Documents</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:12px;">
+            ${docs.lineName ? `<div><span style="opacity:0.6;">Name:</span> ${docs.lineName}</div>` : ''}
+            ${docs.lineCode ? `<div><span style="opacity:0.6;">Code:</span> ${docs.lineCode}</div>` : ''}
+            ${docs.price ? `<div><span style="opacity:0.6;">Price:</span> ${docs.price} €</div>` : ''}
+            ${docs.files && docs.files.length > 0 ? `<div><span style="opacity:0.6;">Files:</span> ${docs.files.length}</div>` : ''}
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- ===== نمایش Transactions (فقط اگر تراکنش داشته باشه) ===== -->
+      ${transactions.length > 0 ? `
+        <div style="margin-top:10px; padding:12px; background:rgba(0,255,136,0.03); border-radius:12px; border:1px solid rgba(0,255,136,0.08);">
+          <div style="color:#00ff88; font-size:13px; font-weight:bold; margin-bottom:8px;">📊 Last Transactions (${transactions.length})</div>
+          <div style="max-height:120px; overflow-y:auto; font-size:11px;">
+            ${transactions.slice(-5).reverse().map(t => `
+              <div style="display:flex; justify-content:space-between; padding:4px 0; border-bottom:1px solid rgba(255,255,255,0.05);">
+                <span>${t.date || ''} ${t.time || ''}</span>
+                <span style="color:${t.amount < 0 ? '#ff5252' : '#00e676'}; font-weight:bold;">${t.amount < 0 ? '-' : '+'}${Math.abs(t.amount)} €</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      ` : ''}
+
     </div>
   `;
 }
+
 function update(id, field, value) {
     const emp = employees.find(e => String(e.id) === String(id));
     if (!emp) {
@@ -2596,13 +2629,13 @@ function update(id, field, value) {
 
     console.log("🔄 UPDATE:", field, "→", value);
 
-    // ===== به‌روزرسانی فیلدهای اصلی =====
-    emp[field] = value;
-
     // ===== اگر فیلد مربوط به documents باشه =====
-    if (field === 'lineCode' || field === 'lineName' || field === 'price') {
+    if (field === 'lineCode' || field === 'lineName' || field === 'price' || field === 'lineEnabled') {
         if (!emp.documents) emp.documents = {};
         emp.documents[field] = value;
+    } else {
+        // فیلدهای معمولی
+        emp[field] = value;
     }
 
     // ===== ذخیره در دیتابیس =====
@@ -2611,7 +2644,6 @@ function update(id, field, value) {
     console.log("✅ Updated:", emp);
 }
 function addEmployee() {
-    // ۱. گرفتن اطلاعات از کاربر
     const name = prompt("نام کارمند را وارد کنید:");
     if (!name) return;
 
@@ -2622,30 +2654,26 @@ function addEmployee() {
     if (!passport) return;
 
     const salary = prompt("حقوق را وارد کنید:") || "0";
-    const iban = prompt("شماره شبا را وارد کنید:") || "";
-    const cardNumber = prompt("شماره کارت را وارد کنید:") || "";
-    const account = prompt("شماره حساب را وارد کنید:") || "";
-    const expiry = prompt("تاریخ انقضا (مثلاً 12/26) را وارد کنید:") || "";
-    const ccv2 = prompt("کد CCV2 را وارد کنید:") || "";
-    const zip = prompt("کد پستی را وارد کنید:") || "";
+    const iban = prompt("شماره شبا را وارد کنید:") || "IR000000000000000000000000";
+    const cardNumber = prompt("شماره کارت را وارد کنید:") || "0000-0000-0000-0000";
+    const account = prompt("شماره حساب را وارد کنید:") || "000000000000000000000000";
+    const expiry = prompt("تاریخ انقضا (مثلاً 12/26) را وارد کنید:") || "12/30";
+    const ccv2 = prompt("کد CCV2 را وارد کنید:") || "000";
+    const zip = prompt("کد پستی را وارد کنید:") || "0000000000";
     const pass = prompt("رمز عبور (حداقل ۶ کاراکتر) را وارد کنید:") || "123456";
 
-    // ۲. چک کردن طول رمز
     if (pass.length < 6) {
         alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد!");
         return;
     }
 
     const newId = String(Date.now());
-
-    // ۳. اول کاربر رو توی Firebase Auth می‌سازیم
     const email = newId + "@employee-app.com";
     
     auth.createUserWithEmailAndPassword(email, pass)
         .then((userCredential) => {
             console.log("✅ Firebase Auth user created");
             
-            // ۴. حالا اطلاعات رو توی دیتابیس ذخیره می‌کنیم
             const newEmployee = {
                 id: newId,
                 passport: passport,
@@ -2672,11 +2700,9 @@ function addEmployee() {
                 transactions: []
             };
 
-            // ۵. ذخیره در Firebase Database
             return db.ref("employees/" + newId).set(newEmployee);
         })
         .then(() => {
-            // ۶. اضافه به آرایه محلی
             employees.push({
                 id: newId,
                 passport: passport,
@@ -2685,7 +2711,6 @@ function addEmployee() {
                 balance: 0
             });
             
-            // ۷. ذخیره در localStorage
             localStorage.setItem("employees", JSON.stringify(employees));
             
             alert("✅ کارمند با موفقیت اضافه شد!");
