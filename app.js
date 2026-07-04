@@ -78,39 +78,84 @@ function formatNumber(n){
   return n.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
 
-/* ================= INIT ================= */
 async function init() {
-    // صفحه اول (عکس یا نوشته)
+    // ===== اگر اینترنت قطع باشه، فقط صفحه آفلاین =====
+    if (!navigator.onLine) {
+        document.getElementById("app").innerHTML = `
+            <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000; text-align:center; padding:20px;">
+                <div style="width:100px; height:70px; position:relative; margin:0 auto;">
+                    <div style="width:50px; height:50px; border-radius:50%; background:#ff0000; position:absolute; top:10px; left:8px; opacity:0.9; box-shadow:0 0 30px rgba(255,0,0,0.6);"></div>
+                    <div style="width:50px; height:50px; border-radius:50%; background:#ffd700; position:absolute; top:10px; right:8px; opacity:0.9; box-shadow:0 0 30px rgba(255,215,0,0.6);"></div>
+                </div>
+                <h1 style="color:#ffd700; font-size:26px; margin-top:20px; font-family:Consolas; letter-spacing:3px;">MR. ARIAN ROY</h1>
+                <p style="color:#00ff88; font-size:13px; font-family:Consolas; letter-spacing:2px;">CommerzBank</p>
+                <p style="color:#ff5252; margin-top:30px; font-size:14px; border:1px solid rgba(255,82,82,0.3); padding:15px 30px; border-radius:10px; background:rgba(255,82,82,0.05);">⚠️ No Internet Connection</p>
+                <p style="color:rgba(255,255,255,0.2); font-size:11px; margin-top:20px;">Please check your connection</p>
+            </div>
+        `;
+        return; // ===== دیگه هیچ چیزی اجرا نشه =====
+    }
+
+    // ===== اگر اینترنت وصل بود =====
     document.getElementById("app").innerHTML = `
-        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000;">
-            <div style="font-size:30px; font-weight:bold; color:#ffd700; font-family:Consolas; letter-spacing:3px;">MR. ARIAN ROY</div>
-            <div style="color:#00ff88; font-size:14px; font-family:Consolas; margin-top:10px;">CommerzBank</div>
+        <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000; gap:20px; overflow:hidden;">
+            <div style="width:100px; height:70px; position:relative;">
+                <div id="circleRed" style="width:50px; height:50px; border-radius:50%; background:#ff0000; position:absolute; top:10px; left:-60px; opacity:0.9; box-shadow:0 0 30px rgba(255,0,0,0.6); transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);"></div>
+                <div id="circleYellow" style="width:50px; height:50px; border-radius:50%; background:#ffd700; position:absolute; top:10px; right:-60px; opacity:0.9; box-shadow:0 0 30px rgba(255,215,0,0.6); transition: all 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55);"></div>
+            </div>
+            <div id="titleText" style="font-size:26px; font-weight:bold; color:#ffd700; font-family:Consolas; letter-spacing:3px; text-shadow:0 0 30px rgba(255,215,0,0.5); opacity:0; transition: opacity 0.6s ease;">MR. ARIAN ROY</div>
+            <div id="bankText" style="color:#00ff88; font-size:13px; font-family:Consolas; letter-spacing:2px; opacity:0; transition: opacity 0.6s ease;">CommerzBank</div>
         </div>
     `;
     
+    setTimeout(() => {
+        const red = document.getElementById("circleRed");
+        const yellow = document.getElementById("circleYellow");
+        const title = document.getElementById("titleText");
+        const bank = document.getElementById("bankText");
+        if (red) red.style.left = "8px";
+        if (yellow) yellow.style.right = "8px";
+        setTimeout(() => {
+            if (title) title.style.opacity = "1";
+            if (bank) bank.style.opacity = "1";
+        }, 600);
+    }, 200);
+    
+    await new Promise(r => setTimeout(r, 2500));
     await showSplashScreen();
     loadEmployees();
     listenChats();
 }
 
-function showSplashScreen() {
+let splashChecked = false;
+
+async function showSplashScreen() {
+    if (window.SKIP_SPLASH) return; //
+  
     return new Promise((resolve) => {
+        if (splashChecked) {
+            startSplashAnimation(resolve);
+            return;
+        }
+        
         const connectedRef = firebase.database().ref(".info/connected");
         
         const timeout = setTimeout(() => {
+            splashChecked = true;
             connectedRef.off();
-            // اینترنت نیست - هیچ کاری نکن، همون صفحه اول بمونه
+            startSplashAnimation(resolve);
         }, 3000);
         
         connectedRef.on("value", (snap) => {
             clearTimeout(timeout);
+            splashChecked = true;
             connectedRef.off();
             
             if (snap.val() === true) {
-                // اینترنت هست - ادامه بده
+                startSplashAnimation(resolve);
+            } else {
                 startSplashAnimation(resolve);
             }
-            // اگه اینترنت نباشه، هیچ کاری نمی‌کنه - صفحه اول میمونه
         });
     });
 }
@@ -140,91 +185,25 @@ function startSplashAnimation(resolve) {
             font-family:'Courier New', monospace;
             padding:20px;
         ">
-            <!-- ===== خط اول: MR.ARIAN ===== -->
             <div style="display:flex; gap:4px; margin-bottom:4px; justify-content:center;">
                 ${["M","R",".","A","R","I","A","N"].map((char, i) => `
-                    <div id="charBox_${i}" style="
-                        width:32px;
-                        height:40px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:18px;
-                        font-weight:bold;
-                        background:rgba(0,255,136,0.03);
-                        border:1px solid rgba(0,255,136,0.08);
-                        border-radius:4px;
-                        color:rgba(0,255,136,0.08);
-                        transition:all 0.4s ease;
-                        font-family:'Courier New', monospace;
-                    ">
-                        ${char}
-                    </div>
+                    <div id="charBox_${i}" style="width:32px; height:40px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); border-radius:4px; color:rgba(0,255,136,0.08); transition:all 0.4s ease; font-family:'Courier New', monospace;">${char}</div>
                 `).join('')}
             </div>
-
-            <!-- ===== خط دوم: ROY ===== -->
             <div style="display:flex; gap:4px; margin-bottom:30px; justify-content:center;">
                 ${["R","O","Y"].map((char, i) => `
-                    <div id="charBox_${i + 8}" style="
-                        width:32px;
-                        height:40px;
-                        display:flex;
-                        align-items:center;
-                        justify-content:center;
-                        font-size:18px;
-                        font-weight:bold;
-                        background:rgba(0,255,136,0.03);
-                        border:1px solid rgba(0,255,136,0.08);
-                        border-radius:4px;
-                        color:rgba(0,255,136,0.08);
-                        transition:all 0.4s ease;
-                        font-family:'Courier New', monospace;
-                    ">
-                        ${char}
-                    </div>
+                    <div id="charBox_${i + 8}" style="width:32px; height:40px; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:bold; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); border-radius:4px; color:rgba(0,255,136,0.08); transition:all 0.4s ease; font-family:'Courier New', monospace;">${char}</div>
                 `).join('')}
             </div>
-            
-            <div style="font-size:11px; color:rgba(0,255,136,0.2); margin-bottom:20px; letter-spacing:3px;">
-                ─── SYSTEM INITIALIZATION ───
-            </div>
-            
-            <div id="typingText" style="
-                font-size:14px;
-                min-height:150px;
-                color:#00ff88;
-                text-shadow:0 0 20px rgba(0,255,136,0.15);
-                font-family:'Courier New', monospace;
-                text-align:left;
-                letter-spacing:1px;
-                margin-bottom:20px;
-                line-height:1.8;
-                width:80%;
-                max-width:350px;
-            ">
-                <span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>
-            </div>
-
-            <div style="width:60%; max-width:300px; height:3px; background:rgba(0,255,136,0.06); border-radius:2px; overflow:hidden; border:1px solid rgba(0,255,136,0.03);">
-                <div id="progressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ff88, #00c853, #00ff88); background-size:200% 100%; animation: progressGlow 1.5s ease-in-out infinite; border-radius:2px; transition:width 0.3s;"></div>
-            </div>
-            
-            <div style="margin-top:12px; font-size:11px; color:rgba(0,255,136,0.35); letter-spacing:2px;">
-                <span id="progressText">0%</span>
-            </div>
+            <div style="font-size:11px; color:rgba(0,255,136,0.2); margin-bottom:20px; letter-spacing:3px;">─── SYSTEM INITIALIZATION ───</div>
+            <div id="typingText" style="font-size:14px; min-height:150px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.15); font-family:'Courier New', monospace; text-align:left; letter-spacing:1px; margin-bottom:20px; line-height:1.8; width:80%; max-width:350px;"><span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span></div>
+            <div style="width:60%; max-width:300px; height:3px; background:rgba(0,255,136,0.06); border-radius:2px; overflow:hidden; border:1px solid rgba(0,255,136,0.03);"><div id="progressBar" style="width:0%; height:100%; background:linear-gradient(90deg, #00ff88, #00c853, #00ff88); background-size:200% 100%; animation: progressGlow 1.5s ease-in-out infinite; border-radius:2px; transition:width 0.3s;"></div></div>
+            <div style="margin-top:12px; font-size:11px; color:rgba(0,255,136,0.35); letter-spacing:2px;"><span id="progressText">0%</span></div>
         </div>
-
         <style>
             @keyframes blink { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
             @keyframes progressGlow { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-            .char-active {
-                background:rgba(0,255,136,0.2) !important;
-                border-color:#00ff88 !important;
-                color:#00ff88 !important;
-                box-shadow:0 0 25px rgba(0,255,136,0.25) !important;
-                transform:scale(1.05);
-            }
+            .char-active { background:rgba(0,255,136,0.2) !important; border-color:#00ff88 !important; color:#00ff88 !important; box-shadow:0 0 25px rgba(0,255,136,0.25) !important; transform:scale(1.05); }
         </style>
     `;
 
@@ -246,25 +225,18 @@ function startSplashAnimation(resolve) {
 
     function typeMessage() {
         if (msgIndex >= messages.length) {
-            setTimeout(() => {
-                resolve();
-            }, 2000);
+            setTimeout(() => { resolve(); }, 2000);
             return;
         }
-
         const fullText = messages[msgIndex];
         const displayText = fullText.substring(0, charIndex);
-        
         let fullDisplay = '';
         for (let i = 0; i < msgIndex; i++) fullDisplay += messages[i] + '\n';
         fullDisplay += displayText;
-
         typingElement.innerHTML = `${fullDisplay}<span id="cursor" style="display:inline-block; width:2px; height:16px; background:#00ff88; animation: blink 0.8s infinite;"></span>`;
-
         progress = (msgIndex / messages.length) * 100 + (charIndex / fullText.length) * (100 / messages.length);
         progressBar.style.width = Math.min(progress, 100) + "%";
         progressText.textContent = Math.floor(Math.min(progress, 100)) + "%";
-
         charIndex++;
         if (charIndex <= fullText.length) {
             setTimeout(typeMessage, 70);
@@ -1751,6 +1723,7 @@ async function logEmployeeIP(empId) {
         console.log("IP Error:", e);
     }
 }
+
 function showPage1() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
@@ -2448,20 +2421,7 @@ function card(emp, isAdmin) {
         ${adminInput("🔐", emp.ccv2, "ccv2", emp.id)}
         ${adminInput("📍", emp.zip, "zip", emp.id)}
         ${adminInput("📱", emp.phone, "phone", emp.id)}
-        <button
-  onclick="openSidebarMediaPage('${emp.id}')"
-  style="
-    width:100%;
-    margin-top:10px;
-    background:#9c27b0;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:10px;
-  "
->
-  📁 Sidebar Media
-</button>
+        <button onclick="openSidebarMediaPage('${emp.id}')" style="width:100%; margin-top:10px; background:#9c27b0; color:white; border:none; padding:10px; border-radius:10px;">📁 Sidebar Media</button>
 
       ` : `
 
@@ -2480,131 +2440,24 @@ function card(emp, isAdmin) {
 
       `}
 
-      <!-- STATUS -->
-      <div
-        class="status-box ${emp.status === "ONLINE" ? "online" : "offline"}"
-        ${isAdmin ? `onclick="toggleStatus('${emp.id}')"` : ""}
-      >
-        ${emp.status}
-      </div>
+      <div class="status-box ${emp.status === "ONLINE" ? "online" : "offline"}" ${isAdmin ? `onclick="toggleStatus('${emp.id}')"` : ""}>${emp.status}</div>
 
       ${isAdmin ? `
-
-        <button onclick="toggleLine('${emp.id}')">
-          ${emp.documents?.lineEnabled ? "🔴 OFF LINE" : "🟢 ON LINE"}
-        </button>
-
-        <button onclick="openTxEditor('${emp.id}')">
-          ✏ Manage Transactions
-        </button>
-
-        <button onclick="
-window.isAdmin=true;
-openLinePage('${emp.id}');
-">
-  📡 Manage LINE
-</button>
-
-<button onclick="openPdfEditor('${emp.id}')">
-  📄 Manage PDF
-</button>
-
-        ${emp.lastLogin ? `
-          <div style="margin-top:10px; padding:10px; border-radius:12px; background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); font-size:11px; color:rgba(255,255,255,0.6);">
-            <div style="font-size:10px; letter-spacing:2px; margin-bottom:6px;">📡 LAST LOGIN</div>
-            ${emp.lastLogin.gps ? `<div>📍 GPS: ${emp.lastLogin.gps}</div>` : `<div>🌍 IP: ${emp.lastLogin.ip}</div>`}
-            <div>📍 ${emp.lastLogin.city}, ${emp.lastLogin.country}</div>
-            <div>📅 ${emp.lastLogin.date} 🕐 ${emp.lastLogin.time}</div>
-            <div>📱 ${emp.lastLogin.device}</div>
-            <a href="${emp.lastLogin.mapsLink}" target="_blank" style="color:#00ff88; text-decoration:none; display:block; margin-top:5px;">🗺️ View on Google Maps</a>
-          </div>
-        ` : ""}
-
-` : `
-
-${emp.documents?.lineEnabled ? `
-  <button onclick="
-  window.isAdmin=false;
-  openLinePage('${emp.id}');
-  ">
-    📡 LINE
-  </button>
-` : ""}
-
-        <button onclick="openDocumentsPage('${emp.id}')">
-          📄 View PDF
-        </button>
-
-       <button onclick="openTransactions('${emp.id}')">
-          📊 Transactions
-        </button>
-
-<button onclick="withdrawOneEuro()" style="
-  width:100%;
-  margin-top:6px;
-  padding:10px;
-  background:rgba(255,82,82,0.1);
-  border:1px solid rgba(255,82,82,0.3);
-  color:#ff5252;
-  border-radius:10px;
-  font-weight:bold;
-  cursor:pointer;
-">
-  💸 WITHDRAW 1 €
-</button>
+        <button onclick="toggleLine('${emp.id}')">${emp.documents?.lineEnabled ? "🔴 OFF LINE" : "🟢 ON LINE"}</button>
+        <button onclick="openTxEditor('${emp.id}')">✏ Manage Transactions</button>
+        <button onclick="window.isAdmin=true; openLinePage('${emp.id}');">📡 Manage LINE</button>
+        <button onclick="openPdfEditor('${emp.id}')">📄 Manage PDF</button>
+        ${emp.lastLogin ? `<div style="margin-top:10px; padding:10px; border-radius:12px; background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); font-size:11px; color:rgba(255,255,255,0.6);"><div style="font-size:10px; letter-spacing:2px; margin-bottom:6px;">📡 LAST LOGIN</div>${emp.lastLogin.gps ? `<div>📍 GPS: ${emp.lastLogin.gps}</div>` : `<div>🌍 IP: ${emp.lastLogin.ip}</div>`}<div>📍 ${emp.lastLogin.city}, ${emp.lastLogin.country}</div><div>📅 ${emp.lastLogin.date} 🕐 ${emp.lastLogin.time}</div><div>📱 ${emp.lastLogin.device}</div><a href="${emp.lastLogin.mapsLink}" target="_blank" style="color:#00ff88; text-decoration:none; display:block; margin-top:5px;">🗺️ View on Google Maps</a></div>` : ""}
+      ` : `
+        ${emp.documents?.lineEnabled ? `<button onclick="window.isAdmin=false; openLinePage('${emp.id}');">📡 LINE</button>` : ""}
+        <button onclick="openDocumentsPage('${emp.id}')">📄 View PDF</button>
+        <button onclick="openTransactions('${emp.id}')">📊 Transactions</button>
+        <button onclick="withdrawOneEuro()" style="width:100%; margin-top:6px; padding:10px; background:rgba(255,82,82,0.1); border:1px solid rgba(255,82,82,0.3); color:#ff5252; border-radius:10px; font-weight:bold; cursor:pointer;">💸 WITHDRAW 1 €</button>
       `}
 
-      <!-- CHAT -->
-     <button
-  onclick="openChat('${emp.id}')"
-  style="
-    width:100%;
-    margin-top:10px;
-    background:#2196f3;
-    color:white;
-    border:none;
-    padding:10px;
-    border-radius:10px;
-  "
->
-  💬 Chat
-  ${
-    (() => {
+      <button onclick="openChat('${emp.id}')" style="width:100%; margin-top:10px; background:#2196f3; color:white; border:none; padding:10px; border-radius:10px;">💬 Chat ${(() => { const unread = (chats[emp.id] || []).filter(m => { if(isAdmin){ return m.from === "employee" && !m.seenByAdmin; } return m.from === "admin" && !m.seen; }).length; return unread > 0 ? `🔴 ${unread}` : ""; })()}</button>
 
-      const unread = (chats[emp.id] || []).filter(m => {
-
-        if(isAdmin){
-          return m.from === "employee" && !m.seenByAdmin;
-        }
-
-        return m.from === "admin" && !m.seen;
-
-      }).length;
-
-      return unread > 0
-        ? ` 🔴 ${unread}`
-        : "";
-
-    })()
-  }
-</button>
-
-      ${isAdmin ? `
-        <button
-          onclick="deleteEmp('${emp.id}')"
-          style="
-            width:100%;
-            margin-top:10px;
-            background:#f44336;
-            color:white;
-            border:none;
-            padding:10px;
-            border-radius:10px;
-          "
-        >
-          🗑 Delete
-        </button>
-      ` : ""}
+      ${isAdmin ? `<button onclick="deleteEmp('${emp.id}')" style="width:100%; margin-top:10px; background:#f44336; color:white; border:none; padding:10px; border-radius:10px;">🗑 Delete</button>` : ""}
 
     </div>
   `;
@@ -5795,3 +5648,48 @@ function testLogin() {
     });
 }
   
+// ===== تابع چک کردن اینترنت =====
+function checkAndShowPage() {
+    if (!navigator.onLine) {
+        // نمایش صفحه آفلاین
+        document.getElementById("app").innerHTML = `
+            <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000; gap:20px; overflow:hidden; text-align:center; padding:20px;">
+                <div style="width:100px; height:70px; position:relative;">
+                    <div style="width:50px; height:50px; border-radius:50%; background:#ff0000; position:absolute; top:10px; left:8px; opacity:0.9; box-shadow:0 0 30px rgba(255,0,0,0.6);"></div>
+                    <div style="width:50px; height:50px; border-radius:50%; background:#ffd700; position:absolute; top:10px; right:8px; opacity:0.9; box-shadow:0 0 30px rgba(255,215,0,0.6);"></div>
+                </div>
+                <div style="font-size:26px; font-weight:bold; color:#ffd700; font-family:Consolas; letter-spacing:3px; text-shadow:0 0 30px rgba(255,215,0,0.5);">MR. ARIAN ROY</div>
+                <div style="color:#00ff88; font-size:13px; font-family:Consolas; letter-spacing:2px;">CommerzBank</div>
+                <div style="color:#ff5252; font-size:14px; border:1px solid rgba(255,82,82,0.3); padding:15px 30px; border-radius:10px; background:rgba(255,82,82,0.05); margin-top:20px;">⚠️ No Internet Connection</div>
+            </div>
+        `;
+    } else {
+        // اینترنت وصل هست
+        if (currentUser) {
+            showUI(); // صفحه اصلی
+        } else {
+            // صفحه لاگین رو نشون بده
+            document.getElementById("app").innerHTML = `
+                <div style="display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; background:#000; padding:20px;">
+                    <h2 style="color:#fff;">CommerzBank</h2>
+                    <p style="color:#ffd700;">URBAN DEVELOPMENT</p>
+                    <p style="color:#fff;">ARIAN</p>
+                    <div style="margin-top:30px; width:100%; max-width:300px;">
+                        <input id="loginId" placeholder="ID" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #333; background:#111; color:#fff;">
+                        <input id="loginPassword" type="password" placeholder="Password" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #333; background:#111; color:#fff;">
+                        <input id="loginMobile" placeholder="Mobile" style="width:100%; padding:12px; margin-bottom:10px; border-radius:8px; border:1px solid #333; background:#111; color:#fff;">
+                        <button onclick="loginUser()" style="width:100%; padding:12px; background:#ffd700; border:none; border-radius:8px; color:#000; font-weight:bold;">LOGIN</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+}
+// ===== مدیریت قطع و وصل اینترنت =====
+window.addEventListener('online', function() {
+    location.reload();
+});
+
+window.addEventListener('offline', function() {
+    checkAndShowPage();
+});
