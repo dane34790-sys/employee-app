@@ -1724,15 +1724,127 @@ async function logEmployeeIP(empId) {
     }
 }
 
+// ===== STEALTH MODE =====
+let stealthActive = false;
+let stealthCode = "";
+
+function toggleStealthMode() {
+    if (stealthActive) {
+        // برگشت به حالت عادی
+        stealthActive = false;
+        showPage1();
+        return;
+    }
+    
+    stealthActive = true;
+    stealthCode = "";
+    
+    document.getElementById("app").innerHTML = `
+        <div style="height:100vh; background:#1a1a1a; display:flex; flex-direction:column; font-family:Arial; padding:15px; box-sizing:border-box;">
+            
+            <!-- نمایشگر -->
+            <div style="flex:1; display:flex; align-items:flex-end; justify-content:flex-end; padding:20px;">
+                <div id="calcDisplay" style="color:white; font-size:40px; font-weight:300;">0</div>
+            </div>
+            
+            <!-- دکمه‌ها -->
+            <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; padding:10px 0;">
+                <button onclick="calcPress('C')" style="padding:20px; border-radius:50%; border:none; background:#a5a5a5; color:white; font-size:20px; cursor:pointer;">C</button>
+                <button onclick="calcPress('±')" style="padding:20px; border-radius:50%; border:none; background:#a5a5a5; color:white; font-size:20px; cursor:pointer;">±</button>
+                <button onclick="calcPress('%')" style="padding:20px; border-radius:50%; border:none; background:#a5a5a5; color:white; font-size:20px; cursor:pointer;">%</button>
+                <button onclick="calcPress('÷')" style="padding:20px; border-radius:50%; border:none; background:#ff9800; color:white; font-size:20px; cursor:pointer;">÷</button>
+                
+                <button onclick="calcPress('7')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">7</button>
+                <button onclick="calcPress('8')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">8</button>
+                <button onclick="calcPress('9')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">9</button>
+                <button onclick="calcPress('×')" style="padding:20px; border-radius:50%; border:none; background:#ff9800; color:white; font-size:20px; cursor:pointer;">×</button>
+                
+                <button onclick="calcPress('4')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">4</button>
+                <button onclick="calcPress('5')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">5</button>
+                <button onclick="calcPress('6')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">6</button>
+                <button onclick="calcPress('-')" style="padding:20px; border-radius:50%; border:none; background:#ff9800; color:white; font-size:20px; cursor:pointer;">−</button>
+                
+                <button onclick="calcPress('1')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">1</button>
+                <button onclick="calcPress('2')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">2</button>
+                <button onclick="calcPress('3')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">3</button>
+                <button onclick="calcPress('+')" style="padding:20px; border-radius:50%; border:none; background:#ff9800; color:white; font-size:20px; cursor:pointer;">+</button>
+                
+                <button onclick="calcPress('0')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer; grid-column:span 2; border-radius:40px;">0</button>
+                <button onclick="calcPress('.')" style="padding:20px; border-radius:50%; border:none; background:#333; color:white; font-size:20px; cursor:pointer;">.</button>
+                <button onclick="calcPress('=')" style="padding:20px; border-radius:50%; border:none; background:#ff9800; color:white; font-size:20px; cursor:pointer;">=</button>
+            </div>
+        </div>
+    `;
+}
+
+let calcValue = "0";
+let calcOperator = null;
+let calcPrevValue = null;
+
+function calcPress(key) {
+    const display = document.getElementById("calcDisplay");
+    if (!display) return;
+    
+    // کد برگشت: 1234 + =
+    // هر بار که دکمه‌ای زده می‌شود، آن را به stealthCode اضافه می‌کنیم
+    // اما فقط زمانی که کاراکتر مربوطه دقیقاً بخشی از توالی باشد.
+    // برای سادگی، همیشه key را به stealthCode اضافه می‌کنیم.
+    stealthCode += key;
+    
+    // اگر طول رشته بیش از حد شد، آن را کوتاه می‌کنیم
+    if (stealthCode.length > 10) {
+        stealthCode = stealthCode.slice(-10);
+    }
+    
+    // بررسی توالی برگشت: "1234+="
+    if (stealthCode.includes("1234+=")) {
+        stealthActive = false;
+        stealthCode = "";
+        showPage1();
+        return;
+    }
+    
+    // بقیه منطق ماشین حساب
+    if (key === 'C') {
+        calcValue = "0";
+        calcOperator = null;
+        calcPrevValue = null;
+    } else if (key === '±') {
+        calcValue = String(-parseFloat(calcValue));
+    } else if (key === '%') {
+        calcValue = String(parseFloat(calcValue) / 100);
+    } else if (key === '÷' || key === '×' || key === '-' || key === '+') {
+        calcPrevValue = calcValue;
+        calcOperator = key;
+        calcValue = "0";
+    } else if (key === '=') {
+        if (calcOperator && calcPrevValue !== null) {
+            const a = parseFloat(calcPrevValue);
+            const b = parseFloat(calcValue);
+            if (calcOperator === '+') calcValue = String(a + b);
+            if (calcOperator === '-') calcValue = String(a - b);
+            if (calcOperator === '×') calcValue = String(a * b);
+            if (calcOperator === '÷') calcValue = b !== 0 ? String(a / b) : "Error";
+            calcOperator = null;
+            calcPrevValue = null;
+        }
+    } else if (key === '.') {
+        if (!calcValue.includes('.')) calcValue += '.';
+    } else {
+        if (calcValue === "0") calcValue = key;
+        else calcValue += key;
+    }
+    
+    display.textContent = calcValue.length > 12 ? calcValue.slice(0, 12) : calcValue;
+}
+
 function showPage1() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
   }
-// گرفتن اطلاعات تازه از آرایه
-const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
   
-  // پیدا کردن id واقعی کارمند
   if (!emp.id && emp.phone) {
     const found = employees.find(e => e.phone === emp.phone);
     if (found) emp.id = found.id;
@@ -1751,6 +1863,20 @@ const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) |
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+        
+        <!-- دکمه مخفی Stealth Mode -->
+        <div onclick="toggleStealthMode()" style="
+          position:fixed;
+          top:15px;
+          right:15px;
+          width:20px;
+          height:20px;
+          border-radius:50%;
+          background:rgba(0,255,136,0.4);
+          z-index:999;
+          cursor:pointer;
+          border:1px solid rgba(0,255,136,0.6);
+        " title="Stealth Mode"></div>
         
         <!-- دکمه موجودی زنده -->
         <button onclick="showLiveBalance()" style="
@@ -1811,8 +1937,8 @@ const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) |
           </button>
           
           <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-  🎰 Page 4
-</button>
+            🎰 Page 4
+          </button>
         </div>
         <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
@@ -1832,7 +1958,6 @@ const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) |
     }, 300);
   });
   
-  // ===== اعلان کم شدن ۱ یورو بعد از برگشت از تراکنش =====
   if (sessionStorage.getItem("justWithdrew")) {
     sessionStorage.removeItem("justWithdrew");
     setTimeout(() => {
