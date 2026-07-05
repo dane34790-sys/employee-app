@@ -2174,6 +2174,18 @@ function showPage3() {
         }
     });
 }
+function toggleWheelLock(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  
+  emp.wheelLocked = !emp.wheelLocked;
+  
+  db.ref("employees/" + empId + "/wheelLocked").set(emp.wheelLocked);
+  saveEmployees();
+  
+  alert(emp.wheelLocked ? "🔒 Wheel Locked!" : "🔓 Wheel Unlocked!");
+  showUI();
+}
 
 function showPage4() {
   if (!currentUser || !currentUser.emp) {
@@ -2181,109 +2193,25 @@ function showPage4() {
     return;
   }
   
-  const freshEmp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
-  if (!freshEmp) return;
-  
-  const lastSpin = localStorage.getItem("lastSpin_" + freshEmp.id);
-const now = Date.now();
-const canSpin = !lastSpin || (now - parseInt(lastSpin)) > 24 * 60 * 60 * 1000;
-  
-  let remainingTime = "";
-  if (!canSpin && lastSpin) {
-    const remaining = 24 * 60 * 60 * 1000 - (now - parseInt(lastSpin));
-    const h = Math.floor(remaining / (60 * 60 * 1000));
-    const m = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
-    const s = Math.floor((remaining % (60 * 1000)) / 1000);
-    remainingTime = `${h}h ${m}m ${s}s`;
-  }
-  
   document.getElementById("app").innerHTML = `
     <div class="screen" style="height:100vh; overflow:hidden;">
       <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-      <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-        <img src="images/telegram.png" onclick="openTelegram()">
-        <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
-      </div>
-      <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:100px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7); display:flex; flex-direction:column; align-items:center;">
         
-        <!-- ===== چرخ شانس ===== -->
-        <div style="font-size:14px; color:rgba(255,255,255,0.5); letter-spacing:3px; margin-top:10px; margin-bottom:5px;">
-          🎰 LUCKY WHEEL
+        <div style="font-size:14px; color:white; letter-spacing:3px; margin-top:20px;">🎰 LUCKY WHEEL</div>
+        
+        <div style="position:relative; width:220px; height:220px; margin:20px auto;">
+          <canvas id="wheelCanvas" width="220" height="220" style="border-radius:50%; border:2px solid gold;"></canvas>
         </div>
         
-        <div id="wheelContainer" style="position:relative; width:220px; height:220px; margin:10px auto;">
-          <canvas id="wheelCanvas" width="220" height="220" style="
-            border-radius:50%;
-            box-shadow:0 0 30px rgba(255,215,0,0.2);
-            border:2px solid rgba(255,215,0,0.3);
-          "></canvas>
-          <div style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width:50px; height:50px; border-radius:50%; background:rgba(0,0,0,0.9); border:2px solid rgba(255,215,0,0.5); display:flex; align-items:center; justify-content:center; font-size:18px; pointer-events:none;">🎰</div>
-          <div style="position:absolute; top:-12px; left:50%; transform:translateX(-50%); width:0; height:0; border-left:12px solid transparent; border-right:12px solid transparent; border-top:20px solid #ff5252; filter:drop-shadow(0 0 6px rgba(255,82,82,0.5)); z-index:5;"></div>
-        </div>
+        <button onclick="spinWheel()" style="padding:15px 40px; border-radius:25px; border:none; background:gold; color:black; font-size:18px; font-weight:bold; cursor:pointer; margin-top:10px;">🎰 SPIN</button>
         
-        ${canSpin ? `
-          <button onclick="spinWheel()" id="spinWheelBtn" style="padding:10px 30px; border-radius:20px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,215,0,0.1); color:#ffd700; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:2px; margin-bottom:5px;">🎰 SPIN</button>
-        ` : `
-          <div style="text-align:center; margin-bottom:5px;">
-            <div style="color:#ff9800; font-size:14px; font-weight:bold;">⏱ ${remainingTime}</div>
-          </div>
-        `}
-        
-        <!-- ===== جداکننده ===== -->
-        <div style="width:80%; height:1px; background:rgba(255,255,255,0.1); margin:15px 0;"></div>
-        
-        <!-- ===== اسلات ماشین ===== -->
-        <div style="font-size:14px; color:rgba(255,255,255,0.5); letter-spacing:3px; margin-bottom:5px;">
-          🎰 SLOT MACHINE
-        </div>
-        
-        <div id="slotSpinCount" style="font-size:12px; color:#ff9800; margin-bottom:5px; letter-spacing:2px;">
-          ${canSpin ? '🎯 3 SPINS' : '⏱ LOCKED'}
-        </div>
-        
-        <div style="
-          width:260px;
-          padding:15px;
-          border-radius:15px;
-          border:1px solid rgba(255,215,0,0.2);
-          background:rgba(0,0,0,0.4);
-          backdrop-filter:blur(10px);
-        ">
-          <div style="display:flex; gap:6px; justify-content:center; margin-bottom:10px; background:rgba(0,0,0,0.6); border-radius:10px; padding:10px;">
-            <div id="slot1" style="width:60px; height:65px; background:rgba(255,255,255,0.03); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid rgba(255,255,255,0.1);">❓</div>
-            <div id="slot2" style="width:60px; height:65px; background:rgba(255,255,255,0.03); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid rgba(255,255,255,0.1);">❓</div>
-            <div id="slot3" style="width:60px; height:65px; background:rgba(255,255,255,0.03); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:32px; border:1px solid rgba(255,255,255,0.1);">❓</div>
-          </div>
-          
-          <div style="display:flex; flex-direction:column; gap:2px; font-size:9px; color:rgba(255,255,255,0.5); margin-bottom:10px;">
-            <div style="display:flex; justify-content:space-between;"><span>🍒🍒🍒</span><span style="color:#ffd700;">3€</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>💎💎💎</span><span style="color:#ffd700;">5€</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>💰💰💰</span><span style="color:#ffd700;">10€</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>7️⃣7️⃣7️⃣</span><span style="color:#ffd700;">50€</span></div>
-          </div>
-          
-          ${canSpin ? `
-            <button onclick="pullSlot()" id="slotSpinBtn" style="width:100%; padding:12px; border-radius:20px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,215,0,0.1); color:#ffd700; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:2px;">🎰 PULL</button>
-          ` : `
-            <div style="text-align:center; color:rgba(255,255,255,0.3); font-size:11px;">🔒 Locked</div>
-          `}
-        </div>
-        
-        <div style="display:flex; gap:10px; margin-top:15px; flex-wrap:wrap; width:100%;">
-          <button onclick="showPage1()" style="flex:1; min-width:50px; background:#00c853; color:white; border:none; padding:10px; border-radius:10px; font-size:11px; cursor:pointer;">📱</button>
-          <button onclick="showPage2()" style="flex:1; min-width:50px; background:#ff9800; color:white; border:none; padding:10px; border-radius:10px; font-size:11px; cursor:pointer;">📊</button>
-          <button onclick="showPage3()" style="flex:1; min-width:50px; background:#9c27b0; color:white; border:none; padding:10px; border-radius:10px; font-size:11px; cursor:pointer;">📝</button>
-          <button onclick="showPage4()" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px; border-radius:10px; font-size:11px; cursor:pointer;">🎰</button>
-        </div>
-        <button class="logout" onclick="showLogin()" style="margin-top:10px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+        <button onclick="showPage1()" style="margin-top:20px; padding:10px 25px; border-radius:15px; border:1px solid white; background:transparent; color:white; cursor:pointer;">← BACK</button>
       </div>
     </div>
   `;
   
   drawWheel();
-  slotSpinsLeft = 3;
 }
 
 const wheelPrizes = [
@@ -2296,64 +2224,132 @@ const wheelPrizes = [
 ];
 
 let spinning = false;
+let slotSpinsLeft = 3;
+let slotSpinning = false;
 
 function drawWheel() {
   const canvas = document.getElementById("wheelCanvas");
   if (!canvas) return;
+
+  canvas.width = 220;
+  canvas.height = 220;
+
   const ctx = canvas.getContext("2d");
-  const center = 140;
-  const radius = 130;
+  const cx = 110;
+  const cy = 110;
+  const radius = 100;
   const slices = wheelPrizes.length;
   const angle = (2 * Math.PI) / slices;
-  
+
   wheelPrizes.forEach((prize, i) => {
+    const startAngle = i * angle;
+    const endAngle = startAngle + angle;
+
     ctx.beginPath();
-    ctx.moveTo(center, center);
-    ctx.arc(center, center, radius, i * angle, (i + 1) * angle);
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, radius, startAngle, endAngle);
     ctx.closePath();
     ctx.fillStyle = prize.color;
     ctx.fill();
-    ctx.strokeStyle = "rgba(255,255,255,0.2)";
+    ctx.strokeStyle = "rgba(255,255,255,0.3)";
     ctx.lineWidth = 2;
     ctx.stroke();
-    
-    // متن
+
     ctx.save();
-    ctx.translate(center, center);
-    ctx.rotate(i * angle + angle / 2);
+    ctx.translate(cx, cy);
+    ctx.rotate(startAngle + angle / 2);
     ctx.fillStyle = "white";
-    ctx.font = "bold 14px Consolas";
+    ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
-    ctx.fillText(prize.label, radius * 0.6, 6);
+    ctx.fillText(prize.label, radius * 0.65, 6);
     ctx.restore();
   });
 }
 
+function playSpinSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    for (let i = 0; i < 15; i++) {
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = 300 + Math.random() * 300;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.08);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.08);
+      }, i * 100);
+    }
+  } catch(e) {}
+}
+
+function playWinSound() {
+  try {
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      setTimeout(() => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.frequency.value = freq;
+        osc.type = "sine";
+        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4);
+        osc.start(audioCtx.currentTime);
+        osc.stop(audioCtx.currentTime + 0.4);
+      }, i * 200);
+    });
+  } catch(e) {}
+}
+
 function spinWheel() {
   if (spinning) return;
-  spinning = true;
-  document.getElementById("spinBtn").disabled = true;
-  document.getElementById("spinBtn").style.opacity = "0.5";
   
   const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
   if (!emp) return;
   
+  // 👇 اینو اضافه کن - دوباره از Firebase بخون
+  db.ref("employees/" + emp.id + "/wheelLocked").once("value").then(snap => {
+    const wheelLocked = snap.val();
+    
+    if (wheelLocked === true) {
+      alert("🔒 Wheel is locked by admin!");
+      return;
+    }
+    
+    // ادامه کد چرخش...
+    doSpin();
+  });
+}
+
+function doSpin() {
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+  if (!emp) return;
+  
+  // چک کردن ۱۲ ساعت
+  const lastSpin = localStorage.getItem("lastSpin_" + emp.id);
+  if (lastSpin && (Date.now() - parseInt(lastSpin)) < 12 * 60 * 60 * 1000) {
+    alert("⏱ You can spin once every 12 hours!");
+    return;
+  }
+  
+  spinning = true;
   const canvas = document.getElementById("wheelCanvas");
   if (!canvas) return;
   
-  const totalRotation = 360 * 5 + Math.random() * 360; // ۵ دور کامل + رندوم
+  const totalRotation = 360 * 5 + Math.random() * 360;
   const duration = 4000;
   let startTime = null;
   
-  // صدا
   playSpinSound();
   
   function animate(timestamp) {
     if (!startTime) startTime = timestamp;
     const elapsed = timestamp - startTime;
     const progress = Math.min(elapsed / duration, 1);
-    
-    // easing - آروم وایمیسته
     const eased = 1 - Math.pow(1 - progress, 3);
     const rotation = totalRotation * eased;
     
@@ -2362,21 +2358,18 @@ function spinWheel() {
     if (progress < 1) {
       requestAnimationFrame(animate);
     } else {
-      // تموم شد
       spinning = false;
       const finalAngle = rotation % 360;
-      const slices = wheelPrizes.length;
-      const sliceAngle = 360 / slices;
+      const sliceAngle = 360 / wheelPrizes.length;
       const winnerIndex = Math.floor(((360 - finalAngle) % 360) / sliceAngle);
       const prize = wheelPrizes[winnerIndex];
       
-      // جایزه رو اضافه کن
       emp.balance = (emp.balance || 0) + prize.value;
       if (!emp.transactions) emp.transactions = [];
       emp.transactions.unshift({
         date: new Date().toLocaleDateString("en-US"),
         time: new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
-        type: "Daily Spin",
+        type: "Lucky Wheel",
         before: emp.balance - prize.value,
         amount: prize.value,
         after: emp.balance,
@@ -2397,44 +2390,89 @@ function spinWheel() {
   requestAnimationFrame(animate);
 }
 
-function playSpinSound() {
-  try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    for (let i = 0; i < 20; i++) {
-      setTimeout(() => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = 200 + i * 30;
-        osc.type = "sine";
-        gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + 0.05);
-      }, i * 150);
+const slotSymbols = ["🍒", "💎", "💰", "7️⃣"];
+const slotPrizes = {
+  "🍒": 3,
+  "💎": 5,
+  "💰": 10,
+  "7️⃣": 50
+};
+
+function pullSlot() {
+  if (slotSpinning || slotSpinsLeft <= 0) return;
+  slotSpinning = true;
+  slotSpinsLeft--;
+  
+  document.getElementById("slotSpinBtn").disabled = true;
+  document.getElementById("slotSpinCount").textContent = `🎯 ${slotSpinsLeft} SPINS LEFT`;
+  
+  playSpinSound();
+  
+  const slot1 = document.getElementById("slot1");
+  const slot2 = document.getElementById("slot2");
+  const slot3 = document.getElementById("slot3");
+  
+  let r1, r2, r3;
+  let spins = 0;
+  const maxSpins = 15;
+  
+  const interval = setInterval(() => {
+    r1 = Math.floor(Math.random() * slotSymbols.length);
+    r2 = Math.floor(Math.random() * slotSymbols.length);
+    r3 = Math.floor(Math.random() * slotSymbols.length);
+    
+    slot1.textContent = slotSymbols[r1];
+    slot2.textContent = slotSymbols[r2];
+    slot3.textContent = slotSymbols[r3];
+    
+    spins++;
+    
+    if (spins >= maxSpins) {
+      clearInterval(interval);
+      slotSpinning = false;
+      
+      if (r1 === r2 && r2 === r3) {
+        const symbol = slotSymbols[r1];
+        const prize = slotPrizes[symbol];
+        
+        const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+        if (emp) {
+          emp.balance = (emp.balance || 0) + prize;
+          if (!emp.transactions) emp.transactions = [];
+          emp.transactions.unshift({
+            date: new Date().toLocaleDateString("en-US"),
+            time: new Date().toLocaleTimeString("en-US", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+            type: "Slot Machine",
+            before: emp.balance - prize,
+            amount: prize,
+            after: emp.balance,
+            receipt: "SLOT-" + Date.now().toString().slice(-6)
+          });
+          saveEmployees();
+          localStorage.setItem("lastSpin_" + emp.id, Date.now());
+          slotSpinsLeft = 0;
+        }
+        
+        playWinSound();
+        setTimeout(() => {
+          alert(`🎉 JACKPOT! ${symbol}${symbol}${symbol}\nYou won ${prize} €!\nBalance: ${formatNumber(emp?.balance || 0)} €`);
+          showPage4();
+        }, 500);
+      } else if (slotSpinsLeft <= 0) {
+        const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+        if (emp) localStorage.setItem("lastSpin_" + emp.id, Date.now());
+        
+        setTimeout(() => {
+          alert("😔 No luck today!\nTry again in 12 hours!");
+          showPage4();
+        }, 500);
+      } else {
+        document.getElementById("slotSpinBtn").disabled = false;
+      }
     }
-  } catch(e) {}
+  }, 100);
 }
 
-function playWinSound() {
-  try {
-    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const notes = [523, 659, 784, 1047];
-    notes.forEach((freq, i) => {
-      setTimeout(() => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        osc.connect(gain); gain.connect(audioCtx.destination);
-        osc.frequency.value = freq;
-        osc.type = "sine";
-        gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3);
-        osc.start(audioCtx.currentTime);
-        osc.stop(audioCtx.currentTime + 0.3);
-      }, i * 150);
-    });
-  } catch(e) {}
-}
 function clearAllData() {
     localStorage.removeItem('userNote');
     localStorage.removeItem('noteLang');
@@ -2529,7 +2567,6 @@ function row(icon, label, value) {
 }
 // =========================
 function card(emp, isAdmin) {
-  // استخراج اطلاعات
   const docs = emp.documents || {};
   const transactions = emp.transactions || [];
 
@@ -2551,6 +2588,20 @@ function card(emp, isAdmin) {
         ${adminInput("📍", emp.zip, "zip", emp.id)}
         ${adminInput("📱", emp.phone, "phone", emp.id)}
         <button onclick="openSidebarMediaPage('${emp.id}')" style="width:100%; margin-top:10px; background:#9c27b0; color:white; border:none; padding:10px; border-radius:10px;">📁 Sidebar Media</button>
+
+        <button onclick="toggleWheelLock('${emp.id}')" style="
+          width:100%;
+          margin-top:6px;
+          padding:10px;
+          background:${emp.wheelLocked ? 'rgba(255,82,82,0.2)' : 'rgba(0,255,136,0.2)'};
+          border:1px solid ${emp.wheelLocked ? 'rgba(255,82,82,0.4)' : 'rgba(0,255,136,0.4)'};
+          color:${emp.wheelLocked ? '#ff5252' : '#00ff88'};
+          border-radius:10px;
+          font-weight:bold;
+          cursor:pointer;
+        ">
+          ${emp.wheelLocked ? '🔒 WHEEL LOCKED' : '🔓 WHEEL OPEN'}
+        </button>
 
       ` : `
 
@@ -2588,7 +2639,6 @@ function card(emp, isAdmin) {
 
       ${isAdmin ? `<button onclick="deleteEmp('${emp.id}')" style="width:100%; margin-top:10px; background:#f44336; color:white; border:none; padding:10px; border-radius:10px;">🗑 Delete</button>` : ""}
 
-      <!-- ===== نمایش Documents (فقط اگر داده داشته باشه) ===== -->
       ${docs && (docs.lineName || docs.lineCode || docs.price || (docs.files && docs.files.length > 0)) ? `
         <div style="margin-top:15px; padding:12px; background:rgba(255,215,0,0.05); border-radius:12px; border:1px solid rgba(255,215,0,0.1);">
           <div style="color:#ffd700; font-size:13px; font-weight:bold; margin-bottom:8px;">📄 Documents</div>
@@ -2601,7 +2651,6 @@ function card(emp, isAdmin) {
         </div>
       ` : ''}
 
-      <!-- ===== نمایش Transactions (فقط اگر تراکنش داشته باشه) ===== -->
       ${transactions.length > 0 ? `
         <div style="margin-top:10px; padding:12px; background:rgba(0,255,136,0.03); border-radius:12px; border:1px solid rgba(0,255,136,0.08);">
           <div style="color:#00ff88; font-size:13px; font-weight:bold; margin-bottom:8px;">📊 Last Transactions (${transactions.length})</div>
@@ -4674,7 +4723,8 @@ function saveEmployees() {
           price: ""
         },
         sidebarMedia: emp.sidebarMedia || { images: [] },
-        transactions: emp.transactions || []
+        transactions: emp.transactions || [],
+        wheelLocked: emp.wheelLocked || false
       };
     }
   });
