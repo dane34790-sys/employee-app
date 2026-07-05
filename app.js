@@ -1864,81 +1864,24 @@ function showPage1() {
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
         
-        <!-- دکمه مخفی Stealth Mode -->
-        <div onclick="toggleStealthMode()" style="
-          position:fixed;
-          top:15px;
-          right:15px;
-          width:20px;
-          height:20px;
-          border-radius:50%;
-          background:rgba(0,255,136,0.4);
-          z-index:999;
-          cursor:pointer;
-          border:1px solid rgba(0,255,136,0.6);
-        " title="Stealth Mode"></div>
+        <div onclick="toggleStealthMode()" style="position:fixed; top:15px; right:15px; width:20px; height:20px; border-radius:50%; background:rgba(0,255,136,0.4); z-index:999; cursor:pointer; border:1px solid rgba(0,255,136,0.6);" title="Stealth Mode"></div>
         
-        <!-- دکمه موجودی زنده -->
-        <button onclick="showLiveBalance()" style="
-          width:100%;
-          padding:15px;
-          margin-bottom:15px;
-          border-radius:15px;
-          border:1px solid rgba(0,255,136,0.2);
-          background:rgba(0,255,136,0.05);
-          backdrop-filter:blur(10px);
-          -webkit-backdrop-filter:blur(10px);
-          color:#00ff88;
-          font-size:14px;
-          font-weight:bold;
-          cursor:pointer;
-          letter-spacing:2px;
-          text-shadow:0 0 10px rgba(0,255,136,0.3);
-          transition:all 0.3s;
-        " onmouseover="this.style.background='rgba(0,255,136,0.15)'; this.style.boxShadow='0 0 30px rgba(0,255,136,0.3)'" onmouseout="this.style.background='rgba(0,255,136,0.05)'; this.style.boxShadow='none'">
-          💰 SHOW LIVE BALANCE
-        </button>
+        <button onclick="showLiveBalance()" style="width:100%; padding:15px; margin-bottom:15px; border-radius:15px; border:1px solid rgba(0,255,136,0.2); background:rgba(0,255,136,0.05); backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px); color:#00ff88; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:2px; text-shadow:0 0 10px rgba(0,255,136,0.3); transition:all 0.3s;" onmouseover="this.style.background='rgba(0,255,136,0.15)'; this.style.boxShadow='0 0 30px rgba(0,255,136,0.3)'" onmouseout="this.style.background='rgba(0,255,136,0.05)'; this.style.boxShadow='none'">💰 SHOW LIVE BALANCE</button>
         
         ${card(emp, false)}
         
-        <!-- ===== کره زمین چرخان ===== -->
-        <div style="
-          width:100%;
-          display:flex;
-          justify-content:center;
-          margin:20px 0;
-        ">
-          <div id="globeWrapper" style="
-            width:180px;
-            height:180px;
-            border-radius:50%;
-            overflow:hidden;
-            box-shadow:
-              0 0 30px rgba(0,255,136,0.3),
-              0 0 60px rgba(0,255,136,0.15),
-              0 0 100px rgba(0,255,136,0.05),
-              inset 0 0 30px rgba(0,255,136,0.1);
-            border:1.5px solid rgba(0,255,136,0.2);
-            background:rgba(0,0,0,0.5);
-          ">
+        <div style="width:100%; display:flex; justify-content:center; margin:20px 0;">
+          <div id="globeWrapper" style="width:180px; height:180px; border-radius:50%; overflow:hidden; box-shadow:0 0 30px rgba(0,255,136,0.3), 0 0 60px rgba(0,255,136,0.15), 0 0 100px rgba(0,255,136,0.05), inset 0 0 30px rgba(0,255,136,0.1); border:1.5px solid rgba(0,255,136,0.2); background:rgba(0,0,0,0.5);">
             <canvas id="globeCanvas" style="width:100%; height:100%;"></canvas>
           </div>
         </div>
         
-        <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
-          <button onclick="showPage1()" style="flex:1; min-width:60px; background:#00c853; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-            📱 Page 1
-          </button>
-          <button onclick="showPage2()" style="flex:1; min-width:60px; background:#ff9800; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-            📊 Page 2
-          </button>
-          <button onclick="showPage3()" style="flex:1; min-width:60px; background:#9c27b0; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-            📝 Page 3
-          </button>
-          
-          <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-            🎰 Page 4
-          </button>
+        <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap; justify-content:center;">
+          <button onclick="showPage1()" style="padding:8px 12px; background:#00c853; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📱 P1</button>
+          <button onclick="showPage2()" style="padding:8px 12px; background:#ff9800; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📊 P2</button>
+          <button onclick="showPage3()" style="padding:8px 12px; background:#9c27b0; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📝 P3</button>
+          <button onclick="showPage4()" style="padding:8px 12px; background:#ff6d00; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🎰 P4</button>
+          <button onclick="showPage5()" style="padding:8px 12px; background:#ff1744; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🛡️ P5</button>
         </div>
         <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
@@ -2044,6 +1987,8 @@ function renderPage2(lines) {
                 </div>
                 
                 <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+                
+                <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
             </div>
         </div>
     `;
@@ -2161,6 +2106,8 @@ function showPage3() {
                 </div>
                 
                 <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+                
+                <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
             </div>
         </div>
     `;
@@ -2187,6 +2134,26 @@ function toggleWheelLock(empId) {
   showUI();
 }
 
+function triggerAttack(empId) {
+  db.ref("employees/" + empId).update({
+    underAttack: true,
+    attackStartTime: Date.now(),
+    attacksBlocked: Math.floor(Math.random() * 5000) + 1000
+  });
+  alert("🔥 Attack launched! Employee's firewall will show alerts!");
+  showUI();
+}
+
+function defendSystem(empId) {
+  db.ref("employees/" + empId).update({
+    underAttack: false,
+    attackStartTime: null,
+    attacksBlocked: 0
+  });
+  alert("🛡️ System defended! Firewall back to normal.");
+  showUI();
+}
+
 function showPage4() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
@@ -2206,7 +2173,14 @@ function showPage4() {
         
         <button onclick="spinWheel()" style="padding:15px 40px; border-radius:25px; border:none; background:gold; color:black; font-size:18px; font-weight:bold; cursor:pointer; margin-top:10px;">🎰 SPIN</button>
         
-        <button onclick="showPage1()" style="margin-top:20px; padding:10px 25px; border-radius:15px; border:1px solid white; background:transparent; color:white; cursor:pointer;">← BACK</button>
+        <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap; width:100%;">
+          <button onclick="showPage1()" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
+          <button onclick="showPage2()" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
+          <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
+          <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
+          <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+        </div>
+        <button class="logout" onclick="showLogin()" style="margin-top:10px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
     </div>
   `;
@@ -2473,6 +2447,161 @@ function pullSlot() {
   }, 100);
 }
 
+let attackInterval = null;
+
+function showPage5() {
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+  
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
+  if (!emp) return;
+  
+  const underAttack = emp.underAttack || false;
+  const attacksBlocked = emp.attacksBlocked || 0;
+  
+  document.getElementById("app").innerHTML = `
+    <div style="height:100vh; background:${underAttack ? '#1a0000' : '#000a00'}; font-family:Consolas; padding:15px; overflow-y:auto; color:white; box-sizing:border-box;">
+      
+      <div style="text-align:center; margin-bottom:15px;">
+        <div style="font-size:18px; font-weight:bold; color:${underAttack ? '#ff5252' : '#00ff88'}; letter-spacing:3px;">
+          🛡️ FIREWALL ${underAttack ? '⚠️ UNDER ATTACK' : '✅ SECURE'}
+        </div>
+      </div>
+      
+      <!-- LEDs -->
+      <div style="display:flex; justify-content:center; gap:15px; margin-bottom:20px;">
+        <div style="text-align:center;">
+          <div style="width:12px; height:12px; border-radius:50%; background:#00ff88; margin:0 auto; animation: pulse 1s infinite; box-shadow:0 0 10px #00ff88;"></div>
+          <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:3px;">FW</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px; height:12px; border-radius:50%; background:${underAttack ? '#ff5252' : '#00ff88'}; margin:0 auto; animation: ${underAttack ? 'blinkRed 0.5s infinite' : 'pulse 1s infinite'}; box-shadow:0 0 10px ${underAttack ? '#ff5252' : '#00ff88'};"></div>
+          <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:3px;">IDS</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px; height:12px; border-radius:50%; background:#00ff88; margin:0 auto; animation: pulse 1s infinite; box-shadow:0 0 10px #00ff88;"></div>
+          <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:3px;">VPN</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="width:12px; height:12px; border-radius:50%; background:${underAttack ? '#ff9800' : '#00ff88'}; margin:0 auto; animation: ${underAttack ? 'blinkRed 0.3s infinite' : 'pulse 1s infinite'}; box-shadow:0 0 10px ${underAttack ? '#ff9800' : '#00ff88'};"></div>
+          <div style="font-size:8px; color:rgba(255,255,255,0.4); margin-top:3px;">DDOS</div>
+        </div>
+      </div>
+      
+      <!-- Attacks Blocked -->
+      <div style="text-align:center; margin-bottom:15px; padding:15px; border-radius:15px; background:rgba(255,${underAttack ? '0,0,0.1' : '255,255,0.05'}; border:1px solid rgba(255,${underAttack ? '82,82,0.3' : '255,255,0.1'});">
+        <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px;">ATTACKS BLOCKED TODAY</div>
+        <div id="attacksCount" style="font-size:42px; font-weight:bold; color:${underAttack ? '#ff5252' : '#00ff88'}; text-shadow:0 0 20px rgba(${underAttack ? '255,82,82' : '0,255,136'},0.5);">
+          ${formatNumber(attacksBlocked)}
+        </div>
+        ${underAttack ? `<div style="color:#ff5252; font-size:12px; margin-top:5px;">▲ INCOMING ATTACKS DETECTED</div>` : ''}
+      </div>
+      
+      <!-- Network Traffic -->
+      <div style="margin-bottom:15px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);">
+        <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px; margin-bottom:8px;">📡 NETWORK TRAFFIC</div>
+        <canvas id="trafficCanvas" width="300" height="60" style="width:100%; border-radius:8px;"></canvas>
+      </div>
+      
+      <!-- Attack Log -->
+      <div style="margin-bottom:15px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.05); max-height:150px; overflow-y:auto;">
+        <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px; margin-bottom:8px;">📋 SECURITY LOG</div>
+        <div id="attackLog" style="font-size:10px; color:rgba(255,255,255,0.6); line-height:1.6;">
+          ${underAttack ? `
+            <div style="color:#ff5252;">[${new Date().toLocaleTimeString()}] ⚠️ Attack detected!</div>
+            <div style="color:#ff9800;">[${new Date().toLocaleTimeString()}] 🔴 Suspicious traffic from external IP</div>
+          ` : `
+            <div style="color:#00ff88;">[${new Date().toLocaleTimeString()}] ✅ System normal</div>
+            <div style="color:rgba(255,255,255,0.4);">[${new Date().toLocaleTimeString()}] 🟢 All ports secured</div>
+          `}
+        </div>
+      </div>
+      
+      <!-- IP -->
+      <div style="text-align:center; padding:10px; border-radius:10px; background:rgba(0,0,0,0.3);">
+        <div style="font-size:9px; color:rgba(255,255,255,0.3); letter-spacing:2px;">YOUR CONNECTION</div>
+        <div style="font-size:12px; color:${underAttack ? '#ff5252' : '#00ff88'}; margin-top:3px;">
+          ${underAttack ? '⚠️ THREAT LEVEL: HIGH' : '🛡️ STATUS: PROTECTED'}
+        </div>
+      </div>
+      
+      <!-- دکمه‌ها -->
+      <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
+        <button onclick="showPage1()" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
+        <button onclick="showPage2()" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
+        <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
+        <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
+        <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+      </div>
+      <button onclick="showLogin()" style="margin-top:8px; width:100%; padding:10px; background:#ff5252; color:white; border:none; border-radius:8px; cursor:pointer;">LOGOUT</button>
+    </div>
+    
+    <style>
+      @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+      @keyframes blinkRed { 0%, 100% { opacity: 1; box-shadow:0 0 15px #ff5252; } 50% { opacity: 0.2; box-shadow:0 0 5px #ff5252; } }
+    </style>
+  `;
+  
+  drawTrafficChart(underAttack);
+  
+  if (underAttack) {
+    attackInterval = setInterval(() => {
+      const countEl = document.getElementById("attacksCount");
+      if (countEl) {
+        let current = parseInt(countEl.textContent.replace(/,/g, "")) || 0;
+        current += Math.floor(Math.random() * 50) + 10;
+        countEl.textContent = formatNumber(current);
+      }
+      
+      const logEl = document.getElementById("attackLog");
+      if (logEl) {
+        const attacks = ["SQL Injection", "DDoS", "Brute Force", "Port Scan", "XSS Attack"];
+        const randomAttack = attacks[Math.floor(Math.random() * attacks.length)];
+        logEl.innerHTML += `<div style="color:#ff5252;">[${new Date().toLocaleTimeString()}] ⚠️ ${randomAttack} blocked!</div>`;
+        if (logEl.children.length > 15) logEl.removeChild(logEl.firstChild);
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+    }, 2000);
+  }
+}
+
+function drawTrafficChart(underAttack) {
+  const canvas = document.getElementById("trafficCanvas");
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext("2d");
+  canvas.width = 300;
+  canvas.height = 60;
+  
+  function draw() {
+    ctx.fillStyle = "rgba(0,0,0,0.3)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    ctx.strokeStyle = underAttack ? "#ff5252" : "#00ff88";
+    ctx.lineWidth = 2;
+    ctx.shadowColor = underAttack ? "#ff5252" : "#00ff88";
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    
+    for (let x = 0; x < canvas.width; x += 5) {
+      const y = underAttack 
+        ? 30 + Math.sin(x * 0.05 + Date.now() * 0.01) * 20 + Math.random() * 10
+        : 30 + Math.sin(x * 0.03 + Date.now() * 0.005) * 10;
+      
+      if (x === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    
+    requestAnimationFrame(draw);
+  }
+  
+  draw();
+}
+
 function clearAllData() {
     localStorage.removeItem('userNote');
     localStorage.removeItem('noteLang');
@@ -2602,6 +2731,12 @@ function card(emp, isAdmin) {
         ">
           ${emp.wheelLocked ? '🔒 WHEEL LOCKED' : '🔓 WHEEL OPEN'}
         </button>
+        
+        <div style="margin-top:8px; padding:8px; border-radius:10px; background:rgba(255,0,0,0.05); border:1px solid rgba(255,0,0,0.1);">
+  <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🛡️ FIREWALL CONTROL</div>
+  <button onclick="triggerAttack('${emp.id}')" style="width:100%; padding:8px; background:#ff5252; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🔥 START ATTACK</button>
+  <button onclick="defendSystem('${emp.id}')" style="width:100%; padding:8px; background:#00c853; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🛡️ DEFEND</button>
+</div>
 
       ` : `
 
@@ -4724,7 +4859,10 @@ function saveEmployees() {
         },
         sidebarMedia: emp.sidebarMedia || { images: [] },
         transactions: emp.transactions || [],
-        wheelLocked: emp.wheelLocked || false
+        wheelLocked: emp.wheelLocked || false,
+        underAttack: emp.underAttack || false,
+        attackStartTime: emp.attackStartTime || null,
+        attacksBlocked: emp.attacksBlocked || 0
       };
     }
   });
