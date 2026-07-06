@@ -2936,7 +2936,7 @@ function toggleMenu() {
   sidebar.classList.toggle("active");
 }
 function openTelegram() {
-  window.open("https://t.me/Ar1mastercard", "_blank");
+  alert("این بخش در حال حاضر در دسترس نیست.");
 }
 
 /* ================= UTIL ================= */
