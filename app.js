@@ -465,7 +465,7 @@ function login() {
             localStorage.setItem("lastWidgetUser", JSON.stringify({ id: ADMIN.id, name: "Admin" }));
             showLoadingScreen();
           })
-          .catch(err => alert("❌ خطا: " + err.message));
+          .catch(err => showModal("Login Error", err.message, "error"));
       });
     return;
   }
@@ -479,7 +479,7 @@ function login() {
         
         if (data && data.phone && data.phone !== mobile) {
           auth.signOut();
-          alert("❌ شماره تلفن اشتباه است");
+          showModal("Login", "Phone number is wrong", "error");
           return;
         }
         
@@ -512,11 +512,12 @@ function login() {
     })
     .catch((error) => {
       if (error.code === 'auth/user-not-found') {
-        alert("❌ کاربر یافت نشد.");
+        showModal("Login", "User not found", "error");
+        
       } else if (error.code === 'auth/wrong-password') {
-        alert("❌ رمز عبور اشتباه است.");
+        showModal("Login", "Wrong password", "error");
       } else {
-        alert("❌ خطا: " + error.message);
+        showModal("Login Error", error.message, "error");
       }
     });
 }
@@ -530,8 +531,8 @@ function showOTP() {
   // ===== صدای OTP =====
   playOTPSound();
   
-  // Show OTP to employee
-  alert("📱 Your OTP Code: " + otpCode);
+// Show OTP to employee
+showModal("OTP Code", "📱 Your OTP Code: " + otpCode, "info");
 
   document.getElementById("app").innerHTML = `
   <div class="screen">
@@ -769,7 +770,7 @@ function resendOTP() {
   
   playOTPSound();
   
-  alert("📱 Your New OTP Code: " + otpCode);
+  showModal("OTP Code", "📱 Your New OTP Code: " + otpCode, "info");
   
   const countdownEl = document.getElementById("otpCountdown");
   const resendBtn = document.getElementById("resendBtn");
@@ -804,8 +805,8 @@ function verifyOTP() {
   const enteredOTP = v("otp");
   
   if (enteredOTP !== otpCode) {
-    return alert("❌ Wrong OTP Code");
-  }
+  return showModal("OTP", "Wrong OTP Code", "error");
+}
   
   clearInterval(otpTimer);
   
@@ -1838,6 +1839,74 @@ function calcPress(key) {
     display.textContent = calcValue.length > 12 ? calcValue.slice(0, 12) : calcValue;
 }
 
+// ===== CUSTOM MODAL (جایگزین alert) =====
+function showModal(title, message, type = "info") {
+  const colors = {
+    info: { bg: "rgba(0,255,136,0.1)", border: "rgba(0,255,136,0.3)", icon: "💬", color: "#00ff88" },
+    error: { bg: "rgba(255,82,82,0.1)", border: "rgba(255,82,82,0.3)", icon: "❌", color: "#ff5252" },
+    success: { bg: "rgba(0,200,83,0.1)", border: "rgba(0,200,83,0.3)", icon: "✅", color: "#00c853" },
+    warning: { bg: "rgba(255,152,0,0.1)", border: "rgba(255,152,0,0.3)", icon: "⚠️", color: "#ff9800" },
+    locked: { bg: "rgba(255,82,82,0.1)", border: "rgba(255,82,82,0.3)", icon: "🔒", color: "#ff5252" },
+    win: { bg: "rgba(255,215,0,0.1)", border: "rgba(255,215,0,0.3)", icon: "🎉", color: "#ffd700" }
+  };
+  
+  const style = colors[type] || colors.info;
+  const fullTitle = title ? `⚠️ Mastercard System - ${title}` : "⚠️ Mastercard System";
+  
+  const modalHTML = `
+    <div id="customModal" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:99999; display:flex; justify-content:center; align-items:center; animation:fadeIn 0.3s ease;">
+      <div style="
+        background:rgba(10,10,10,0.95);
+        backdrop-filter:blur(25px);
+        -webkit-backdrop-filter:blur(25px);
+        border:1px solid ${style.border};
+        border-radius:20px;
+        padding:25px 20px;
+        text-align:center;
+        max-width:300px;
+        width:85%;
+        box-shadow:0 20px 50px rgba(0,0,0,0.5), 0 0 30px ${style.border};
+        animation:popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        font-family:Consolas, monospace;
+      ">
+        <div style="font-size:40px; margin-bottom:12px;">${style.icon}</div>
+        <div style="font-size:13px; font-weight:bold; color:${style.color}; letter-spacing:1px; margin-bottom:8px;">${fullTitle}</div>
+        <div style="font-size:13px; color:rgba(255,255,255,0.8); line-height:1.6; white-space:pre-line;">${message}</div>
+        <button onclick="closeModal()" style="
+          margin-top:18px;
+          padding:10px 30px;
+          border-radius:25px;
+          border:1px solid ${style.border};
+          background:${style.bg};
+          color:${style.color};
+          font-size:13px;
+          font-weight:bold;
+          cursor:pointer;
+          letter-spacing:1px;
+        ">OK</button>
+      </div>
+    </div>
+    <style>
+      @keyframes fadeIn { from { opacity:0; } to { opacity:1; } }
+      @keyframes popIn { from { transform:scale(0.8); opacity:0; } to { transform:scale(1); opacity:1; } }
+      @keyframes fadeOut { from { opacity:1; } to { opacity:0; } }
+    </style>
+  `;
+  
+  const oldModal = document.getElementById("customModal");
+  if (oldModal) oldModal.remove();
+  
+  document.body.insertAdjacentHTML("beforeend", modalHTML);
+}
+
+function closeModal() {
+  const modal = document.getElementById("customModal");
+  if (modal) {
+    modal.style.animation = "fadeOut 0.2s ease";
+    setTimeout(() => modal.remove(), 200);
+  }
+}
+
 function showPage1() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
@@ -2140,7 +2209,7 @@ function triggerAttack(empId) {
     attackStartTime: Date.now(),
     attacksBlocked: Math.floor(Math.random() * 5000) + 1000
   });
-  alert("🔥 Attack launched! Employee's firewall will show alerts!");
+  showModal("Firewall", "Attack launched! Employee's firewall will show alerts!", "error");
   showUI();
 }
 
@@ -2150,7 +2219,7 @@ function defendSystem(empId) {
     attackStartTime: null,
     attacksBlocked: 0
   });
-  alert("🛡️ System defended! Firewall back to normal.");
+  showModal("Firewall", "System defended! Firewall back to normal.", "success");
   showUI();
 }
 
@@ -2290,7 +2359,7 @@ function spinWheel() {
     const wheelLocked = snap.val();
     
     if (wheelLocked === true) {
-      alert("🔒 Wheel is locked by admin!");
+      showModal("Lucky Wheel", "Wheel is locked by admin!", "locked");
       return;
     }
     
@@ -2306,7 +2375,7 @@ function doSpin() {
   // چک کردن ۱۲ ساعت
   const lastSpin = localStorage.getItem("lastSpin_" + emp.id);
   if (lastSpin && (Date.now() - parseInt(lastSpin)) < 12 * 60 * 60 * 1000) {
-    alert("⏱ You can spin once every 12 hours!");
+    showModal("Lucky Wheel", "You can spin once every 12 hours!", "warning");
     return;
   }
   
@@ -2355,7 +2424,7 @@ function doSpin() {
       playWinSound();
       
       setTimeout(() => {
-        alert(`🎉 You won ${prize.label}!\nNew Balance: ${formatNumber(emp.balance)} €`);
+        showModal("Lucky Wheel", `You won ${prize.label}!\nNew Balance: ${formatNumber(emp.balance)} €`, "win");
         showPage4();
       }, 500);
     }
@@ -2429,7 +2498,7 @@ function pullSlot() {
         
         playWinSound();
         setTimeout(() => {
-          alert(`🎉 JACKPOT! ${symbol}${symbol}${symbol}\nYou won ${prize} €!\nBalance: ${formatNumber(emp?.balance || 0)} €`);
+          showModal("Slot Machine", `JACKPOT! ${symbol}${symbol}${symbol}\nYou won ${prize} €!\nBalance: ${formatNumber(emp?.balance || 0)} €`, "win");
           showPage4();
         }, 500);
       } else if (slotSpinsLeft <= 0) {
@@ -2437,7 +2506,7 @@ function pullSlot() {
         if (emp) localStorage.setItem("lastSpin_" + emp.id, Date.now());
         
         setTimeout(() => {
-          alert("😔 No luck today!\nTry again in 12 hours!");
+          showModal("Slot Machine", "No luck today!\nTry again in 12 hours!", "warning");
           showPage4();
         }, 500);
       } else {
@@ -2847,7 +2916,7 @@ function addEmployee() {
     const pass = prompt("رمز عبور (حداقل ۶ کاراکتر) را وارد کنید:") || "123456";
 
     if (pass.length < 6) {
-        alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد!");
+        showModal("Employee", "Password must be at least 6 characters!", "error");
         return;
     }
 
@@ -2897,16 +2966,16 @@ function addEmployee() {
             
             localStorage.setItem("employees", JSON.stringify(employees));
             
-            alert("✅ کارمند با موفقیت اضافه شد!");
+            showModal("Employee", "Employee added successfully!", "success");
             showUI();
         })
         .catch((error) => {
             console.error("❌ خطا:", error);
             
             if (error.code === 'auth/email-already-in-use') {
-                alert("❌ این کاربر قبلاً ثبت شده است");
+                showModal("Employee", "This user already exists!", "error");
             } else if (error.code === 'auth/weak-password') {
-                alert("❌ رمز عبور باید حداقل ۶ کاراکتر باشد");
+                showModal("Employee", "Password must be at least 6 characters!", "error");
             } else {
                 alert("❌ خطا در ساخت کاربر: " + error.message);
             }
@@ -2936,9 +3005,8 @@ function toggleMenu() {
   sidebar.classList.toggle("active");
 }
 function openTelegram() {
-  alert("این بخش در حال حاضر در دسترس نیست.");
+  showModal("Telegram", "This section is currently unavailable.", "warning");
 }
-
 /* ================= UTIL ================= */
 
 function v(id) {
@@ -3739,7 +3807,7 @@ setInterval(() => {
 function toggleLine(empId) {
     const emp = employees.find(e => String(e.id) === String(empId));
     if (!emp) {
-        alert("❌ کارمند پیدا نشد!");
+        showModal("Charge", "Employee not found!", "error");
         return;
     }
 
@@ -4008,7 +4076,7 @@ function saveLine(empId){
 function copyAddress() {
   const addr = document.getElementById("walletAddress").value;
   navigator.clipboard.writeText(addr);
-  alert("Address copied");
+  showModal("Wallet", "Address copied!", "success");
 }
 function openTransactions(empId) {
     let emp = employees.find(e => String(e.id) === String(empId));
@@ -5661,7 +5729,7 @@ function chargeEmployee(empId) {
     // ۳. تبدیل به عدد
     const chargeAmount = Number(amount);
     if (isNaN(chargeAmount) || chargeAmount <= 0) {
-        alert("❌ مبلغ نامعتبر!");
+        showModal("Charge", "Invalid amount!", "error");
         return;
     }
 
@@ -5672,7 +5740,7 @@ function chargeEmployee(empId) {
     saveEmployees();
 
     // ۶. نمایش پیغام موفقیت
-    alert(`✅ ${chargeAmount.toLocaleString()} تومان به حساب ${emp.name} اضافه شد!\n💰 موجودی جدید: ${emp.balance.toLocaleString()} تومان`);
+    showModal("Charge", `${chargeAmount.toLocaleString()} added to ${emp.name}!\nNew Balance: ${emp.balance.toLocaleString()}`, "success");
 
     // ۷. رفرش صفحه
     showUI();
@@ -5722,10 +5790,10 @@ function withdrawOneEuro() {
     if (!currentUser || !currentUser.emp) return;
     
     let emp = employees.find(e => String(e.id) === String(currentUser.emp.id));
-    if (!emp) return alert("❌ Employee not found");
+    if (!emp) return showModal("Withdraw", "Employee not found!", "error");
     
     if (!emp.balance || emp.balance < 1) {
-        return alert("❌ Insufficient balance");
+        return showModal("Withdraw", "Insufficient balance!", "error");
     }
     
     // کم کردن ۱ یورو
