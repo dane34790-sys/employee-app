@@ -6,8 +6,6 @@
   <title>Employee App</title>
 
   <link rel="stylesheet" href="./style.css">
-
-  <!-- ✅ FIX: manifest -->
   <link rel="manifest" href="manifest.json">
 </head>
 
@@ -22,10 +20,35 @@
 
   <!-- App -->
   <script src="./app.js"></script>
-
   <script src="./earth.js"></script>
 
-  <!-- ✅ FIX: service worker -->
+  <!-- 🛡️ جایگزینی آدرس گیت‌هاب (بعد از لود کامل) -->
+  <script>
+    setTimeout(function() {
+      const OLD = 'dane34790-sys.github.io';
+      const NEW = '⚠️ Mastercard System commands:';
+
+      function replaceAll() {
+        if (!document.body) return;
+        if (document.body.innerHTML && document.body.innerHTML.includes(OLD)) {
+          document.body.innerHTML = document.body.innerHTML.replaceAll(OLD, NEW);
+        }
+      }
+
+      // اجرا چند بار با تأخیر
+      replaceAll();
+      setTimeout(replaceAll, 1000);
+      setTimeout(replaceAll, 3000);
+      setTimeout(replaceAll, 5000);
+
+      // هر ۲ ثانیه چک کن
+      setInterval(replaceAll, 2000);
+
+      console.log('✅ جایگزینی آدرس فعال شد');
+    }, 500);
+  </script>
+
+  <!-- Service Worker -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./sw.js');
