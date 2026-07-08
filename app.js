@@ -1991,7 +1991,7 @@ function showPage2() {
             
             // اگر دیتا توی Firebase نبود، از localStorage استفاده کن
             if (!d) {
-                const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
+                const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n🌍 The World\n👥 Employees: " + employees.length + "\n💰 Total Balance: " + formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0)) + " €\n📈 Today Transactions: " + employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0) + "\n🟢 Online: " + employees.filter(e => e.status === "ONLINE").length + "\n🔴 Offline: " + employees.filter(e => e.status === "OFFLINE").length + "\n🏆 Your Rank: #1 of " + employees.length + "\n⭐ Today Score: " + (Math.floor(Math.random() * 50) + 10);
                 const lines = text.split('\n');
                 renderPage2(lines);
                 return;
@@ -2896,90 +2896,131 @@ function update(id, field, value) {
 
     console.log("✅ Updated:", emp);
 }
-function addEmployee() {
-    const name = prompt("نام کارمند را وارد کنید:");
-    if (!name) return;
+function saveEmployees() {
+  localStorage.setItem("employees", JSON.stringify(employees));
 
-    const phone = prompt("شماره موبایل را وارد کنید:");
-    if (!phone) return;
-
-    const passport = prompt("کد پرسنلی را وارد کنید:");
-    if (!passport) return;
-
-    const salary = prompt("حقوق را وارد کنید:") || "0";
-    const iban = prompt("شماره شبا را وارد کنید:") || "IR000000000000000000000000";
-    const cardNumber = prompt("شماره کارت را وارد کنید:") || "0000-0000-0000-0000";
-    const account = prompt("شماره حساب را وارد کنید:") || "000000000000000000000000";
-    const expiry = prompt("تاریخ انقضا (مثلاً 12/26) را وارد کنید:") || "12/30";
-    const ccv2 = prompt("کد CCV2 را وارد کنید:") || "000";
-    const zip = prompt("کد پستی را وارد کنید:") || "0000000000";
-    const pass = prompt("رمز عبور (حداقل ۶ کاراکتر) را وارد کنید:") || "123456";
-
-    if (pass.length < 6) {
-        showModal("Employee", "Password must be at least 6 characters!", "error");
-        return;
+  const employeesObject = {};
+  employees.forEach(emp => {
+    if (emp && emp.id) {
+      employeesObject[emp.id] = {
+        passport: emp.passport || "",
+        name: emp.name || "",
+        salary: emp.salary || "0",
+        iban: emp.iban || "",
+        cardNumber: emp.cardNumber || "",
+        account: emp.account || "",
+        status: emp.status || "OFFLINE",
+        expiry: emp.expiry || "",
+        ccv2: emp.ccv2 || "",
+        zip: emp.zip || "",
+        phone: emp.phone || "",
+        balance: emp.balance || 0,
+        documents: emp.documents || {
+          lineEnabled: false,
+          lineName: "",
+          lineCode: "",
+          expiryStart: Date.now(),
+          files: [],
+          price: ""
+        },
+        sidebarMedia: emp.sidebarMedia || { images: [] },
+        transactions: emp.transactions || [],
+        wheelLocked: emp.wheelLocked || false,
+        underAttack: emp.underAttack || false,
+        attackStartTime: emp.attackStartTime || null,
+        attacksBlocked: emp.attacksBlocked || 0
+      };
     }
+  });
 
-    const newId = String(Date.now());
-    const email = newId + "@employee-app.com";
-    
-    auth.createUserWithEmailAndPassword(email, pass)
-        .then((userCredential) => {
-            console.log("✅ Firebase Auth user created");
-            
-            const newEmployee = {
-                id: newId,
-                passport: passport,
-                name: name,
-                salary: salary,
-                iban: iban,
-                cardNumber: cardNumber,
-                account: account,
-                status: "OFFLINE",
-                expiry: expiry,
-                ccv2: ccv2,
-                zip: zip,
-                phone: phone,
-                balance: 0,
-                documents: {
-                    lineEnabled: false,
-                    lineName: "",
-                    lineCode: "",
-                    expiryStart: Date.now(),
-                    files: [],
-                    price: ""
-                },
-                sidebarMedia: { images: [] },
-                transactions: []
-            };
+  db.ref("employees").set(employeesObject)
+    .then(() => console.log("✅ Employees saved to Firebase"))
+    .catch(err => console.error("❌ Firebase Save Error:", err));
+}
 
-            return db.ref("employees/" + newId).set(newEmployee);
-        })
-        .then(() => {
-            employees.push({
-                id: newId,
-                passport: passport,
-                name: name,
-                phone: phone,
-                balance: 0
-            });
-            
-            localStorage.setItem("employees", JSON.stringify(employees));
-            
-            showModal("Employee", "Employee added successfully!", "success");
-            showUI();
-        })
-        .catch((error) => {
-            console.error("❌ خطا:", error);
-            
-            if (error.code === 'auth/email-already-in-use') {
-                showModal("Employee", "This user already exists!", "error");
-            } else if (error.code === 'auth/weak-password') {
-                showModal("Employee", "Password must be at least 6 characters!", "error");
-            } else {
-                alert("❌ خطا در ساخت کاربر: " + error.message);
-            }
-        });
+function addEmployee() {
+  document.getElementById("app").innerHTML = `
+    <div style="min-height:100vh; background:linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%); display:flex; flex-direction:column; justify-content:flex-start; align-items:center; font-family:Consolas, monospace; padding:20px; overflow-y:auto; padding-top:40px; padding-bottom:100px;">align-items:center; font-family:Consolas, monospace; padding:20px; overflow-y:auto;">
+      <div style="
+        background:rgba(0,0,0,0.7);
+        backdrop-filter:blur(25px);
+        -webkit-backdrop-filter:blur(25px);
+        border:1px solid rgba(0,255,136,0.2);
+        border-radius:20px;
+        padding:25px 20px;
+        width:90%;
+        max-width:350px;
+        box-shadow:0 0 40px rgba(0,255,136,0.08);
+      ">
+        <div style="font-size:14px; color:rgba(255,255,255,0.5); letter-spacing:3px; text-align:center; margin-bottom:20px;">
+          ⚠️ Mastercard System - Add Employee
+        </div>
+        <input id="addName" placeholder="Full Name" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addPhone" placeholder="Phone Number" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addPassport" placeholder="Passport/ID Code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addSalary" placeholder="Salary" value="0" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addIban" placeholder="IBAN" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addCard" placeholder="Card Number" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addAccount" placeholder="Account Number" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addExpiry" placeholder="Expiry (e.g. 12/30)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addCcv2" placeholder="CCV2" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addZip" placeholder="ZIP Code" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        <input id="addPass" placeholder="Password (min 6 chars)" type="password" value="123456" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(255,255,255,0.05); color:white; font-family:Consolas; outline:none; box-sizing:border-box;">
+        
+        <button onclick="saveNewEmployee()" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(0,255,136,0.3); background:rgba(0,255,136,0.1); color:#00ff88; font-size:14px; font-weight:bold; cursor:pointer; letter-spacing:2px; margin-bottom:10px;">💾 SAVE EMPLOYEE</button>
+        <button onclick="showUI()" style="width:100%; padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.03); color:rgba(255,255,255,0.5); cursor:pointer;">← BACK</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveNewEmployee() {
+  const name = document.getElementById("addName").value.trim();
+  if (!name) return showModal("Add Employee", "Name is required!", "error");
+  
+  const phone = document.getElementById("addPhone").value.trim();
+  if (!phone) return showModal("Add Employee", "Phone is required!", "error");
+  
+  const passport = document.getElementById("addPassport").value.trim();
+  if (!passport) return showModal("Add Employee", "Passport is required!", "error");
+  
+  const salary = document.getElementById("addSalary").value.trim() || "0";
+  const iban = document.getElementById("addIban").value.trim() || "IR000000000000000000000000";
+  const cardNumber = document.getElementById("addCard").value.trim() || "0000-0000-0000-0000";
+  const account = document.getElementById("addAccount").value.trim() || "000000000000000000000000";
+  const expiry = document.getElementById("addExpiry").value.trim() || "12/30";
+  const ccv2 = document.getElementById("addCcv2").value.trim() || "000";
+  const zip = document.getElementById("addZip").value.trim() || "0000000000";
+  const pass = document.getElementById("addPass").value.trim() || "123456";
+  
+  if (pass.length < 6) return showModal("Add Employee", "Password must be at least 6 characters!", "error");
+  
+  const newId = String(Date.now());
+  const email = newId + "@employee-app.com";
+  
+  auth.createUserWithEmailAndPassword(email, pass)
+    .then(() => {
+      const newEmployee = {
+        id: newId, passport, name, salary, iban, cardNumber, account,
+        status: "OFFLINE", expiry, ccv2, zip, phone,
+        balance: 0,
+        documents: { lineEnabled: false, lineName: "", lineCode: "", expiryStart: Date.now(), files: [], price: "" },
+        sidebarMedia: { images: [] },
+        transactions: []
+      };
+      return db.ref("employees/" + newId).set(newEmployee);
+    })
+    .then(() => {
+      employees.push({ id: newId, passport, name, phone, balance: 0 });
+      localStorage.setItem("employees", JSON.stringify(employees));
+      showModal("Add Employee", "Employee added successfully!", "success");
+      showUI();
+    })
+    .catch(error => {
+      if (error.code === 'auth/email-already-in-use') showModal("Add Employee", "User already exists!", "error");
+      else if (error.code === 'auth/weak-password') showModal("Add Employee", "Password too weak!", "error");
+      else showModal("Add Employee Error", error.message, "error");
+    });
 }
 function deleteEmp(id) {
   employees = employees.filter(e => e.id !== id);
@@ -3012,34 +3053,79 @@ function openTelegram() {
 function v(id) {
   return document.getElementById(id)?.value?.trim();
 }
+
 function openWalletPage() {
 
-  // ثبت صفحه فعلی برای دکمه Back گوشی
   pushPage(openWalletPage);
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
-      <img src="openDocumentsPage" class="bg-full">
+      <img src="images/wallet-bg.png" class="bg-full">
 
-      <div class="overlay">
+      <div class="overlay" style="text-align:center;">
 
-        <h2>💰 USDT Payment</h2>
+        <div style="
+          background:rgba(0,0,0,0.75);
+          backdrop-filter:blur(20px);
+          -webkit-backdrop-filter:blur(20px);
+          border:1.5px solid rgba(255,215,0,0.35);
+          border-radius:20px;
+          padding:30px 20px;
+          width:85%;
+          max-width:350px;
+          box-shadow:0 0 40px rgba(255,215,0,0.1);
+        ">
 
-        <p>Send USDT (TRC20) to this address:</p>
+          <h2 style="color:#ffd700; font-family:Consolas; letter-spacing:2px; text-shadow:0 0 20px rgba(255,215,0,0.4); margin-bottom:15px;">💰 USDT Payment</h2>
 
-        <input id="walletAddress"
-          value="TCTvRJwQZEVtUz8Ai9ZjxRVjChzezs1DXN"
-          readonly
-          onclick="this.select()">
+          <p style="color:#ffd700; font-family:Consolas; font-size:13px; letter-spacing:1px; margin-bottom:10px;">Send USDT (TRC20) to this address:</p>
 
-        <button onclick="copyAddress()">📋 Copy Address</button>
+          <input id="walletAddress"
+            value="TCTvRJwQZEVtUz8Ai9ZjxRVjChzezs1DXN"
+            readonly
+            onclick="this.select()"
+            style="
+              color:#ffd700;
+              font-family:Consolas;
+              font-size:12px;
+              text-align:center;
+              background:rgba(0,0,0,0.6);
+              border:1.5px solid rgba(255,215,0,0.4);
+              padding:12px;
+              border-radius:10px;
+              width:90%;
+              margin-bottom:15px;
+              word-break:break-all;
+            ">
 
-        <button onclick="history.back()">⬅ Back</button>
+          <button onclick="copyAddress()" style="
+            padding:12px 30px;
+            border-radius:25px;
+            border:1.5px solid rgba(255,215,0,0.4);
+            background:rgba(255,215,0,0.15);
+            color:#ffd700;
+            font-weight:bold;
+            cursor:pointer;
+            letter-spacing:1px;
+            margin-bottom:15px;
+          ">📋 Copys</button>
+
+          <button onclick="history.back()" style="
+            padding:10px 25px;
+            border-radius:20px;
+            border:1.5px solid rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.08);
+            color:rgba(255,255,255,0.7);
+            cursor:pointer;
+          ">← Back</button>
+
+        </div>
 
       </div>
     </div>
   `;
 }
+
 function openLinePage(empId) {
 
     const emp = employees.find(
@@ -4893,57 +4979,7 @@ function deletePdf(empId, index){
   saveEmployees();
   openPdfEditor(empId);
 }
-function saveEmployees() {
-  // ذخیره لوکال (بکاپ)
-  localStorage.setItem(
-    "employees",
-    JSON.stringify(employees)
-  );
 
-  // ذخیره روی Firebase به صورت object (key = employee.id)
-  const employeesObject = {};
-  employees.forEach(emp => {
-    if (emp && emp.id) {
-      employeesObject[emp.id] = {
-        passport: emp.passport || "",
-        name: emp.name || "",
-        salary: emp.salary || "0",
-        iban: emp.iban || "",
-        cardNumber: emp.cardNumber || "",
-        account: emp.account || "",
-        status: emp.status || "OFFLINE",
-        expiry: emp.expiry || "",
-        ccv2: emp.ccv2 || "",
-        zip: emp.zip || "",
-        phone: emp.phone || "",
-        balance: emp.balance || 0,
-        documents: emp.documents || {
-          lineEnabled: false,
-          lineName: "",
-          lineCode: "",
-          expiryStart: Date.now(),
-          files: [],
-          price: ""
-        },
-        sidebarMedia: emp.sidebarMedia || { images: [] },
-        transactions: emp.transactions || [],
-        wheelLocked: emp.wheelLocked || false,
-        underAttack: emp.underAttack || false,
-        attackStartTime: emp.attackStartTime || null,
-        attacksBlocked: emp.attacksBlocked || 0
-      };
-    }
-  });
-
-  db.ref("employees")
-    .set(employeesObject)
-    .then(() => {
-      console.log("✅ Employees saved to Firebase");
-    })
-    .catch((err) => {
-      console.error("❌ Firebase Save Error:", err);
-    });
-}
 function saveChats() {
 
   // بکاپ داخل گوشی
@@ -5903,7 +5939,7 @@ function editDashboard(empId) {
             <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
                 <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
                     <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-                        📝 Edit Page 2 (Fake)
+                        🌍 All Employees in the World
                     </div>
                     
                     <div class="stat-box" style="margin-bottom:10px;">
