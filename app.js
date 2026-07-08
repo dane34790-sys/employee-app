@@ -1187,7 +1187,7 @@ function showLiveBalance() {
   document.getElementById("app").innerHTML = `
   <div style="
     height:100vh;
-    background:linear-gradient(135deg, #0a0a0a 0%, #0d1b0d 30%, #0a1a2e 70%, #000000 100%);
+    background: url('images/balance-bg.png') center/cover;
     display:flex;
     flex-direction:column;
     justify-content:center;
