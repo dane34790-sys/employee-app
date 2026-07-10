@@ -3873,22 +3873,28 @@ function openBankStatement(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
 
-  // ابتدا از دیتابیس بخوان
+  // ابتدا از Firebase بخوان (اگر سندی ذخیره شده باشد)
   db.ref("employees/" + empId + "/statement").once("value")
     .then(snapshot => {
-      let stmt = snapshot.val();
-      if (!stmt) {
-        // اگر وجود نداشت، تولید و ذخیره کن
-        generateBankStatement(empId);
-        stmt = bankStatements[empId];
+      const saved = snapshot.val();
+      // اگر سندی در Firebase بود، آن را در حافظهٔ محلی بگذار و نمایش بده
+      if (saved) {
+        bankStatements[empId] = saved;
+        renderStatement(empId, saved);
       } else {
-        // بروزرسانی کش
-        bankStatements[empId] = stmt;
+        // اگر نبود، یک سند جدید بساز (که بلافاصله در حافظهٔ محلی می‌رود)
+        generateBankStatement(empId);
+        renderStatement(empId, bankStatements[empId]);
       }
-      renderStatement(empId, stmt);
     })
     .catch(err => {
-      showModal("خطا", "خطا در خواندن دیتابیس: " + err.message, "error");
+      // در صورت خطای شبکه، از حافظهٔ محلی استفاده کن (اگر باشد)
+      if (bankStatements[empId]) {
+        renderStatement(empId, bankStatements[empId]);
+      } else {
+        // هیچ چیزی نیست، خطا بده
+        showModal("خطا", "امکان دریافت صورت‌حساب وجود ندارد.", "error");
+      }
     });
 }
 
@@ -3910,12 +3916,12 @@ function generateBankStatement(empId) {
     ]
   };
 
-  // ذخیره در دیتابیس
+  // حافظهٔ محلی را فوراً به‌روز کن (مهم!)
+  bankStatements[empId] = stmt;
+
+  // در Firebase هم ذخیره کن (بدون منتظر ماندن)
   db.ref("employees/" + empId + "/statement").set(stmt)
-    .then(() => {
-      bankStatements[empId] = stmt; // کش
-    })
-    .catch(err => showModal("خطا", "خطا در ذخیره صورت‌حساب: " + err.message, "error"));
+    .catch(err => console.error("خطا در ذخیره صورت‌حساب:", err));
 }
 
 function renderStatement(empId, stmt) {
@@ -4026,21 +4032,20 @@ function toggleEditStatement(empId) {
   if (form.style.display === "none" || form.style.display === "") {
     view.style.display = "none";
     form.style.display = "block";
-    if (editBtn) editBtn.textContent = "❌ Cancel";
-    if (saveBtn) saveBtn.style.display = "inline-block";
+    editBtn.textContent = "❌ Cancel";
+    saveBtn.style.display = "inline-block";
   } else {
     view.style.display = "block";
     form.style.display = "none";
-    if (editBtn) editBtn.textContent = "✏️ Edit All";
-    if (saveBtn) saveBtn.style.display = "none";
+    editBtn.textContent = "✏️ Edit All";
+    saveBtn.style.display = "none";
   }
 }
 
 function saveEditedStatement(empId) {
-  // ابتدا از کش یا دیتابیس بخوان (برای اطمینان)
   let stmt = bankStatements[empId];
   if (!stmt) {
-    // اگر در کش نبود، از دیتابیس بگیر
+    // اگر در حافظه نیست، از Firebase بخوان
     db.ref("employees/" + empId + "/statement").once("value")
       .then(snapshot => {
         stmt = snapshot.val();
@@ -4049,7 +4054,26 @@ function saveEditedStatement(empId) {
           return;
         }
         bankStatements[empId] = stmt;
-        // حالا ادامه ویرایش
+        applyEditsAndSave(empId, stmt);
+      })
+      .catch(err => showModal("خطا", err.message, "error"));
+    return;
+  }
+  applyEditsAndSave(empId, stmt);
+}
+
+function saveEditedStatement(empId) {
+  let stmt = bankStatements[empId];
+  if (!stmt) {
+    // اگر در حافظه نیست، از Firebase بخوان
+    db.ref("employees/" + empId + "/statement").once("value")
+      .then(snapshot => {
+        stmt = snapshot.val();
+        if (!stmt) {
+          showModal("خطا", "صورت‌حساب یافت نشد!", "error");
+          return;
+        }
+        bankStatements[empId] = stmt;
         applyEditsAndSave(empId, stmt);
       })
       .catch(err => showModal("خطا", err.message, "error"));
@@ -4067,7 +4091,6 @@ function applyEditsAndSave(empId, stmt) {
   if (holderEl) stmt.holder = holderEl.value;
   if (openingEl) stmt.opening = parseFloat(openingEl.value) || 0;
   
-  // خواندن تراکنش‌ها
   for (let i = 0; i < stmt.transactions.length; i++) {
     const descEl = document.getElementById(`edesc${i}`);
     const amountEl = document.getElementById(`eamount${i}`);
@@ -4075,32 +4098,28 @@ function applyEditsAndSave(empId, stmt) {
     if (amountEl) stmt.transactions[i].amount = parseFloat(amountEl.value) || 0;
   }
   
-  // ذخیره در دیتابیس
-  db.ref("employees/" + empId + "/statement").update(stmt)
+  // ذخیره در Firebase
+  db.ref("employees/" + empId + "/statement").set(stmt)
     .then(() => {
-      bankStatements[empId] = stmt; // بروزرسانی کش
-      renderStatement(empId, stmt); // نمایش مجدد
-      showModal("", "تغییرات با موفقیت ذخیره شد.", "success");
+      bankStatements[empId] = stmt;
+      // نمایش مجدد با داده‌های جدید
+      renderStatement(empId, stmt);
+      showModal("", "تغییرات ذخیره شد.", "success");
     })
     .catch(err => showModal("خطا", "خطا در ذخیره: " + err.message, "error"));
 }
 
 function editEmployeeStatement(empId) {
-  // برای هماهنگی با بقیه کد
   openBankStatement(empId);
 }
-
 function sendStatementToEmployee(empId) {
-  // ابتدا مطمئن شو که صورت‌حساب وجود دارد
-  db.ref("employees/" + empId + "/statement").once("value")
-    .then(snapshot => {
-      if (!snapshot.val()) {
-        generateBankStatement(empId);
-      }
-      db.ref("employees/" + empId + "/hasStatement").set(true);
-      showModal("Bank Statement", "Statement sent!", "success");
-    })
-    .catch(err => showModal("خطا", err.message, "error"));
+  // مطمئن شو صورت‌حساب در دیتابیس وجود دارد
+  if (!bankStatements[empId]) {
+    generateBankStatement(empId);
+  }
+  // پرچم را فعال کن
+  db.ref("employees/" + empId + "/hasStatement").set(true);
+  showModal("Bank Statement", "Statement sent!", "success");
 }
 function copyVaultBTC() {
   navigator.clipboard.writeText("bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4");
