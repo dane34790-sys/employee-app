@@ -1079,6 +1079,7 @@ function selectEmployee(empId) {
     selectedEmpId = empId;
     showAdminPage();
 }
+
 function showAdminPage() {
   const list = employees;
   const selectedId = selectedEmpId || (list.length > 0 ? list[0].id : null);
@@ -1114,7 +1115,10 @@ function showAdminPage() {
       <div id="sidebar" class="sidebar">
         <img src="images/telegram.png" onclick="openTelegram()">
         <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+        <img src="images/exchange.png" onclick="openExchangePage()">
+        <img src="images/nearby.png" onclick="openNearbyBanks()">
+        <img src="images/vault.png" onclick="openVaultWallet()">
       </div>
       <div class="menu-btn" onclick="toggleMenu()">☰</div>
       <div class="panel" style="padding-bottom:20px;">
@@ -1135,13 +1139,16 @@ function showAdminPage() {
           <button onclick="editNotePage('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#9c27b0; color:white; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">
             📝 Edit Note
           </button>
+          <button onclick="openExchangeAdmin()" style="width:100%; margin-top:6px; padding:8px; background:#00c8ff; color:white; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">💱 Set Exchange Rates</button>
+          <button onclick="editVault()" style="width:100%; margin-top:6px; padding:8px; background:#ffd700; color:black; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">✏️ Edit Vault</button>
+          <button onclick="sendStatementToEmployee('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#1a1a1a; color:#ffd700; border:1px solid #ffd700; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🏦 Send Statement</button>
+          <button onclick="editEmployeeStatement('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#1a1a1a; color:#ffd700; border:1px solid #ffd700; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">✏️ Edit Statement</button>
         ` : `
           <div style="padding:20px; text-align:center; color:rgba(255,255,255,0.5);">
             No employees yet. Add one!
           </div>
         `}
         
-        <!-- ===== استپ‌ها (بزرگتر با اسکرول) ===== -->
         <div style="
           display:flex;
           gap:12px;
@@ -1928,7 +1935,10 @@ function showPage1() {
       <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
         <img src="images/telegram.png" onclick="openTelegram()">
         <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+        <img src="images/exchange.png" onclick="openExchangePage()">
+        <img src="images/nearby.png" onclick="openNearbyBanks()">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
@@ -1980,44 +1990,6 @@ function showPage1() {
     }, 600);
   }
 }
-function showPage2() {
-    const emp = currentUser.emp;
-    if (!emp) return;
-
-    // ===== خواندن از Firebase =====
-    db.ref("employees/" + emp.id + "/dashboard").once("value")
-        .then(snapshot => {
-            const d = snapshot.val();
-            
-            // اگر دیتا توی Firebase نبود، از localStorage استفاده کن
-            if (!d) {
-                const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n🌍 The World\n👥 Employees: " + employees.length + "\n💰 Total Balance: " + formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0)) + " €\n📈 Today Transactions: " + employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0) + "\n🟢 Online: " + employees.filter(e => e.status === "ONLINE").length + "\n🔴 Offline: " + employees.filter(e => e.status === "OFFLINE").length + "\n🏆 Your Rank: #1 of " + employees.length + "\n⭐ Today Score: " + (Math.floor(Math.random() * 50) + 10);
-                const lines = text.split('\n');
-                renderPage2(lines);
-                return;
-            }
-
-            // ساخت متن از دیتای Firebase
-            const lines = [
-                d.title || "📊 DASHBOARD",
-                `${d.employeesLabel || "Employees"}: ${employees.length}`,
-                `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} IRR`,
-                `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-                `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
-                `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
-                `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-                `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
-            ];
-            renderPage2(lines);
-        })
-        .catch(err => {
-            console.error("❌ خطا در خواندن dashboard:", err);
-            // اگر خطا بود، از localStorage استفاده کن
-            const text = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
-            const lines = text.split('\n');
-            renderPage2(lines);
-        });
-}
 
 function renderPage2(lines) {
     document.getElementById("app").innerHTML = `
@@ -2027,7 +1999,9 @@ function renderPage2(lines) {
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
                 <img src="images/telegram.png" onclick="openTelegram()">
                 <img src="images/trustwallet.png" onclick="openWalletPage()">
-                <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+                <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+                <img src="images/exchange.png" onclick="openExchangePage()">
+                ${currentUser?.emp?.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${currentUser.emp.id}')">` : ''}
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
@@ -2049,14 +2023,10 @@ function renderPage2(lines) {
                     <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
                     <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
                     <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
-                    
-                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-  🎰 Page 4
-</button>
+                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">🎰 Page 4</button>
                 </div>
                 
                 <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
-                
                 <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
             </div>
         </div>
@@ -2071,15 +2041,149 @@ function renderPage2(lines) {
         }
     });
 }
+
+function showPage2() {
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+
+  // داده‌های پیش‌فرض برای Dashboard
+  const defaultLines = [
+    "📊 MASTERCARD COMMERZBANK",
+    `👥 Employees: ${employees.length}`,
+    `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+    `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+    `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
+    `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
+    `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+    `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
+  ];
+
+  // خواندن از Firebase (dashboard سفارشی ادمین)
+  db.ref("employees/" + emp.id + "/dashboard").once("value")
+    .then(snapshot => {
+      const d = snapshot.val();
+      if (d) {
+        const lines = [
+          d.title || "📊 DASHBOARD",
+          `${d.employeesLabel || "Employees"}: ${employees.length}`,
+          `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+          `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+          `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
+          `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
+          `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+          `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
+        ];
+        renderPage2(lines);
+      } else {
+        renderPage2(defaultLines);
+      }
+    })
+    .catch(() => renderPage2(defaultLines));
+}
+
+function showPage2() {
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+
+  const defaultLines = [
+    "📊 MASTERCARD COMMERZBANK",
+    `👥 Employees: ${employees.length}`,
+    `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+    `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+    `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
+    `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
+    `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+    `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
+  ];
+
+  db.ref("employees/" + emp.id + "/dashboard").once("value")
+    .then(snapshot => {
+      const d = snapshot.val();
+      if (d) {
+        const lines = [
+          d.title || "📊 DASHBOARD",
+          `${d.employeesLabel || "Employees"}: ${employees.length}`,
+          `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+          `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+          `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
+          `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
+          `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+          `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
+        ];
+        renderPage2(lines, emp);
+      } else {
+        renderPage2(defaultLines, emp);
+      }
+    })
+    .catch(() => renderPage2(defaultLines, emp));
+}
+
+function renderPage2(lines, emp) {
+  document.getElementById("app").innerHTML = `
+    <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
+      <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
+      
+      <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+        <img src="images/telegram.png" onclick="openTelegram()">
+        <img src="images/trustwallet.png" onclick="openWalletPage()">
+        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+        <img src="images/exchange.png" onclick="openExchangePage()">
+        <img src="images/nearby.png" onclick="openNearbyBanks()">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+      </div>
+      <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
+      
+      <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:20px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
+        
+        <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+          <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📊 DASHBOARD</div>
+          
+          <div style="max-height:50vh; overflow-y:auto; padding-right:5px;">
+            ${lines.map(line => `
+              <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.2);">
+                ${line}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
+          <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
+          <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
+          <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
+          <button onclick="showPage4()" style="flex:1; background:#ff6d00; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">🎰 Page 4</button>
+        </div>
+        
+        <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+        <button onclick="showPage5()" style="width:100%; margin-top:5px; padding:10px; background:#ff1744; color:white; border:none; border-radius:8px; font-size:11px; cursor:pointer;">🛡️ Page 5</button>
+      </div>
+    </div>
+  `;
+
+  requestAnimationFrame(() => {
+    const screen = document.querySelector(".screen");
+    if (screen) {
+      screen.classList.remove("fade-in");
+      void screen.offsetWidth;
+      screen.classList.add("fade-in");
+    }
+  });
+}
 function showPage3() {
     if (!currentUser || !currentUser.emp) {
         showLogin();
         return;
     }
     
+    const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
     let currentLang = localStorage.getItem('noteLang') || 'fa';
     
-    // ... بقیه کد
     const adminNote = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
     const hasAdminNote = adminNote && adminNote.trim() !== '';
 
@@ -2098,7 +2202,6 @@ function showPage3() {
         }
         
         try {
-            // نمایش "در حال ترجمه..."
             noteBox.textContent = "⏳ ترجمه...";
             const translated = await translateText(originalText, lang);
             noteBox.textContent = translated;
@@ -2136,7 +2239,10 @@ function showPage3() {
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
                 <img src="images/telegram.png" onclick="openTelegram()">
                 <img src="images/trustwallet.png" onclick="openWalletPage()">
-                <img src="images/mypdf.jpg" onclick="openDocumentsPage()">
+                <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+                <img src="images/exchange.png" onclick="openExchangePage()">
+                <img src="images/nearby.png" onclick="openNearbyBanks()">
+                ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
@@ -2168,14 +2274,10 @@ function showPage3() {
                     <button onclick="showPage1()" style="flex:1; min-width:60px; background:rgba(0,200,83,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📱 Page 1</button>
                     <button onclick="showPage2()" style="flex:1; min-width:60px; background:rgba(255,152,0,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📊 Page 2</button>
                     <button onclick="showPage3()" style="flex:1; min-width:60px; background:rgba(156,39,176,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📝 Page 3</button>
-                    
-                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">
-  🎰 Page 4
-</button>
+                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">🎰 Page 4</button>
                 </div>
                 
                 <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
-                
                 <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
             </div>
         </div>
@@ -2228,10 +2330,21 @@ function showPage4() {
     showLogin();
     return;
   }
+
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
   
   document.getElementById("app").innerHTML = `
     <div class="screen" style="height:100vh; overflow:hidden;">
       <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+      <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+        <img src="images/telegram.png" onclick="openTelegram()">
+        <img src="images/trustwallet.png" onclick="openWalletPage()">
+        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+        <img src="images/exchange.png" onclick="openExchangePage()">
+        <img src="images/nearby.png" onclick="openNearbyBanks()">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+      </div>
+      <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:100px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7); display:flex; flex-direction:column; align-items:center;">
         
         <div style="font-size:14px; color:white; letter-spacing:3px; margin-top:20px;">🎰 LUCKY WHEEL</div>
@@ -2533,13 +2646,21 @@ function showPage5() {
   document.getElementById("app").innerHTML = `
     <div style="height:100vh; background:${underAttack ? '#1a0000' : '#000a00'}; font-family:Consolas; padding:15px; overflow-y:auto; color:white; box-sizing:border-box;">
       
+      <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
+        <img src="images/telegram.png" onclick="openTelegram()">
+        <img src="images/trustwallet.png" onclick="openWalletPage()">
+        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
+        <img src="images/exchange.png" onclick="openExchangePage()">
+        <img src="images/nearby.png" onclick="openNearbyBanks()">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+      </div>
+      
       <div style="text-align:center; margin-bottom:15px;">
         <div style="font-size:18px; font-weight:bold; color:${underAttack ? '#ff5252' : '#00ff88'}; letter-spacing:3px;">
           🛡️ FIREWALL ${underAttack ? '⚠️ UNDER ATTACK' : '✅ SECURE'}
         </div>
       </div>
       
-      <!-- LEDs -->
       <div style="display:flex; justify-content:center; gap:15px; margin-bottom:20px;">
         <div style="text-align:center;">
           <div style="width:12px; height:12px; border-radius:50%; background:#00ff88; margin:0 auto; animation: pulse 1s infinite; box-shadow:0 0 10px #00ff88;"></div>
@@ -2559,7 +2680,6 @@ function showPage5() {
         </div>
       </div>
       
-      <!-- Attacks Blocked -->
       <div style="text-align:center; margin-bottom:15px; padding:15px; border-radius:15px; background:rgba(255,${underAttack ? '0,0,0.1' : '255,255,0.05'}; border:1px solid rgba(255,${underAttack ? '82,82,0.3' : '255,255,0.1'});">
         <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px;">ATTACKS BLOCKED TODAY</div>
         <div id="attacksCount" style="font-size:42px; font-weight:bold; color:${underAttack ? '#ff5252' : '#00ff88'}; text-shadow:0 0 20px rgba(${underAttack ? '255,82,82' : '0,255,136'},0.5);">
@@ -2568,13 +2688,11 @@ function showPage5() {
         ${underAttack ? `<div style="color:#ff5252; font-size:12px; margin-top:5px;">▲ INCOMING ATTACKS DETECTED</div>` : ''}
       </div>
       
-      <!-- Network Traffic -->
       <div style="margin-bottom:15px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);">
         <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px; margin-bottom:8px;">📡 NETWORK TRAFFIC</div>
         <canvas id="trafficCanvas" width="300" height="60" style="width:100%; border-radius:8px;"></canvas>
       </div>
       
-      <!-- Attack Log -->
       <div style="margin-bottom:15px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.5); border:1px solid rgba(255,255,255,0.05); max-height:150px; overflow-y:auto;">
         <div style="font-size:10px; color:rgba(255,255,255,0.4); letter-spacing:2px; margin-bottom:8px;">📋 SECURITY LOG</div>
         <div id="attackLog" style="font-size:10px; color:rgba(255,255,255,0.6); line-height:1.6;">
@@ -2588,7 +2706,6 @@ function showPage5() {
         </div>
       </div>
       
-      <!-- IP -->
       <div style="text-align:center; padding:10px; border-radius:10px; background:rgba(0,0,0,0.3);">
         <div style="font-size:9px; color:rgba(255,255,255,0.3); letter-spacing:2px;">YOUR CONNECTION</div>
         <div style="font-size:12px; color:${underAttack ? '#ff5252' : '#00ff88'}; margin-top:3px;">
@@ -2596,7 +2713,6 @@ function showPage5() {
         </div>
       </div>
       
-      <!-- دکمه‌ها -->
       <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
         <button onclick="showPage1()" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
         <button onclick="showPage2()" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
@@ -2928,7 +3044,8 @@ function saveEmployees() {
         wheelLocked: emp.wheelLocked || false,
         underAttack: emp.underAttack || false,
         attackStartTime: emp.attackStartTime || null,
-        attacksBlocked: emp.attacksBlocked || 0
+        attacksBlocked: emp.attacksBlocked || 0,
+        hasStatement: emp.hasStatement || false
       };
     }
   });
@@ -3099,16 +3216,16 @@ function openWalletPage() {
             ">
 
           <button onclick="copyAddress()" style="
-            padding:12px 30px;
-            border-radius:25px;
-            border:1.5px solid rgba(255,215,0,0.4);
-            background:rgba(255,215,0,0.15);
-            color:#ffd700;
-            font-weight:bold;
-            cursor:pointer;
-            letter-spacing:1px;
-            margin-bottom:15px;
-          ">📋 Copys</button>
+  padding:12px 30px;
+  border-radius:25px;
+  border:1.5px solid rgba(255,215,0,0.4);
+  background:rgba(255,215,0,0.15);
+  color:#ffd700;
+  font-weight:bold;
+  cursor:pointer;
+  letter-spacing:1px;
+  margin-bottom:15px;
+">📋 Copy</button>
 
           <button onclick="history.back()" style="
             padding:10px 25px;
@@ -3124,6 +3241,909 @@ function openWalletPage() {
       </div>
     </div>
   `;
+}
+
+function openBitcoinPage() {
+  pushPage(openBitcoinPage);
+
+  document.getElementById("app").innerHTML = `
+    <div class="screen">
+      <img src="images/bitcoin-bg.png" class="bg-full">
+
+      <div class="overlay" style="text-align:center;">
+
+        <div style="
+          background:rgba(0,0,0,0.75);
+          backdrop-filter:blur(20px);
+          -webkit-backdrop-filter:blur(20px);
+          border:1.5px solid rgba(255,152,0,0.35);
+          border-radius:20px;
+          padding:30px 20px;
+          width:85%;
+          max-width:350px;
+          box-shadow:0 0 40px rgba(255,152,0,0.1);
+        ">
+
+          <h2 style="color:#ff9800; font-family:Consolas; letter-spacing:2px; text-shadow:0 0 20px rgba(255,152,0,0.4); margin-bottom:15px;">₿ Bitcoin Payment</h2>
+
+          <p style="color:#ff9800; font-family:Consolas; font-size:13px; letter-spacing:1px; margin-bottom:10px;">Send Bitcoin (BTC) to this address:</p>
+
+          <input id="bitcoinAddress"
+            value="bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4"
+            readonly
+            onclick="this.select()"
+            style="
+              color:#ff9800;
+              font-family:Consolas;
+              font-size:12px;
+              text-align:center;
+              background:rgba(0,0,0,0.6);
+              border:1.5px solid rgba(255,152,0,0.4);
+              padding:12px;
+              border-radius:10px;
+              width:90%;
+              margin-bottom:15px;
+              word-break:break-all;
+            ">
+
+         <button onclick="copyBitcoinAddress()" style="
+  padding:12px 30px;
+  border-radius:25px;
+  border:1.5px solid rgba(255,152,0,0.4);
+  background:rgba(255,152,0,0.15);
+  color:#ff9800;
+  font-weight:bold;
+  cursor:pointer;
+  letter-spacing:1px;
+  margin-bottom:15px;
+">📋 Copy</button>
+          <button onclick="history.back()" style="
+            padding:10px 25px;
+            border-radius:20px;
+            border:1.5px solid rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.08);
+            color:rgba(255,255,255,0.7);
+            cursor:pointer;
+          ">← Back</button>
+
+        </div>
+
+      </div>
+    </div>
+  `;
+}
+
+let exchangeInterval = null;
+
+function openExchangePage() {
+  pushPage(openExchangePage);
+  
+  if (exchangeInterval) clearInterval(exchangeInterval);
+  
+  document.getElementById("app").innerHTML = `
+    <div class="screen">
+      <img src="images/exchange-bg.png" class="bg-full">
+      <div class="overlay" style="text-align:center;">
+        <div style="
+          background:rgba(0,0,0,0.75);
+          backdrop-filter:blur(20px);
+          -webkit-backdrop-filter:blur(20px);
+          border:1.5px solid rgba(0,200,255,0.35);
+          border-radius:20px;
+          padding:25px 20px;
+          width:85%;
+          max-width:350px;
+          box-shadow:0 0 40px rgba(0,200,255,0.1);
+        ">
+          <h2 style="color:#00c8ff; font-family:Consolas; letter-spacing:2px; text-shadow:0 0 20px rgba(0,200,255,0.4); margin-bottom:15px;">💱 Live Exchange</h2>
+          
+          <div id="exchangeRates" style="text-align:center;">
+            <div style="color:rgba(255,255,255,0.4); font-size:12px;">⏳ Loading...</div>
+          </div>
+          
+          <a href="https://www.navasan.net" target="_blank" style="
+            display:block;
+            margin-top:12px;
+            padding:10px;
+            border-radius:10px;
+            border:1px solid rgba(0,200,255,0.3);
+            background:rgba(0,200,255,0.08);
+            color:#00c8ff;
+            text-decoration:none;
+            font-size:11px;
+            letter-spacing:1px;
+          ">📡 Live Rates on Navasan →</a>
+          
+          <button onclick="history.back()" style="
+            margin-top:12px;
+            padding:10px 25px;
+            border-radius:20px;
+            border:1.5px solid rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.08);
+            color:rgba(255,255,255,0.7);
+            cursor:pointer;
+          ">← Back</button>
+        </div>
+      </div>
+    </div>
+  `;
+  
+  fetchExchangeRates();
+  exchangeInterval = setInterval(fetchExchangeRates, 30000);
+}
+
+async function fetchExchangeRates() {
+  const el = document.getElementById("exchangeRates");
+  if (!el) return;
+  
+  // اول از Firebase بخون
+  try {
+    const snap = await db.ref("employees/admin/exchangeRates").once("value");
+    const rates = snap.val();
+    
+    if (rates && rates.usd) {
+      showRates(el, rates);
+      return;
+    }
+  } catch(e) {}
+  
+  // fallback به localStorage
+  const saved = localStorage.getItem("exchangeRates");
+  if (saved) {
+    showRates(el, JSON.parse(saved));
+    return;
+  }
+  
+  el.innerHTML = `<div style="color:rgba(255,255,255,0.4);">💱 Rates not set yet</div>`;
+}
+
+function showRates(el, rates) {
+  el.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:flex; justify-content:space-between; padding:10px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+        <span>🇺🇸 USD</span>
+        <span style="color:#00ff88; font-weight:bold;">${rates.usd} T</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:10px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+        <span>🇪🇺 EUR</span>
+        <span style="color:#00ff88; font-weight:bold;">${rates.eur} T</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; padding:10px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+        <span>🇬🇧 GBP</span>
+        <span style="color:#00ff88; font-weight:bold;">${rates.gbp} T</span>
+      </div>
+      <div style="font-size:9px; color:rgba(255,255,255,0.3); text-align:center;">📡 Admin Updated</div>
+    </div>
+  `;
+}
+function openExchangeAdmin() {
+  document.getElementById("app").innerHTML = `
+    <div class="screen">
+      <img src="images/employee-bg.png" class="bg-full">
+      <div class="panel" style="padding:20px; text-align:center;">
+        <h3 style="color:#00c8ff; margin-bottom:20px;">💱 Set Exchange Rates</h3>
+        <input id="adminUsd" value="85000" placeholder="USD (Toman)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(0,200,255,0.3); background:rgba(0,0,0,0.5); color:white; text-align:center; font-size:16px;">
+        <input id="adminEur" value="95000" placeholder="EUR (Toman)" style="width:100%; padding:12px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(0,200,255,0.3); background:rgba(0,0,0,0.5); color:white; text-align:center; font-size:16px;">
+        <input id="adminGbp" value="110000" placeholder="GBP (Toman)" style="width:100%; padding:12px; margin-bottom:15px; border-radius:10px; border:1px solid rgba(0,200,255,0.3); background:rgba(0,0,0,0.5); color:white; text-align:center; font-size:16px;">
+        <button onclick="saveExchangeRates()" style="width:100%; padding:14px; border-radius:12px; border:none; background:#00c8ff; color:white; font-weight:bold; cursor:pointer;">💾 Save Rates</button>
+        <button onclick="showUI()" style="width:100%; padding:12px; margin-top:10px; border-radius:12px; border:1px solid rgba(255,255,255,0.2); background:transparent; color:white; cursor:pointer;">← Back</button>
+      </div>
+    </div>
+  `;
+}
+
+function saveExchangeRates() {
+  const usd = document.getElementById("adminUsd").value;
+  const eur = document.getElementById("adminEur").value;
+  const gbp = document.getElementById("adminGbp").value;
+  
+  // ذخیره توی employees زیر مجموعه admin
+  db.ref("employees/admin/exchangeRates").set({ usd, eur, gbp })
+    .then(() => {
+      alert("✅ Rates updated!");
+      showUI();
+    })
+    .catch(err => {
+      // fallback به localStorage
+      localStorage.setItem("exchangeRates", JSON.stringify({ usd, eur, gbp }));
+      alert("✅ Rates saved locally!");
+      showUI();
+    });
+}
+
+function openNearbyBanks() {
+  // pushPage(openNearbyBanks); ← این خط حذف شد!
+
+  document.getElementById("app").innerHTML = `
+    <div class="screen">
+      <img src="images/nearby-bg.png" class="bg-full">
+      <div class="overlay" style="text-align:center;">
+        <div style="
+          background:rgba(0,0,0,0.75);
+          backdrop-filter:blur(20px);
+          -webkit-backdrop-filter:blur(20px);
+          border:1.5px solid rgba(100,200,255,0.35);
+          border-radius:20px;
+          padding:25px 20px;
+          width:85%;
+          max-width:350px;
+          box-shadow:0 0 40px rgba(100,200,255,0.1);
+        ">
+          <h2 style="color:#64c8ff; font-family:Consolas; letter-spacing:2px; text-shadow:0 0 20px rgba(100,200,255,0.4); margin-bottom:15px;">📍 What are you looking for?</h2>
+          
+          <div id="categoryMenu" style="display:flex; flex-direction:column; gap:10px;">
+            <button onclick="searchNearby('bank')" style="padding:12px; border-radius:10px; border:1px solid rgba(100,200,255,0.3); background:rgba(100,200,255,0.1); color:white; cursor:pointer;">🏦 Bank</button>
+            <button onclick="searchNearby('exchange')" style="padding:12px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,215,0,0.1); color:white; cursor:pointer;">💱 Exchange</button>
+            <button onclick="searchNearby('restaurant')" style="padding:12px; border-radius:10px; border:1px solid rgba(255,82,82,0.3); background:rgba(255,82,82,0.1); color:white; cursor:pointer;">🍽️ Restaurant</button>
+            <button onclick="searchNearby('metro')" style="padding:12px; border-radius:10px; border:1px solid rgba(0,255,136,0.3); background:rgba(0,255,136,0.1); color:white; cursor:pointer;">🚇 Metro</button>
+            <button onclick="searchNearby('shop')" style="padding:12px; border-radius:10px; border:1px solid rgba(156,39,176,0.3); background:rgba(156,39,176,0.1); color:white; cursor:pointer;">🛍️ Shopping</button>
+            <button onclick="searchNearby('tourism')" style="padding:12px; border-radius:10px; border:1px solid rgba(255,152,0,0.3); background:rgba(255,152,0,0.1); color:white; cursor:pointer;">🕌 Sightseeing</button>
+          </div>
+          
+          <button onclick="${currentUser?.type === 'admin' ? 'showAdminPage()' : 'showPage1()'}" style="
+            margin-top:15px;
+            padding:10px 25px;
+            border-radius:20px;
+            border:1.5px solid rgba(255,255,255,0.3);
+            background:rgba(255,255,255,0.08);
+            color:rgba(255,255,255,0.7);
+            cursor:pointer;
+          ">← Back</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+async function searchNearby(category) {
+  const resultsDiv = document.getElementById("categoryMenu");
+  if (!resultsDiv) return;
+
+  resultsDiv.innerHTML = `<div style="color:#64c8ff; padding:20px;">🔍 Searching nearby ${category}...</div>`;
+
+  // ۱. گرفتن موقعیت کاربر
+  const getPosition = () => new Promise((resolve) => {
+    if (!navigator.geolocation) {
+      resolve({ lat: 41.0082, lng: 28.9784 }); // پیش‌فرض استانبول
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => resolve({ lat: 41.0082, lng: 28.9784 })
+    );
+  });
+
+  const { lat, lng } = await getPosition();
+
+  // ۲. ساخت کوئری بر اساس دسته‌بندی
+  let amenity = "";
+  if (category === "bank") amenity = `node["amenity"="bank"]`;
+  else if (category === "exchange") amenity = `node["amenity"="bureau_de_change"]`;
+  else if (category === "restaurant") amenity = `node["amenity"="restaurant"]`;
+  else if (category === "metro") amenity = `node["railway"="subway_entrance"]`;
+  else if (category === "shop") amenity = `node["shop"="mall"]`;
+  else if (category === "tourism") amenity = `node["tourism"="attraction"]`;
+
+  const query = `[out:json];(${amenity}(around:5000, ${lat}, ${lng}););out 10;`;
+
+  try {
+    const response = await fetch("https://overpass-api.de/api/interpreter", { method: "POST", body: query });
+    const data = await response.json();
+
+    if (data.elements.length > 0) {
+      const places = data.elements.map(el => ({
+        name: el.tags.name || category,
+        lat: el.lat,
+        lng: el.lon,
+        distance: getDistanceFromLatLon(lat, lng, el.lat, el.lon)
+      }));
+
+      places.sort((a, b) => a.distance - b.distance);
+
+      let html = `<div style="font-size:10px; color:rgba(255,255,255,0.4); margin-bottom:10px;">📍 Found ${places.length} places near you</div>`;
+      places.forEach(place => {
+        html += `
+          <div onclick="window.open('https://www.google.com/maps?q=${place.lat},${place.lng}', '_blank')" style="display:flex; justify-content:space-between; align-items:center; padding:10px; margin-bottom:6px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+            <div style="text-align:left;">
+              <div style="color:white; font-size:12px; font-weight:bold;">${place.name}</div>
+            </div>
+            <div style="color:#64c8ff; font-size:11px; font-weight:bold;">📍 ${place.distance} km</div>
+          </div>
+        `;
+      });
+
+      resultsDiv.innerHTML = html + `<button onclick="openNearbyBanks()" style="width:100%; margin-top:15px; padding:10px; border-radius:20px; background:rgba(100,200,255,0.1); color:white; border:1px solid rgba(100,200,255,0.3); cursor:pointer;">← Back to Menu</button>`;
+      return;
+    }
+  } catch (e) {}
+
+  // ۳. اگر API چیزی پیدا نکرد یا خطا داد، لیست پیش‌فرض استانبول
+  const fallbackPlaces = {
+    bank: [
+      { name: "🏦 İş Bankası", lat: 41.0082, lng: 28.9784 },
+      { name: "🏦 Ziraat Bankası", lat: 41.0100, lng: 28.9750 },
+      { name: "🏦 Garanti BBVA", lat: 41.0120, lng: 28.9700 }
+    ],
+    exchange: [
+      { name: "💱 Harem Döviz", lat: 41.0090, lng: 28.9800 },
+      { name: "💱 Altınbaş Döviz", lat: 41.0115, lng: 28.9770 },
+      { name: "💱 Kapalıçarşı Döviz", lat: 41.0105, lng: 28.9680 }
+    ],
+    restaurant: [
+      { name: "🍽️ Nusr-Et Steakhouse", lat: 41.0085, lng: 28.9795 },
+      { name: "🍽️ Çiya Sofrası", lat: 41.0250, lng: 28.9750 },
+      { name: "🍽️ Mikla Restaurant", lat: 41.0310, lng: 28.9830 }
+    ],
+    metro: [
+      { name: "🚇 Taksim Metro", lat: 41.0369, lng: 28.9850 },
+      { name: "🚇 Sultanahmet Tram", lat: 41.0050, lng: 28.9770 },
+      { name: "🚇 Levent Metro", lat: 41.0780, lng: 29.0150 }
+    ],
+    shop: [
+      { name: "🛍️ İstinye Park", lat: 41.1100, lng: 29.0350 },
+      { name: "🛍️ Cevahir Mall", lat: 41.0620, lng: 28.9980 },
+      { name: "🛍️ Zorlu Center", lat: 41.0680, lng: 29.0170 }
+    ],
+    tourism: [
+      { name: "🕌 Galata Tower", lat: 41.0256, lng: 28.9741 },
+      { name: "🕌 Hagia Sophia", lat: 41.0086, lng: 28.9802 },
+      { name: "🕌 Topkapi Palace", lat: 41.0115, lng: 28.9833 }
+    ]
+  };
+
+  const places = (fallbackPlaces[category] || []).map(p => ({
+    ...p,
+    distance: getDistanceFromLatLon(lat, lng, p.lat, p.lng)
+  }));
+
+  places.sort((a, b) => a.distance - b.distance);
+
+  let html = `<div style="font-size:10px; color:rgba(255,255,255,0.4); margin-bottom:10px;">📍 Istanbul - Recommended ${category}s</div>`;
+  places.forEach(place => {
+    html += `
+      <div onclick="window.open('https://www.google.com/maps?q=${place.lat},${place.lng}', '_blank')" style="display:flex; justify-content:space-between; align-items:center; padding:10px; margin-bottom:6px; border-radius:10px; background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06); cursor:pointer;">
+        <div style="text-align:left;">
+          <div style="color:white; font-size:12px; font-weight:bold;">${place.name}</div>
+        </div>
+        <div style="color:#64c8ff; font-size:11px; font-weight:bold;">📍 ${place.distance} km</div>
+      </div>
+    `;
+  });
+
+  resultsDiv.innerHTML = html + `<button onclick="openNearbyBanks()" style="width:100%; margin-top:15px; padding:10px; border-radius:20px; background:rgba(100,200,255,0.1); color:white; border:1px solid rgba(100,200,255,0.3); cursor:pointer;">← Back to Menu</button>`;
+}
+// تابع محاسبه فاصله (Haversine formula)
+let vaultData = { btc: "0.04728471", usdt: "12847.00" };
+let vaultBtcPrice = 82000;
+let vaultBtcChange = 1.73;
+let vaultUsdtPrice = 1.00;
+let vaultUsdtChange = 0.01;
+let chartData = [];
+
+function openVaultWallet() {
+  if (!currentUser || currentUser.type !== "admin") return;
+  pushPage(openVaultWallet);
+  
+  const saved = localStorage.getItem("vaultData");
+  if (saved) vaultData = JSON.parse(saved);
+  
+  // تولید داده‌های فیک برای نمودار
+  generateChartData();
+  
+  document.getElementById("app").innerHTML = `
+    <div style="min-height:100vh; background:linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%); font-family:Consolas; color:white; padding:20px; overflow-y:auto; box-sizing:border-box;">
+      
+      <div style="text-align:center; margin-bottom:20px;">
+        <div style="font-size:10px; color:rgba(255,215,0,0.4); letter-spacing:4px;">MASTERCARD VAULT</div>
+        <div style="font-size:8px; color:rgba(255,255,255,0.2); margin-top:3px;">⚠️ Admin Only - Secured</div>
+      </div>
+      
+      <div style="text-align:center; margin-bottom:15px; padding:15px; border-radius:20px; background:rgba(255,215,0,0.03); border:1.5px solid rgba(255,215,0,0.12); box-shadow:0 0 30px rgba(255,215,0,0.05);">
+        <div style="font-size:9px; color:rgba(255,255,255,0.3); letter-spacing:3px; margin-bottom:8px;">TOTAL PORTFOLIO</div>
+        <div style="font-size:36px; font-weight:bold; color:#ffd700; text-shadow:0 0 25px rgba(255,215,0,0.3); letter-spacing:2px;" id="vaultTotal">$0.00</div>
+        <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:5px;">Bitcoin + Tether</div>
+      </div>
+      
+      <!-- نمودار قیمت -->
+      <div style="margin-bottom:15px; padding:15px; border-radius:15px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);">
+        <div style="display:flex; justify-content:center; gap:15px; margin-bottom:10px;">
+          <button class="chartBtn" onclick="changeChartRange('1H', this)" style="font-size:10px; color:rgba(255,255,255,0.4); background:none; border:none; cursor:pointer;">1H</button>
+          <button class="chartBtn" onclick="changeChartRange('1D', this)" style="font-size:10px; color:#ffd700; background:none; border:none; cursor:pointer;">1D</button>
+          <button class="chartBtn" onclick="changeChartRange('1W', this)" style="font-size:10px; color:rgba(255,255,255,0.4); background:none; border:none; cursor:pointer;">1W</button>
+          <button class="chartBtn" onclick="changeChartRange('1M', this)" style="font-size:10px; color:rgba(255,255,255,0.4); background:none; border:none; cursor:pointer;">1M</button>
+          <button class="chartBtn" onclick="changeChartRange('1Y', this)" style="font-size:10px; color:rgba(255,255,255,0.4); background:none; border:none; cursor:pointer;">1Y</button>
+        </div>
+        <canvas id="vaultChart" width="300" height="150" style="width:100%; border-radius:10px;"></canvas>
+      </div>
+      
+      <div style="margin-bottom:12px; padding:18px; border-radius:18px; background:rgba(247,147,26,0.04); border:1.5px solid rgba(247,147,26,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(247,147,26,0.2); display:flex; align-items:center; justify-content:center; font-size:20px;">₿</div>
+            <div>
+              <div style="font-size:14px; font-weight:bold;">Bitcoin</div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.3);">BTC</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:16px; font-weight:bold; color:#f7931a;" id="vaultBtc">${vaultData.btc} BTC</div>
+            <div style="font-size:10px; color:rgba(247,147,26,0.6);" id="vaultBtcUsd">≈ $0.00</div>
+            <div id="btcChange" style="font-size:9px;"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:20px; padding:18px; border-radius:18px; background:rgba(0,200,83,0.04); border:1.5px solid rgba(0,200,83,0.15);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+          <div style="display:flex; align-items:center; gap:10px;">
+            <div style="width:40px; height:40px; border-radius:50%; background:rgba(0,200,83,0.2); display:flex; align-items:center; justify-content:center; font-size:20px;">💵</div>
+            <div>
+              <div style="font-size:14px; font-weight:bold;">Tether</div>
+              <div style="font-size:10px; color:rgba(255,255,255,0.3);">USDT</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:16px; font-weight:bold; color:#00c853;" id="vaultUsdt">${vaultData.usdt} USDT</div>
+            <div style="font-size:10px; color:rgba(0,200,83,0.6);" id="vaultUsdtUsd">≈ $0.00</div>
+            <div id="usdtChange" style="font-size:9px;"></div>
+          </div>
+        </div>
+      </div>
+      
+      <div style="margin-bottom:20px;">
+        <div style="margin-bottom:10px; padding:12px; border-radius:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); margin-bottom:5px;">🔑 BTC Address</div>
+          <div style="font-size:10px; color:rgba(247,147,26,0.7); word-break:break-all;">bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4</div>
+        </div>
+        <div style="padding:12px; border-radius:12px; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:9px; color:rgba(255,255,255,0.3); margin-bottom:5px;">🔑 USDT Address (TRC20)</div>
+          <div style="font-size:10px; color:rgba(0,200,83,0.7); word-break:break-all;">TCTvRJwQZEVtUz8Ai9ZjxRVjChzezs1DXN</div>
+        </div>
+      </div>
+      
+      <div style="text-align:center; padding:12px; border-radius:12px; background:rgba(0,255,136,0.02); border:1px solid rgba(0,255,136,0.08); margin-bottom:15px;">
+        <div style="font-size:9px; color:rgba(0,255,136,0.4); letter-spacing:2px;">🛡️ PROTECTED BY MASTERCARD SYSTEM</div>
+      </div>
+      
+      <button onclick="showAdminPage()" style="width:100%; padding:8px; border-radius:10px; border:1px solid rgba(255,255,255,0.08); background:rgba(255,255,255,0.02); color:rgba(255,255,255,0.3); font-size:10px; cursor:pointer;">← Back</button>
+    </div>
+  `;
+  
+  updateVaultDisplay();
+  fetchCryptoPrices();
+  setTimeout(() => drawVaultChart(30), 300);
+}
+
+function generateChartData() {
+  chartData = [];
+  let price = vaultBtcPrice;
+  for (let i = 0; i < 365; i++) {
+    price = price * (1 + (Math.random() - 0.48) * 0.05);
+    chartData.push(price);
+  }
+}
+
+function changeChartRange(range, btn) {
+  document.querySelectorAll(".chartBtn").forEach(b => b.style.color = "rgba(255,255,255,0.4)");
+  btn.style.color = "#ffd700";
+  
+  const ranges = { "1H": 60, "1D": 24, "1W": 7, "1M": 30, "1Y": 365 };
+  drawVaultChart(ranges[range] || 30);
+}
+
+function drawVaultChart(points) {
+  const canvas = document.getElementById("vaultChart");
+  if (!canvas) return;
+  
+  const ctx = canvas.getContext("2d");
+  canvas.width = 300;
+  canvas.height = 150;
+  
+  // تولید داده‌های واقعی‌تر با الگوی بازار
+  const data = [];
+  let price = vaultBtcPrice * 0.92;
+  const total = points;
+  let trend = 0;
+  let volatility = 0.03;
+  
+  for (let i = 0; i < total; i++) {
+    // تغییر روند هر ۲۰٪ از داده‌ها (مثل بازار واقعی)
+    if (i % Math.floor(total * 0.2) === 0) {
+      trend = (Math.random() - 0.4) * 0.04;
+      volatility = 0.02 + Math.random() * 0.04;
+    }
+    
+    // نوسان تصادفی با توزیع نرمال تقریبی
+    const swing = (Math.random() + Math.random() + Math.random() - 1.5) * volatility;
+    
+    // روند صعودی ملایم در کل
+    const upwardBias = 0.001;
+    
+    price = price * (1 + swing + trend + upwardBias);
+    data.push(price);
+  }
+  
+  // نرمال‌سازی به قیمت واقعی
+  const lastPrice = data[data.length - 1];
+  const ratio = vaultBtcPrice / lastPrice;
+  const normalized = data.map(p => p * ratio);
+  
+  const min = Math.min(...normalized) * 0.97;
+  const max = Math.max(...normalized) * 1.02;
+  const range = max - min;
+  
+  ctx.clearRect(0, 0, 300, 150);
+  
+  // گرادینت زیر نمودار - شبیه TradingView
+  const gradient = ctx.createLinearGradient(0, 0, 0, 150);
+  gradient.addColorStop(0, "rgba(0,200,83,0.08)");
+  gradient.addColorStop(0.6, "rgba(0,200,83,0.02)");
+  gradient.addColorStop(1, "rgba(0,200,83,0)");
+  
+  ctx.beginPath();
+  ctx.moveTo(0, 150);
+  
+  normalized.forEach((val, i) => {
+    const x = (i / (normalized.length - 1)) * 300;
+    const y = 150 - ((val - min) / range) * 140;
+    ctx.lineTo(x, y);
+  });
+  
+  ctx.lineTo(300, 150);
+  ctx.closePath();
+  ctx.fillStyle = gradient;
+  ctx.fill();
+  
+  // خط نمودار
+  ctx.beginPath();
+  ctx.strokeStyle = "#00c853";
+  ctx.lineWidth = 1.3;
+  
+  normalized.forEach((val, i) => {
+    const x = (i / (normalized.length - 1)) * 300;
+    const y = 150 - ((val - min) / range) * 140;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  });
+  
+  ctx.stroke();
+}
+
+async function fetchCryptoPrices() {
+  try {
+    const resp = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,tether&vs_currencies=usd&include_24hr_change=true");
+    const data = await resp.json();
+    vaultBtcPrice = data.bitcoin.usd;
+    vaultBtcChange = data.bitcoin.usd_24h_change || 0;
+    vaultUsdtPrice = data.tether.usd;
+    vaultUsdtChange = data.tether.usd_24h_change || 0;
+  } catch(e) {}
+  updateVaultDisplay();
+}
+
+function liveTicker() {
+  const btcChange = (Math.random() - 0.5) * 0.02;
+  const usdtChange = (Math.random() - 0.5) * 0.002;
+  vaultBtcPrice = vaultBtcPrice * (1 + btcChange / 100);
+  vaultUsdtPrice = vaultUsdtPrice * (1 + usdtChange / 100);
+  updateVaultDisplay();
+}
+
+fetchCryptoPrices();
+setInterval(fetchCryptoPrices, 30000);
+setInterval(liveTicker, 1000);
+
+function updateVaultDisplay() {
+  const btc = parseFloat(vaultData.btc) || 0;
+  const usdt = parseFloat(vaultData.usdt) || 0;
+  const total = (btc * vaultBtcPrice) + (usdt * vaultUsdtPrice);
+  
+  const totalEl = document.getElementById("vaultTotal");
+  const btcEl = document.getElementById("vaultBtc");
+  const btcUsdEl = document.getElementById("vaultBtcUsd");
+  const btcChangeEl = document.getElementById("btcChange");
+  const usdtEl = document.getElementById("vaultUsdt");
+  const usdtUsdEl = document.getElementById("vaultUsdtUsd");
+  const usdtChangeEl = document.getElementById("usdtChange");
+  
+  if (totalEl) totalEl.textContent = "$" + total.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (btcEl) btcEl.textContent = vaultData.btc + " BTC";
+  if (btcUsdEl) btcUsdEl.textContent = "≈ $" + (btc * vaultBtcPrice).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  if (usdtEl) usdtEl.textContent = vaultData.usdt + " USDT";
+  if (usdtUsdEl) usdtUsdEl.textContent = "≈ $" + (usdt * vaultUsdtPrice).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  
+  if (btcChangeEl) {
+    const sign = vaultBtcChange >= 0 ? "+" : "";
+    btcChangeEl.textContent = sign + vaultBtcChange.toFixed(2) + "% (24h)";
+    btcChangeEl.style.color = vaultBtcChange >= 0 ? "#00c853" : "#ff5252";
+  }
+  
+  if (usdtChangeEl) {
+    const sign = vaultUsdtChange >= 0 ? "+" : "";
+    usdtChangeEl.textContent = sign + vaultUsdtChange.toFixed(2) + "% (24h)";
+    usdtChangeEl.style.color = vaultUsdtChange >= 0 ? "#00c853" : "#ff5252";
+  }
+}
+
+function editVault() {
+  const newBtc = prompt("Enter BTC amount:", vaultData.btc);
+  if (newBtc === null) return;
+  const newUsdt = prompt("Enter USDT amount:", vaultData.usdt);
+  if (newUsdt === null) return;
+  
+  vaultData.btc = newBtc;
+  vaultData.usdt = newUsdt;
+  localStorage.setItem("vaultData", JSON.stringify(vaultData));
+  generateChartData();
+  updateVaultDisplay();
+  setTimeout(() => drawVaultChart(30), 300);
+}
+
+// ===== BANK STATEMENT =====
+let bankStatements = {}; // کش محلی
+
+function openBankStatement(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  // ابتدا از دیتابیس بخوان
+  db.ref("employees/" + empId + "/statement").once("value")
+    .then(snapshot => {
+      let stmt = snapshot.val();
+      if (!stmt) {
+        // اگر وجود نداشت، تولید و ذخیره کن
+        generateBankStatement(empId);
+        stmt = bankStatements[empId];
+      } else {
+        // بروزرسانی کش
+        bankStatements[empId] = stmt;
+      }
+      renderStatement(empId, stmt);
+    })
+    .catch(err => {
+      showModal("خطا", "خطا در خواندن دیتابیس: " + err.message, "error");
+    });
+}
+
+function generateBankStatement(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  const stmt = {
+    account: "DE12 3456 7890 " + empId.slice(-8),
+    holder: emp.name || "",
+    opening: (emp.balance || 0) + Math.floor(Math.random() * 5000),
+    transactions: [
+      { date: "01 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 2000) + 500 },
+      { date: "05 Jul", desc: "POS Payment", amount: -(Math.floor(Math.random() * 100) + 20) },
+      { date: "12 Jul", desc: "Salary", amount: Math.floor(Math.random() * 3000) + 1000 },
+      { date: "18 Jul", desc: "ATM Withdraw", amount: -(Math.floor(Math.random() * 300) + 50) },
+      { date: "25 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 1000) + 200 },
+      { date: "30 Jul", desc: "Interest", amount: Math.floor(Math.random() * 20) + 5 }
+    ]
+  };
+
+  // ذخیره در دیتابیس
+  db.ref("employees/" + empId + "/statement").set(stmt)
+    .then(() => {
+      bankStatements[empId] = stmt; // کش
+    })
+    .catch(err => showModal("خطا", "خطا در ذخیره صورت‌حساب: " + err.message, "error"));
+}
+
+function renderStatement(empId, stmt) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  const closing = stmt.transactions.reduce((sum, t) => sum + t.amount, stmt.opening);
+  const isAdmin = currentUser?.type === 'admin';
+
+  document.getElementById("app").innerHTML = `
+    <div style="min-height:100vh; background:#fff; font-family:Arial, sans-serif; color:#333; padding:20px; overflow-y:auto; box-sizing:border-box; max-width:400px; margin:0 auto;">
+      
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #ffd700; padding-bottom:15px;">
+        <div>
+          <div style="font-size:20px; font-weight:bold; color:#1a1a1a;">COMMERZBANK</div>
+          <div style="font-size:10px; color:#666; letter-spacing:2px;">ACCOUNT STATEMENT</div>
+        </div>
+        <div style="width:40px; height:40px; background:#ffd700; border-radius:50%;"></div>
+      </div>
+      
+      ${isAdmin ? `
+      <div style="display:flex; gap:8px; margin-bottom:15px;">
+        <button id="editBtn" onclick="toggleEditStatement('${empId}')" style="flex:1; padding:10px; border:1px solid #ffd700; background:white; color:#333; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold;">✏️ Edit All</button>
+        <button id="saveBtn" onclick="saveEditedStatement('${empId}')" style="flex:1; padding:10px; border:none; background:#00c853; color:white; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold; display:none;">💾 Save All</button>
+      </div>
+      ` : ''}
+      
+      <div id="statementView">
+        <div style="margin-bottom:20px; font-size:11px;">
+          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Account:</span><span style="font-weight:bold;">${stmt.account}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Holder:</span><span style="font-weight:bold;">${stmt.holder || emp.name || "---"}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Date:</span><span>${new Date().toLocaleDateString("en-GB")}</span></div>
+          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Period:</span><span>July 2026</span></div>
+        </div>
+        
+        <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
+          <div style="font-size:10px; color:#666;">OPENING BALANCE</div>
+          <div style="font-size:22px; font-weight:bold; color:#1a1a1a;">€${stmt.opening.toLocaleString('en-US', {minimumFractionDigits:2})}</div>
+        </div>
+        
+        <div style="margin-bottom:20px;">
+          <div style="font-size:10px; color:#666; letter-spacing:2px; margin-bottom:10px;">TRANSACTIONS</div>
+          ${stmt.transactions.map(t => `
+            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; font-size:12px;">
+              <div>
+                <div style="font-weight:bold;">${t.desc}</div>
+                <div style="font-size:10px; color:#999;">${t.date}</div>
+              </div>
+              <div style="font-weight:bold; color:${t.amount >= 0 ? '#00c853' : '#ff5252'};">
+                ${t.amount >= 0 ? '+' : ''}€${Math.abs(t.amount).toLocaleString('en-US', {minimumFractionDigits:2})}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+        
+        <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:20px; text-align:center; border:1px solid #ffd700;">
+          <div style="font-size:10px; color:#666;">CLOSING BALANCE</div>
+          <div style="font-size:22px; font-weight:bold; color:#1a1a1a;">€${closing.toLocaleString('en-US', {minimumFractionDigits:2})}</div>
+        </div>
+      </div>
+      
+      ${isAdmin ? `
+      <div id="editStatementForm" style="display:none;">
+        <div style="margin-bottom:15px;">
+          <label style="font-size:10px; color:#666; font-weight:bold;">Account Number</label>
+          <input id="eAccount" value="${stmt.account}" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:15px;">
+          <label style="font-size:10px; color:#666; font-weight:bold;">Holder Name</label>
+          <input id="eHolder" value="${stmt.holder || emp.name || ''}" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:15px;">
+          <label style="font-size:10px; color:#666; font-weight:bold;">Opening Balance (€)</label>
+          <input id="eOpening" value="${stmt.opening}" type="number" step="0.01" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
+        </div>
+        <div style="margin-bottom:15px;">
+          <label style="font-size:10px; color:#666; font-weight:bold;">Transactions</label>
+          ${stmt.transactions.map((t, i) => `
+            <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+              <input id="edesc${i}" value="${t.desc}" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:11px;" placeholder="Description">
+              <input id="eamount${i}" value="${t.amount}" type="number" step="0.01" style="width:90px; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:11px;" placeholder="Amount">
+            </div>
+          `).join('')}
+        </div>
+      </div>
+      ` : ''}
+      
+      <div style="font-size:9px; color:#999; text-align:center; margin-bottom:15px;">
+        This is a computer-generated statement.<br>Valid without signature.
+      </div>
+      
+      <div style="display:flex; gap:10px;">
+        <button onclick="navigator.clipboard.writeText('${stmt.account}'); showModal('','Account copied!','success')" style="flex:1; padding:12px; border:2px solid #ffd700; background:white; color:#333; font-weight:bold; border-radius:10px; cursor:pointer;">📋 Copy IBAN</button>
+        <button onclick="${isAdmin ? 'showAdminPage()' : 'showPage1()'}" style="flex:1; padding:12px; border:2px solid #333; background:white; color:#333; font-weight:bold; border-radius:10px; cursor:pointer;">← Back</button>
+      </div>
+    </div>
+  `;
+}
+
+function toggleEditStatement(empId) {
+  const view = document.getElementById("statementView");
+  const form = document.getElementById("editStatementForm");
+  const editBtn = document.getElementById("editBtn");
+  const saveBtn = document.getElementById("saveBtn");
+  
+  if (!view || !form) return;
+  
+  if (form.style.display === "none" || form.style.display === "") {
+    view.style.display = "none";
+    form.style.display = "block";
+    if (editBtn) editBtn.textContent = "❌ Cancel";
+    if (saveBtn) saveBtn.style.display = "inline-block";
+  } else {
+    view.style.display = "block";
+    form.style.display = "none";
+    if (editBtn) editBtn.textContent = "✏️ Edit All";
+    if (saveBtn) saveBtn.style.display = "none";
+  }
+}
+
+function saveEditedStatement(empId) {
+  // ابتدا از کش یا دیتابیس بخوان (برای اطمینان)
+  let stmt = bankStatements[empId];
+  if (!stmt) {
+    // اگر در کش نبود، از دیتابیس بگیر
+    db.ref("employees/" + empId + "/statement").once("value")
+      .then(snapshot => {
+        stmt = snapshot.val();
+        if (!stmt) {
+          showModal("خطا", "صورت‌حساب یافت نشد!", "error");
+          return;
+        }
+        bankStatements[empId] = stmt;
+        // حالا ادامه ویرایش
+        applyEditsAndSave(empId, stmt);
+      })
+      .catch(err => showModal("خطا", err.message, "error"));
+    return;
+  }
+  applyEditsAndSave(empId, stmt);
+}
+
+function applyEditsAndSave(empId, stmt) {
+  const accountEl = document.getElementById("eAccount");
+  const holderEl = document.getElementById("eHolder");
+  const openingEl = document.getElementById("eOpening");
+  
+  if (accountEl) stmt.account = accountEl.value;
+  if (holderEl) stmt.holder = holderEl.value;
+  if (openingEl) stmt.opening = parseFloat(openingEl.value) || 0;
+  
+  // خواندن تراکنش‌ها
+  for (let i = 0; i < stmt.transactions.length; i++) {
+    const descEl = document.getElementById(`edesc${i}`);
+    const amountEl = document.getElementById(`eamount${i}`);
+    if (descEl) stmt.transactions[i].desc = descEl.value;
+    if (amountEl) stmt.transactions[i].amount = parseFloat(amountEl.value) || 0;
+  }
+  
+  // ذخیره در دیتابیس
+  db.ref("employees/" + empId + "/statement").update(stmt)
+    .then(() => {
+      bankStatements[empId] = stmt; // بروزرسانی کش
+      renderStatement(empId, stmt); // نمایش مجدد
+      showModal("", "تغییرات با موفقیت ذخیره شد.", "success");
+    })
+    .catch(err => showModal("خطا", "خطا در ذخیره: " + err.message, "error"));
+}
+
+function editEmployeeStatement(empId) {
+  // برای هماهنگی با بقیه کد
+  openBankStatement(empId);
+}
+
+function sendStatementToEmployee(empId) {
+  // ابتدا مطمئن شو که صورت‌حساب وجود دارد
+  db.ref("employees/" + empId + "/statement").once("value")
+    .then(snapshot => {
+      if (!snapshot.val()) {
+        generateBankStatement(empId);
+      }
+      db.ref("employees/" + empId + "/hasStatement").set(true);
+      showModal("Bank Statement", "Statement sent!", "success");
+    })
+    .catch(err => showModal("خطا", err.message, "error"));
+}
+function copyVaultBTC() {
+  navigator.clipboard.writeText("bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4");
+  alert("BTC Address Copied!");
+}
+
+function copyVaultUSDT() {
+  navigator.clipboard.writeText("TCTvRJwQZEVtUz8Ai9ZjxRVjChzezs1DXN");
+  alert("USDT Address Copied!");
+}
+function getDistanceFromLatLon(lat1, lon1, lat2, lon2) {
+  const R = 6371; // شعاع زمین به کیلومتر
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c;
+  return d.toFixed(1);
+}
+
+function deg2rad(deg) {
+  return deg * (Math.PI / 180);
+}
+function copyBitcoinAddress() {
+  const addr = document.getElementById("bitcoinAddress").value;
+  navigator.clipboard.writeText(addr);
+  showModal("Bitcoin", "Address copied!", "success");
 }
 
 function openLinePage(empId) {
