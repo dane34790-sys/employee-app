@@ -2069,7 +2069,7 @@ function showPage2() {
         const lines = [
           d.title || "📊 DASHBOARD",
           `${d.employeesLabel || "Employees"}: ${employees.length}`,
-          `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+          d.balanceLabel ? d.balanceLabel : `Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
           `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
           `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
           `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
@@ -2107,14 +2107,14 @@ function showPage2() {
       const d = snapshot.val();
       if (d) {
         const lines = [
-          d.title || "📊 DASHBOARD",
-          `${d.employeesLabel || "Employees"}: ${employees.length}`,
-          `${d.balanceLabel || "Total Balance"}: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
-          `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-          `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
-          `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
-          `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-          `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
+          d.title || "📊 MASTERCARD COMMERZBANK",
+          d.employeesLabel || `👥 Employees: ${employees.length}`,
+          d.balanceLabel || `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
+          d.transactionsLabel || `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
+          d.onlineLabel || `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
+          d.offlineLabel || `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
+          d.rankLabel || `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
+          d.scoreLabel || `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
         ];
         renderPage2(lines, emp);
       } else {
@@ -6959,8 +6959,9 @@ function editDashboard(empId) {
               <input id="dashEmployees" value="${d.employeesLabel || 'Employees'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Total Balance Label</label>
+              <label style="color:#00ff88;">Total Balance (Fake Number)</label>
               <input id="dashBalance" value="${d.balanceLabel || 'Total Balance'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <div style="font-size:10px; color:#ffd700; margin-top:4px;">💡 Write the full line e.g. "💰 Total Balance: 196,556,722 €"</div>
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Today Transactions Label</label>
