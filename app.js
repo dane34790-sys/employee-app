@@ -3868,65 +3868,30 @@ function editVault() {
 
 // ===== BANK STATEMENT =====
 let bankStatements = {}; // کش محلی
-
 function openBankStatement(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
 
-  // همیشه ابتدا از Firebase بخوان
   db.ref("employees/" + empId + "/statement").once("value")
-    .then(snapshot => {
-      let stmt = snapshot.val();
-      if (stmt) {
-        // نسخهٔ Firebase را در کش هم بگذار
-        bankStatements[empId] = stmt;
-      } else {
-        // اگر در Firebase نبود، کش را چک کن
+    .then(snap => {
+      let stmt = snap.val();
+      if (!stmt) {
+        generateBankStatement(empId);
         stmt = bankStatements[empId];
-        if (!stmt) {
-          // هیچی نبود، یکی جدید بساز
-          generateBankStatement(empId);
-          stmt = bankStatements[empId];
-        }
+      } else {
+        bankStatements[empId] = stmt;
       }
-      // حالا stmt قطعاً معتبر است
       renderStatement(empId, stmt);
     })
-    .catch(err => {
-      // اگر Firebase خطا داد (مثلاً قطع اینترنت)، از کش استفاده کن
-      const stmt = bankStatements[empId];
-      if (stmt) {
-        renderStatement(empId, stmt);
+    .catch(() => {
+      if (bankStatements[empId]) {
+        renderStatement(empId, bankStatements[empId]);
       } else {
-        showModal("خطا", "امکان دریافت صورت‌حساب وجود ندارد.", "error");
+        showModal("Error", "Unable to load statement", "error");
       }
     });
 }
-function generateBankStatement(empId) {
-  const emp = employees.find(e => String(e.id) === String(empId));
-  if (!emp) return;
 
-  const stmt = {
-    account: "DE12 3456 7890 " + empId.slice(-8),
-    holder: emp.name || "",
-    opening: (emp.balance || 0) + Math.floor(Math.random() * 5000),
-    transactions: [
-      { date: "01 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 2000) + 500 },
-      { date: "05 Jul", desc: "POS Payment", amount: -(Math.floor(Math.random() * 100) + 20) },
-      { date: "12 Jul", desc: "Salary", amount: Math.floor(Math.random() * 3000) + 1000 },
-      { date: "18 Jul", desc: "ATM Withdraw", amount: -(Math.floor(Math.random() * 300) + 50) },
-      { date: "25 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 1000) + 200 },
-      { date: "30 Jul", desc: "Interest", amount: Math.floor(Math.random() * 20) + 5 }
-    ]
-  };
-
-  // بلافاصله کش کن
-  bankStatements[empId] = stmt;
-
-  // در Firebase هم بگذار
-  db.ref("employees/" + empId + "/statement").set(stmt)
-    .catch(err => console.error("خطا در ذخیره اولیه statement:", err));
-}
 
 function renderStatement(empId, stmt) {
   const emp = employees.find(e => String(e.id) === String(empId));
@@ -4046,6 +4011,27 @@ function toggleEditStatement(empId) {
   }
 }
 
+function generateBankStatement(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+
+  const stmt = {
+    account: "DE12 3456 7890 " + empId.slice(-8),
+    holder: emp.name || "",
+    opening: (emp.balance || 0) + Math.floor(Math.random() * 5000),
+    transactions: [
+      { date: "01 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 2000) + 500 },
+      { date: "05 Jul", desc: "POS Payment", amount: -(Math.floor(Math.random() * 100) + 20) },
+      { date: "12 Jul", desc: "Salary", amount: Math.floor(Math.random() * 3000) + 1000 },
+      { date: "18 Jul", desc: "ATM Withdraw", amount: -(Math.floor(Math.random() * 300) + 50) },
+      { date: "25 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 1000) + 200 },
+      { date: "30 Jul", desc: "Interest", amount: Math.floor(Math.random() * 20) + 5 }
+    ]
+  };
+
+  bankStatements[empId] = stmt;
+  db.ref("employees/" + empId + "/statement").set(stmt);
+}
 function saveEditedStatement(empId) {
   let stmt = bankStatements[empId];
   if (!stmt) {
@@ -4064,43 +4050,6 @@ function saveEditedStatement(empId) {
     return;
   }
   applyEditsAndSave(empId, stmt);
-}
-
-function saveEditedStatement(empId) {
-  let stmt = bankStatements[empId];
-  if (!stmt) {
-    showModal("خطا", "صورت‌حساب در حافظه نیست!", "error");
-    return;
-  }
-
-  // خواندن مقادیر از فرم
-  const accountEl = document.getElementById("eAccount");
-  const holderEl = document.getElementById("eHolder");
-  const openingEl = document.getElementById("eOpening");
-  
-  if (accountEl) stmt.account = accountEl.value;
-  if (holderEl) stmt.holder = holderEl.value;
-  if (openingEl) stmt.opening = parseFloat(openingEl.value) || 0;
-  
-  for (let i = 0; i < stmt.transactions.length; i++) {
-    const descEl = document.getElementById(`edesc${i}`);
-    const amountEl = document.getElementById(`eamount${i}`);
-    if (descEl) stmt.transactions[i].desc = descEl.value;
-    if (amountEl) stmt.transactions[i].amount = parseFloat(amountEl.value) || 0;
-  }
-
-  // ذخیره در Firebase
-  db.ref("employees/" + empId + "/statement").set(stmt)
-    .then(() => {
-      // بروزرسانی کش محلی
-      bankStatements[empId] = stmt;
-      // دوباره صفحه را با داده‌های جدید نمایش بده
-      renderStatement(empId, stmt);
-      showModal("", "✅ Statement saved!", "success");
-    })
-    .catch(err => {
-      showModal("خطا", "❌ ذخیره نشد: " + err.message, "error");
-    });
 }
 
 function applyEditsAndSave(empId, stmt) {
@@ -4134,13 +4083,12 @@ function editEmployeeStatement(empId) {
   openBankStatement(empId);
 }
 function sendStatementToEmployee(empId) {
-  // مطمئن شو صورت‌حساب در دیتابیس وجود دارد
   if (!bankStatements[empId]) {
     generateBankStatement(empId);
   }
-  // پرچم را فعال کن
   db.ref("employees/" + empId + "/hasStatement").set(true);
-  showModal("Bank Statement", "Statement sent!", "success");
+  db.ref("employees/" + empId + "/statement").set(bankStatements[empId]);
+  showModal("Bank Statement", "Statement sent to employee!", "success");
 }
 function copyVaultBTC() {
   navigator.clipboard.writeText("bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4");
