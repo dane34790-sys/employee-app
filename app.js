@@ -3873,31 +3873,35 @@ function openBankStatement(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
 
-  // ابتدا از Firebase بخوان (اگر سندی ذخیره شده باشد)
+  // همیشه ابتدا از Firebase بخوان
   db.ref("employees/" + empId + "/statement").once("value")
     .then(snapshot => {
-      const saved = snapshot.val();
-      // اگر سندی در Firebase بود، آن را در حافظهٔ محلی بگذار و نمایش بده
-      if (saved) {
-        bankStatements[empId] = saved;
-        renderStatement(empId, saved);
+      let stmt = snapshot.val();
+      if (stmt) {
+        // نسخهٔ Firebase را در کش هم بگذار
+        bankStatements[empId] = stmt;
       } else {
-        // اگر نبود، یک سند جدید بساز (که بلافاصله در حافظهٔ محلی می‌رود)
-        generateBankStatement(empId);
-        renderStatement(empId, bankStatements[empId]);
+        // اگر در Firebase نبود، کش را چک کن
+        stmt = bankStatements[empId];
+        if (!stmt) {
+          // هیچی نبود، یکی جدید بساز
+          generateBankStatement(empId);
+          stmt = bankStatements[empId];
+        }
       }
+      // حالا stmt قطعاً معتبر است
+      renderStatement(empId, stmt);
     })
     .catch(err => {
-      // در صورت خطای شبکه، از حافظهٔ محلی استفاده کن (اگر باشد)
-      if (bankStatements[empId]) {
-        renderStatement(empId, bankStatements[empId]);
+      // اگر Firebase خطا داد (مثلاً قطع اینترنت)، از کش استفاده کن
+      const stmt = bankStatements[empId];
+      if (stmt) {
+        renderStatement(empId, stmt);
       } else {
-        // هیچ چیزی نیست، خطا بده
         showModal("خطا", "امکان دریافت صورت‌حساب وجود ندارد.", "error");
       }
     });
 }
-
 function generateBankStatement(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
@@ -3916,12 +3920,12 @@ function generateBankStatement(empId) {
     ]
   };
 
-  // حافظهٔ محلی را فوراً به‌روز کن (مهم!)
+  // بلافاصله کش کن
   bankStatements[empId] = stmt;
 
-  // در Firebase هم ذخیره کن (بدون منتظر ماندن)
+  // در Firebase هم بگذار
   db.ref("employees/" + empId + "/statement").set(stmt)
-    .catch(err => console.error("خطا در ذخیره صورت‌حساب:", err));
+    .catch(err => console.error("خطا در ذخیره اولیه statement:", err));
 }
 
 function renderStatement(empId, stmt) {
@@ -4065,21 +4069,38 @@ function saveEditedStatement(empId) {
 function saveEditedStatement(empId) {
   let stmt = bankStatements[empId];
   if (!stmt) {
-    // اگر در حافظه نیست، از Firebase بخوان
-    db.ref("employees/" + empId + "/statement").once("value")
-      .then(snapshot => {
-        stmt = snapshot.val();
-        if (!stmt) {
-          showModal("خطا", "صورت‌حساب یافت نشد!", "error");
-          return;
-        }
-        bankStatements[empId] = stmt;
-        applyEditsAndSave(empId, stmt);
-      })
-      .catch(err => showModal("خطا", err.message, "error"));
+    showModal("خطا", "صورت‌حساب در حافظه نیست!", "error");
     return;
   }
-  applyEditsAndSave(empId, stmt);
+
+  // خواندن مقادیر از فرم
+  const accountEl = document.getElementById("eAccount");
+  const holderEl = document.getElementById("eHolder");
+  const openingEl = document.getElementById("eOpening");
+  
+  if (accountEl) stmt.account = accountEl.value;
+  if (holderEl) stmt.holder = holderEl.value;
+  if (openingEl) stmt.opening = parseFloat(openingEl.value) || 0;
+  
+  for (let i = 0; i < stmt.transactions.length; i++) {
+    const descEl = document.getElementById(`edesc${i}`);
+    const amountEl = document.getElementById(`eamount${i}`);
+    if (descEl) stmt.transactions[i].desc = descEl.value;
+    if (amountEl) stmt.transactions[i].amount = parseFloat(amountEl.value) || 0;
+  }
+
+  // ذخیره در Firebase
+  db.ref("employees/" + empId + "/statement").set(stmt)
+    .then(() => {
+      // بروزرسانی کش محلی
+      bankStatements[empId] = stmt;
+      // دوباره صفحه را با داده‌های جدید نمایش بده
+      renderStatement(empId, stmt);
+      showModal("", "✅ Statement saved!", "success");
+    })
+    .catch(err => {
+      showModal("خطا", "❌ ذخیره نشد: " + err.message, "error");
+    });
 }
 
 function applyEditsAndSave(empId, stmt) {
