@@ -2890,7 +2890,6 @@ function card(emp, isAdmin) {
         ${adminInput("🔐", emp.ccv2, "ccv2", emp.id)}
         ${adminInput("📍", emp.zip, "zip", emp.id)}
         ${adminInput("📱", emp.phone, "phone", emp.id)}
-        <button onclick="openSidebarMediaPage('${emp.id}')" style="width:100%; margin-top:10px; background:#9c27b0; color:white; border:none; padding:10px; border-radius:10px;">📁 Sidebar Media</button>
 
         <button onclick="toggleWheelLock('${emp.id}')" style="
           width:100%;
@@ -2907,10 +2906,10 @@ function card(emp, isAdmin) {
         </button>
         
         <div style="margin-top:8px; padding:8px; border-radius:10px; background:rgba(255,0,0,0.05); border:1px solid rgba(255,0,0,0.1);">
-  <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🛡️ FIREWALL CONTROL</div>
-  <button onclick="triggerAttack('${emp.id}')" style="width:100%; padding:8px; background:#ff5252; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🔥 START ATTACK</button>
-  <button onclick="defendSystem('${emp.id}')" style="width:100%; padding:8px; background:#00c853; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🛡️ DEFEND</button>
-</div>
+          <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🛡️ FIREWALL CONTROL</div>
+          <button onclick="triggerAttack('${emp.id}')" style="width:100%; padding:8px; background:#ff5252; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🔥 START ATTACK</button>
+          <button onclick="defendSystem('${emp.id}')" style="width:100%; padding:8px; background:#00c853; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🛡️ DEFEND</button>
+        </div>
 
       ` : `
 
@@ -2977,7 +2976,6 @@ function card(emp, isAdmin) {
     </div>
   `;
 }
-
 function update(id, field, value) {
     const emp = employees.find(e => String(e.id) === String(id));
     if (!emp) {
@@ -5561,7 +5559,6 @@ function openDocumentsPage(){
   }
 
   const docs = getDocs(emp) || [];
-  const sidebar = emp.sidebarMedia?.images || [];
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -5592,24 +5589,7 @@ function openDocumentsPage(){
     >
   </div>
 `).join("")}
-        <!-- SIDEBAR MEDIA -->
-        <h3 style="text-align:center;color:white;margin-top:25px;">
-          📁 Sidebar Media
-        </h3>
-
-        ${sidebar.length > 0 ? sidebar.map(img => `
-          <div class="card" style="overflow:hidden;max-height:200px;">
-            <img
-              src="${img}"
-              style="width:100%;height:180px;object-fit:cover;display:block;border-radius:12px;"
-              onclick="window.open('${img}','_blank')"
-            >
-          </div>
-        `).join("") : `
-          <div style="text-align:center;color:white;opacity:0.7;margin-top:10px;">
-            No Sidebar Media
-          </div>
-        `}
+        <!-- SIDEBAR MEDIA حذف شد -->
 
         <button onclick="showUI()" class="logout" style="margin-top:15px;">
           ⬅ Back
@@ -5618,200 +5598,6 @@ function openDocumentsPage(){
       </div>
     </div>
   `;
-}
-function openSidebarMediaPage(empId){
-
-  pushPage(() => showUI());
-
-  const emp = employees.find(e => e.id === empId);
-
-  if(!emp){
-    document.getElementById("app").innerHTML = `
-      <div class="screen">
-        <div class="panel">
-          <div style="color:red;text-align:center;padding:20px">
-            Employee not found
-          </div>
-          <button onclick="showUI()" class="logout">⬅ Back</button>
-        </div>
-      </div>
-    `;
-    return;
-  }
-
-  if(!emp.sidebarMedia){
-    emp.sidebarMedia = { images: [] };
-  }
-
-  if(!Array.isArray(emp.sidebarMedia.images)){
-    emp.sidebarMedia.images = [];
-  }
-
-  const images = emp.sidebarMedia.images;
-
-  document.getElementById("app").innerHTML = `
-    <div class="screen">
-
-      <img src="images/employee-bg.png" class="bg-full">
-
-      <div class="panel">
-
-        <h2 style="text-align:center;margin-bottom:15px;">
-          📁 Sidebar Media Manager
-        </h2>
-
-        <!-- INPUT -->
-        <div class="card">
-
-          <input
-            id="sidebarInput"
-            type="text"
-            placeholder="Paste Image URL"
-          >
-
-          <button
-            onclick="addSidebarImage('${emp.id}')"
-            style="
-              width:100%;
-              margin-top:10px;
-              background:#4caf50;
-              color:white;
-              border:none;
-              padding:10px;
-              border-radius:10px;
-            ">
-            ➕ Add Image
-          </button>
-
-        </div>
-
-        <!-- IMAGES -->
-        ${images.length > 0 ? images.map((img, i) => `
-          <div class="card" style="overflow:hidden;max-height:220px;">
-
-            <img
-              src="${img}"
-              style="width:100%;height:180px;object-fit:cover;border-radius:12px;"
-            >
-
-            <button
-              onclick="deleteSidebarImage('${emp.id}', ${i})"
-              style="
-                background:red;
-                margin-top:10px;
-                width:100%;
-                color:white;
-                border:none;
-                padding:10px;
-                border-radius:10px;
-              ">
-              🗑 Delete
-            </button>
-
-          </div>
-        `).join("") : `
-          <div style="text-align:center;color:white;opacity:0.7;margin-top:10px;">
-            No Sidebar Media
-          </div>
-        `}
-
-        <button onclick="showUI()" class="logout">
-          ⬅ Back
-        </button>
-
-      </div>
-
-    </div>
-  `;
-}
-function addSidebarImage(empId){
-
-  const emp = employees.find(e => e.id === empId);
-  if(!emp) return;
-
-  const input = document.getElementById("sidebarInput");
-  if(!input) return;
-
-  const url = input.value.trim();
-  if(!url) return;
-
-  if(!emp.sidebarMedia){
-    emp.sidebarMedia = { images: [] };
-  }
-
-  if(!Array.isArray(emp.sidebarMedia.images)){
-    emp.sidebarMedia.images = [];
-  }
-
-  emp.sidebarMedia.images.push(url);
-  saveEmployees();
-
-  input.value = ""; // پاک کردن input
-
-  openSidebarMediaPage(empId);
-}
-function deleteSidebarImage(empId, index){
-
-  const emp = employees.find(e => e.id === empId);
-  if(!emp) return;
-
-  if(!emp.sidebarMedia){
-    emp.sidebarMedia = { images: [] };
-  }
-
-  if(!Array.isArray(emp.sidebarMedia.images)){
-    emp.sidebarMedia.images = [];
-  }
-
-  emp.sidebarMedia.images.splice(index, 1);
-
-  saveEmployees();
-  openSidebarMediaPage(empId);
-}
-function uploadSidebarImage(empId){
-
-  const input = document.getElementById("sidebarFile");
-
-  // 🔥 DEBUG مهم
-  console.log("INPUT:", input);
-  console.log("FILES:", input?.files);
-
-  if(!input || !input.files || input.files.length === 0){
-    alert("آپلود فایلد - هیچ فایلی انتخاب نشده");
-    return;
-  }
-
-  const file = input.files[0];
-
-  const emp = employees.find(e => e.id === empId);
-
-  if(!emp){
-    alert("Employee not found");
-    return;
-  }
-
-  const reader = new FileReader();
-
-  reader.onload = function(){
-
-    if(!emp.sidebarMedia){
-      emp.sidebarMedia = { images: [] };
-    }
-
-    emp.sidebarMedia.images.push(reader.result);
-
-    saveEmployees();
-
-    setTimeout(() => {
-      openSidebarMediaPage(empId);
-    }, 300);
-  };
-
-  reader.onerror = function(){
-    alert("File read error");
-  };
-
-  reader.readAsDataURL(file);
 }
 
 function openAdminPage(){
