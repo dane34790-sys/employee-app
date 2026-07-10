@@ -2843,34 +2843,23 @@ function adminInput(icon, value, field, empId){
 
 // ===== اینجا اضافه کن =====
 function saveDashboard(empId) {
-    const emp = employees.find(e => String(e.id) === String(empId));
-    if (!emp) {
-        alert("❌ کارمند پیدا نشد!");
-        return;
-    }
+  const dashboardData = {
+    title: document.getElementById('dashTitle').value || "📊 MASTERCARD COMMERZBANK",
+    employeesLabel: document.getElementById('dashEmployees').value || "Employees",
+    balanceLabel: document.getElementById('dashBalance').value || "Total Balance",
+    transactionsLabel: document.getElementById('dashTransactions').value || "Today Transactions",
+    onlineLabel: document.getElementById('dashOnline').value || "Online",
+    offlineLabel: document.getElementById('dashOffline').value || "Offline",
+    rankLabel: document.getElementById('dashRank').value || "Your Rank",
+    scoreLabel: document.getElementById('dashScore').value || "Today Score"
+  };
 
-    const dashboardData = {
-        title: document.getElementById('dashTitle').value || "📊 DASHBOARD",
-        employeesLabel: document.getElementById('dashEmployees').value || "Employees",
-        balanceLabel: document.getElementById('dashBalance').value || "Total Balance",
-        transactionsLabel: document.getElementById('dashTransactions').value || "Today Transactions",
-        onlineLabel: document.getElementById('dashOnline').value || "Online",
-        offlineLabel: document.getElementById('dashOffline').value || "Offline",
-        rankLabel: document.getElementById('dashRank').value || "Your Rank",
-        scoreLabel: document.getElementById('dashScore').value || "Today Score"
-    };
-
-    // ===== ذخیره در Firebase برای هر کارمند =====
-    db.ref("employees/" + empId + "/dashboard").set(dashboardData)
-        .then(() => {
-            alert("✅ Dashboard ذخیره شد!");
-            showAdminPage();
-        })
-        .catch(err => {
-            alert("❌ خطا در ذخیره: " + err.message);
-        });
+  db.ref("employees/" + empId + "/dashboard").set(dashboardData)
+    .then(() => {
+      showModal("Dashboard", "Dashboard saved!", "success");
+      showAdminPage();
+    });
 }
-
 function row(icon, label, value) {
     return `
         <div class="info-row">
@@ -6948,36 +6937,64 @@ let currentPage = 1;
 // ==========================================
 
 function editDashboard(empId) {
-    // خواندن متن فعلی از localStorage
-    const currentText = localStorage.getItem('page2text') || "📊 DASHBOARD\n👥 Employees: 4\n💰 Total Balance: 14,446,951 IRR\n📈 Today Transactions: 43\n🟢 Online: 1\n🔴 Offline: 3\n🏆 Your Rank: #1 of 4\n⭐ Today Score: 42";
-
-    pushPage(() => editDashboard(empId));
-
+  // خواندن مقادیر فعلی از Firebase
+  db.ref("employees/" + empId + "/dashboard").once("value").then(snap => {
+    const d = snap.val() || {};
+    
     document.getElementById("app").innerHTML = `
-        <div class="screen" style="height:100vh; overflow:hidden;">
-            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
-                <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-                        🌍 All Employees in the World
-                    </div>
-                    
-                    <div class="stat-box" style="margin-bottom:10px;">
-                        <label style="color:#00ff88;">Write your text (each line = one box):</label>
-                        <textarea id="page2text" rows="10" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px;">${currentText}</textarea>
-                    </div>
-                </div>
-                
-                <button onclick="savePage2()" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                    💾 Save Page 2
-                </button>
-                
-                <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                    ⬅ Back
-                </button>
+      <div class="screen" style="height:100vh; overflow:hidden;">
+        <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+        <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+          <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
+            <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
+              🌍 All Employees in the World
             </div>
+            
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Title</label>
+              <input id="dashTitle" value="${d.title || '📊 MASTERCARD COMMERZBANK'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Employees Label</label>
+              <input id="dashEmployees" value="${d.employeesLabel || 'Employees'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Total Balance Label</label>
+              <input id="dashBalance" value="${d.balanceLabel || 'Total Balance'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Today Transactions Label</label>
+              <input id="dashTransactions" value="${d.transactionsLabel || 'Today Transactions'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Online Label</label>
+              <input id="dashOnline" value="${d.onlineLabel || 'Online'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Offline Label</label>
+              <input id="dashOffline" value="${d.offlineLabel || 'Offline'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Your Rank Label</label>
+              <input id="dashRank" value="${d.rankLabel || 'Your Rank'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88;">Today Score Label</label>
+              <input id="dashScore" value="${d.scoreLabel || 'Today Score'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            </div>
+          </div>
+          
+          <button onclick="saveDashboard('${empId}')" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+            💾 Save Dashboard
+          </button>
+          
+          <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+            ⬅ Back
+          </button>
         </div>
+      </div>
     `;
+  });
 }
 function savePage2() {
     const text = document.getElementById('page2text').value;
