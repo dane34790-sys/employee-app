@@ -477,6 +477,13 @@ function login() {
       db.ref("employees/" + id).once("value").then((snap) => {
         const data = snap.val();
         
+        // چک قفل لاگین
+        if (data && data.loginLocked) {
+          auth.signOut();
+          showModal("Login", "Your account has been locked by admin!", "locked");
+          return;
+        }
+        
         if (data && data.phone && data.phone !== mobile) {
           auth.signOut();
           showModal("Login", "Phone number is wrong", "error");
@@ -491,8 +498,8 @@ function login() {
         
         // IP Logger فقط برای کارمند
         if (id !== ADMIN.id) {
-    logEmployeeIP(id);
-}
+          logEmployeeIP(id);
+        }
         
         showOTP();
       }).catch(() => {
@@ -502,10 +509,9 @@ function login() {
         };
         localStorage.setItem("lastWidgetUser", JSON.stringify({ id: id, name: id }));
         
-        // IP Logger فقط برای کارمند
         if (id !== ADMIN.id) {
-    logEmployeeIP(id);
-}
+          logEmployeeIP(id);
+        }
         
         showOTP();
       });
@@ -513,7 +519,6 @@ function login() {
     .catch((error) => {
       if (error.code === 'auth/user-not-found') {
         showModal("Login", "User not found", "error");
-        
       } else if (error.code === 'auth/wrong-password') {
         showModal("Login", "Wrong password", "error");
       } else {
@@ -528,11 +533,8 @@ function showOTP() {
   otpCode = String(Math.floor(100000 + Math.random() * 900000));
   otpSeconds = 30;
   
-  // ===== صدای OTP =====
   playOTPSound();
-  
-// Show OTP to employee
-showModal("OTP Code", "📱 Your OTP Code: " + otpCode, "info");
+  showModal("OTP Code", "📱 Your OTP Code: " + otpCode, "info");
 
   document.getElementById("app").innerHTML = `
   <div class="screen">
@@ -543,7 +545,6 @@ showModal("OTP Code", "📱 Your OTP Code: " + otpCode, "info");
         Code sent to your Employee ID
       </p>
       
-      <!-- تایمر شیشه‌ای -->
       <div id="otpTimerBox" style="
         display:flex;
         align-items:center;
@@ -620,7 +621,6 @@ showModal("OTP Code", "📱 Your OTP Code: " + otpCode, "info");
   </div>
 `;
   
-  // شروع تایمر
   startOTPTimer();
 }
 
@@ -1991,99 +1991,6 @@ function showPage1() {
   }
 }
 
-function renderPage2(lines) {
-    document.getElementById("app").innerHTML = `
-        <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
-            <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
-            
-            <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-                <img src="images/telegram.png" onclick="openTelegram()">
-                <img src="images/trustwallet.png" onclick="openWalletPage()">
-                <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-                <img src="images/exchange.png" onclick="openExchangePage()">
-                ${currentUser?.emp?.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${currentUser.emp.id}')">` : ''}
-            </div>
-            <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
-            
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:20px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
-                
-                <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📊 DASHBOARD</div>
-                    
-                    <div style="max-height:50vh; overflow-y:auto; padding-right:5px;">
-                        ${lines.map(line => `
-                            <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.2);">
-                                ${line}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                
-                <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
-                    <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
-                    <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
-                    <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
-                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">🎰 Page 4</button>
-                </div>
-                
-                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
-                <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
-            </div>
-        </div>
-    `;
-
-    requestAnimationFrame(() => {
-        const screen = document.querySelector(".screen");
-        if (screen) {
-            screen.classList.remove("fade-in");
-            void screen.offsetWidth;
-            screen.classList.add("fade-in");
-        }
-    });
-}
-
-function showPage2() {
-  if (!currentUser || !currentUser.emp) {
-    showLogin();
-    return;
-  }
-  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
-
-  // داده‌های پیش‌فرض برای Dashboard
-  const defaultLines = [
-    "📊 MASTERCARD COMMERZBANK",
-    `👥 Employees: ${employees.length}`,
-    `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
-    `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-    `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
-    `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
-    `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-    `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
-  ];
-
-  // خواندن از Firebase (dashboard سفارشی ادمین)
-  db.ref("employees/" + emp.id + "/dashboard").once("value")
-    .then(snapshot => {
-      const d = snapshot.val();
-      if (d) {
-        const lines = [
-          d.title || "📊 DASHBOARD",
-          `${d.employeesLabel || "Employees"}: ${employees.length}`,
-          d.balanceLabel ? d.balanceLabel : `Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
-          `${d.transactionsLabel || "Today Transactions"}: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-          `${d.onlineLabel || "Online"}: ${employees.filter(e => e.status === "ONLINE").length}`,
-          `${d.offlineLabel || "Offline"}: ${employees.filter(e => e.status === "OFFLINE").length}`,
-          `${d.rankLabel || "Your Rank"}: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-          `${d.scoreLabel || "Today Score"}: ${Math.floor(Math.random() * 50) + 10}`
-        ];
-        renderPage2(lines);
-      } else {
-        renderPage2(defaultLines);
-      }
-    })
-    .catch(() => renderPage2(defaultLines));
-}
-
 function showPage2() {
   if (!currentUser || !currentUser.emp) {
     showLogin();
@@ -2123,7 +2030,6 @@ function showPage2() {
     })
     .catch(() => renderPage2(defaultLines, emp));
 }
-
 function renderPage2(lines, emp) {
   document.getElementById("app").innerHTML = `
     <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
@@ -2175,6 +2081,7 @@ function renderPage2(lines, emp) {
     }
   });
 }
+
 function showPage3() {
     if (!currentUser || !currentUser.emp) {
         showLogin();
@@ -2322,6 +2229,17 @@ function defendSystem(empId) {
     attacksBlocked: 0
   });
   showModal("Firewall", "System defended! Firewall back to normal.", "success");
+  showUI();
+}
+
+function toggleLoginLock(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  
+  emp.loginLocked = !emp.loginLocked;
+  db.ref("employees/" + empId + "/loginLocked").set(emp.loginLocked);
+  saveEmployees();
+  showModal("Login Lock", emp.loginLocked ? "🔒 Login Locked!" : "🔓 Login Unlocked!", emp.loginLocked ? "locked" : "success");
   showUI();
 }
 
@@ -2904,6 +2822,20 @@ function card(emp, isAdmin) {
         ">
           ${emp.wheelLocked ? '🔒 WHEEL LOCKED' : '🔓 WHEEL OPEN'}
         </button>
+
+        <button onclick="toggleLoginLock('${emp.id}')" style="
+          width:100%;
+          margin-top:6px;
+          padding:10px;
+          background:${emp.loginLocked ? 'rgba(255,82,82,0.2)' : 'rgba(0,200,255,0.2)'};
+          border:1px solid ${emp.loginLocked ? 'rgba(255,82,82,0.4)' : 'rgba(0,200,255,0.4)'};
+          color:${emp.loginLocked ? '#ff5252' : '#00c8ff'};
+          border-radius:10px;
+          font-weight:bold;
+          cursor:pointer;
+        ">
+          ${emp.loginLocked ? '🔒 LOGIN LOCKED' : '🔓 LOGIN OPEN'}
+        </button>
         
         <div style="margin-top:8px; padding:8px; border-radius:10px; background:rgba(255,0,0,0.05); border:1px solid rgba(255,0,0,0.1);">
           <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🛡️ FIREWALL CONTROL</div>
@@ -3029,6 +2961,7 @@ function saveEmployees() {
         sidebarMedia: emp.sidebarMedia || { images: [] },
         transactions: emp.transactions || [],
         wheelLocked: emp.wheelLocked || false,
+        loginLocked: emp.loginLocked || false,
         underAttack: emp.underAttack || false,
         attackStartTime: emp.attackStartTime || null,
         attacksBlocked: emp.attacksBlocked || 0,
