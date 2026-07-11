@@ -1961,6 +1961,7 @@ function showPage1() {
           <button onclick="showPage3()" style="padding:8px 12px; background:#9c27b0; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📝 P3</button>
           <button onclick="showPage4()" style="padding:8px 12px; background:#ff6d00; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🎰 P4</button>
           <button onclick="showPage5()" style="padding:8px 12px; background:#ff1744; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🛡️ P5</button>
+          <button onclick="showPage6()" style="padding:8px 12px; background:#00bcd4; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🌍 P6</button>
         </div>
         <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
@@ -2068,6 +2069,7 @@ function renderPage2(lines, emp) {
         
         <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
         <button onclick="showPage5()" style="width:100%; margin-top:5px; padding:10px; background:#ff1744; color:white; border:none; border-radius:8px; font-size:11px; cursor:pointer;">🛡️ Page 5</button>
+        <button onclick="showPage6()" style="width:100%; margin-top:5px; padding:10px; background:#00bcd4; color:white; border:none; border-radius:8px; font-size:11px; cursor:pointer;">🌍 Page 6</button>
       </div>
     </div>
   `;
@@ -2186,6 +2188,7 @@ function showPage3() {
                 
                 <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
                 <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+                <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
             </div>
         </div>
     `;
@@ -2279,6 +2282,7 @@ function showPage4() {
           <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
           <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
           <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+          <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
         </div>
         <button class="logout" onclick="showLogin()" style="margin-top:10px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
@@ -2637,6 +2641,7 @@ function showPage5() {
         <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
         <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
         <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+        <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
       </div>
       <button onclick="showLogin()" style="margin-top:8px; width:100%; padding:10px; background:#ff5252; color:white; border:none; border-radius:8px; cursor:pointer;">LOGOUT</button>
     </div>
@@ -2703,6 +2708,762 @@ function drawTrafficChart(underAttack) {
   }
   
   draw();
+}
+
+// ==================== PAGE 6 - MASTERCARD VERIFICATION SYSTEM ====================
+function showPage6() {
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+  
+  const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+  
+  // ==================== 180 Countries with Real Telecom Data ====================
+  const countries = [
+    { name: "Albania", flag: "🇦🇱", telecom: "Vodafone Albania", server: "Tirana" },
+    { name: "Algeria", flag: "🇩🇿", telecom: "Mobilis", server: "Algiers" },
+    { name: "Andorra", flag: "🇦🇩", telecom: "Andorra Telecom", server: "Andorra la Vella" },
+    { name: "Angola", flag: "🇦🇴", telecom: "Unitel", server: "Luanda" },
+    { name: "Antigua and Barbuda", flag: "🇦🇬", telecom: "Digicel", server: "St. John's" },
+    { name: "Argentina", flag: "🇦🇷", telecom: "Movistar", server: "Buenos Aires" },
+    { name: "Armenia", flag: "🇦🇲", telecom: "Viva-MTS", server: "Yerevan" },
+    { name: "Australia", flag: "🇦🇺", telecom: "Telstra", server: "Sydney" },
+    { name: "Austria", flag: "🇦🇹", telecom: "A1 Telekom", server: "Vienna" },
+    { name: "Azerbaijan", flag: "🇦🇿", telecom: "Azercell", server: "Baku" },
+    { name: "Bahamas", flag: "🇧🇸", telecom: "BTC", server: "Nassau" },
+    { name: "Bahrain", flag: "🇧🇭", telecom: "Batelco", server: "Manama" },
+    { name: "Bangladesh", flag: "🇧🇩", telecom: "Grameenphone", server: "Dhaka" },
+    { name: "Barbados", flag: "🇧🇧", telecom: "Digicel", server: "Bridgetown" },
+    { name: "Belarus", flag: "🇧🇾", telecom: "A1 Belarus", server: "Minsk" },
+    { name: "Belgium", flag: "🇧🇪", telecom: "Proximus", server: "Brussels" },
+    { name: "Belize", flag: "🇧🇿", telecom: "Digi", server: "Belmopan" },
+    { name: "Benin", flag: "🇧🇯", telecom: "MTN Benin", server: "Porto-Novo" },
+    { name: "Bhutan", flag: "🇧🇹", telecom: "Bhutan Telecom", server: "Thimphu" },
+    { name: "Bolivia", flag: "🇧🇴", telecom: "Entel", server: "La Paz" },
+    { name: "Bosnia and Herzegovina", flag: "🇧🇦", telecom: "BH Telecom", server: "Sarajevo" },
+    { name: "Botswana", flag: "🇧🇼", telecom: "Mascom", server: "Gaborone" },
+    { name: "Brazil", flag: "🇧🇷", telecom: "Vivo", server: "São Paulo" },
+    { name: "Brunei", flag: "🇧🇳", telecom: "DST", server: "Bandar Seri Begawan" },
+    { name: "Bulgaria", flag: "🇧🇬", telecom: "A1 Bulgaria", server: "Sofia" },
+    { name: "Burkina Faso", flag: "🇧🇫", telecom: "Orange BF", server: "Ouagadougou" },
+    { name: "Burundi", flag: "🇧🇮", telecom: "Econet", server: "Bujumbura" },
+    { name: "Cape Verde", flag: "🇨🇻", telecom: "CV Telecom", server: "Praia" },
+    { name: "Cambodia", flag: "🇰🇭", telecom: "Smart Axiata", server: "Phnom Penh" },
+    { name: "Cameroon", flag: "🇨🇲", telecom: "MTN Cameroon", server: "Yaoundé" },
+    { name: "Canada", flag: "🇨🇦", telecom: "Bell Canada", server: "Toronto" },
+    { name: "Central African Republic", flag: "🇨🇫", telecom: "Orange RCA", server: "Bangui" },
+    { name: "Chad", flag: "🇹🇩", telecom: "Tigo", server: "N'Djamena" },
+    { name: "Chile", flag: "🇨🇱", telecom: "Entel Chile", server: "Santiago" },
+    { name: "China", flag: "🇨🇳", telecom: "China Telecom", server: "Beijing" },
+    { name: "Colombia", flag: "🇨🇴", telecom: "Claro", server: "Bogotá" },
+    { name: "Comoros", flag: "🇰🇲", telecom: "Comores Telecom", server: "Moroni" },
+    { name: "Congo", flag: "🇨🇬", telecom: "MTN Congo", server: "Brazzaville" },
+    { name: "DR Congo", flag: "🇨🇩", telecom: "Vodacom", server: "Kinshasa" },
+    { name: "Costa Rica", flag: "🇨🇷", telecom: "ICE", server: "San José" },
+    { name: "Ivory Coast", flag: "🇨🇮", telecom: "Orange CI", server: "Abidjan" },
+    { name: "Croatia", flag: "🇭🇷", telecom: "Hrvatski Telekom", server: "Zagreb" },
+    { name: "Cuba", flag: "🇨🇺", telecom: "ETECSA", server: "Havana" },
+    { name: "Cyprus", flag: "🇨🇾", telecom: "CYTA", server: "Nicosia" },
+    { name: "Czech Republic", flag: "🇨🇿", telecom: "O2 Czech", server: "Prague" },
+    { name: "Denmark", flag: "🇩🇰", telecom: "TDC", server: "Copenhagen" },
+    { name: "Djibouti", flag: "🇩🇯", telecom: "Djibouti Telecom", server: "Djibouti City" },
+    { name: "Dominica", flag: "🇩🇲", telecom: "Digicel", server: "Roseau" },
+    { name: "Dominican Republic", flag: "🇩🇴", telecom: "Altice", server: "Santo Domingo" },
+    { name: "Ecuador", flag: "🇪🇨", telecom: "CNT", server: "Quito" },
+    { name: "Egypt", flag: "🇪🇬", telecom: "Vodafone Egypt", server: "Cairo" },
+    { name: "El Salvador", flag: "🇸🇻", telecom: "Tigo", server: "San Salvador" },
+    { name: "Equatorial Guinea", flag: "🇬🇶", telecom: "Getesa", server: "Malabo" },
+    { name: "Eritrea", flag: "🇪🇷", telecom: "Eritel", server: "Asmara" },
+    { name: "Estonia", flag: "🇪🇪", telecom: "Telia Estonia", server: "Tallinn" },
+    { name: "Eswatini", flag: "🇸🇿", telecom: "MTN Eswatini", server: "Mbabane" },
+    { name: "Ethiopia", flag: "🇪🇹", telecom: "Ethio Telecom", server: "Addis Ababa" },
+    { name: "Fiji", flag: "🇫🇯", telecom: "Digicel Fiji", server: "Suva" },
+    { name: "Finland", flag: "🇫🇮", telecom: "Elisa", server: "Helsinki" },
+    { name: "France", flag: "🇫🇷", telecom: "Orange", server: "Paris" },
+    { name: "Gabon", flag: "🇬🇦", telecom: "Airtel Gabon", server: "Libreville" },
+    { name: "Gambia", flag: "🇬🇲", telecom: "Africell", server: "Banjul" },
+    { name: "Georgia", flag: "🇬🇪", telecom: "MagtiCom", server: "Tbilisi" },
+    { name: "Germany", flag: "🇩🇪", telecom: "Deutsche Telekom", server: "Berlin" },
+    { name: "Ghana", flag: "🇬🇭", telecom: "MTN Ghana", server: "Accra" },
+    { name: "Greece", flag: "🇬🇷", telecom: "Cosmote", server: "Athens" },
+    { name: "Grenada", flag: "🇬🇩", telecom: "Digicel", server: "St. George's" },
+    { name: "Guatemala", flag: "🇬🇹", telecom: "Tigo", server: "Guatemala City" },
+    { name: "Guinea", flag: "🇬🇳", telecom: "Orange Guinea", server: "Conakry" },
+    { name: "Guinea-Bissau", flag: "🇬🇼", telecom: "Orange Bissau", server: "Bissau" },
+    { name: "Guyana", flag: "🇬🇾", telecom: "Digicel", server: "Georgetown" },
+    { name: "Haiti", flag: "🇭🇹", telecom: "Digicel Haiti", server: "Port-au-Prince" },
+    { name: "Honduras", flag: "🇭🇳", telecom: "Tigo", server: "Tegucigalpa" },
+    { name: "Hungary", flag: "🇭🇺", telecom: "Magyar Telekom", server: "Budapest" },
+    { name: "Iceland", flag: "🇮🇸", telecom: "Nova", server: "Reykjavik" },
+    { name: "India", flag: "🇮🇳", telecom: "BSNL", server: "Mumbai" },
+    { name: "Indonesia", flag: "🇮🇩", telecom: "Telkomsel", server: "Jakarta" },
+    { name: "Iraq", flag: "🇮🇶", telecom: "Zain Iraq", server: "Baghdad" },
+    { name: "Ireland", flag: "🇮🇪", telecom: "Vodafone Ireland", server: "Dublin" },
+    { name: "Italy", flag: "🇮🇹", telecom: "TIM", server: "Rome" },
+    { name: "Jamaica", flag: "🇯🇲", telecom: "Digicel", server: "Kingston" },
+    { name: "Japan", flag: "🇯🇵", telecom: "NTT Docomo", server: "Tokyo" },
+    { name: "Jordan", flag: "🇯🇴", telecom: "Zain Jordan", server: "Amman" },
+    { name: "Kazakhstan", flag: "🇰🇿", telecom: "Kcell", server: "Nur-Sultan" },
+    { name: "Kenya", flag: "🇰🇪", telecom: "Safaricom", server: "Nairobi" },
+    { name: "Kiribati", flag: "🇰🇮", telecom: "TSKL", server: "Tarawa" },
+    { name: "Kosovo", flag: "🇽🇰", telecom: "Vala", server: "Pristina" },
+    { name: "Kuwait", flag: "🇰🇼", telecom: "Zain Kuwait", server: "Kuwait City" },
+    { name: "Kyrgyzstan", flag: "🇰🇬", telecom: "MegaCom", server: "Bishkek" },
+    { name: "Laos", flag: "🇱🇦", telecom: "Unitel", server: "Vientiane" },
+    { name: "Latvia", flag: "🇱🇻", telecom: "LMT", server: "Riga" },
+    { name: "Lesotho", flag: "🇱🇸", telecom: "Vodacom Lesotho", server: "Maseru" },
+    { name: "Liberia", flag: "🇱🇷", telecom: "Orange Liberia", server: "Monrovia" },
+    { name: "Libya", flag: "🇱🇾", telecom: "Libyana", server: "Tripoli" },
+    { name: "Liechtenstein", flag: "🇱🇮", telecom: "Telecom Liechtenstein", server: "Vaduz" },
+    { name: "Lithuania", flag: "🇱🇹", telecom: "Telia Lithuania", server: "Vilnius" },
+    { name: "Luxembourg", flag: "🇱🇺", telecom: "POST Luxembourg", server: "Luxembourg City" },
+    { name: "Madagascar", flag: "🇲🇬", telecom: "Telma", server: "Antananarivo" },
+    { name: "Malawi", flag: "🇲🇼", telecom: "Airtel Malawi", server: "Lilongwe" },
+    { name: "Malaysia", flag: "🇲🇾", telecom: "Maxis", server: "Kuala Lumpur" },
+    { name: "Maldives", flag: "🇲🇻", telecom: "Dhiraagu", server: "Malé" },
+    { name: "Mali", flag: "🇲🇱", telecom: "Orange Mali", server: "Bamako" },
+    { name: "Malta", flag: "🇲🇹", telecom: "GO", server: "Valletta" },
+    { name: "Marshall Islands", flag: "🇲🇭", telecom: "NTA", server: "Majuro" },
+    { name: "Mauritania", flag: "🇲🇷", telecom: "Mauritel", server: "Nouakchott" },
+    { name: "Mauritius", flag: "🇲🇺", telecom: "Orange Mauritius", server: "Port Louis" },
+    { name: "Mexico", flag: "🇲🇽", telecom: "Telcel", server: "Mexico City" },
+    { name: "Micronesia", flag: "🇫🇲", telecom: "FSM Telecom", server: "Palikir" },
+    { name: "Moldova", flag: "🇲🇩", telecom: "Orange Moldova", server: "Chișinău" },
+    { name: "Monaco", flag: "🇲🇨", telecom: "Monaco Telecom", server: "Monte Carlo" },
+    { name: "Mongolia", flag: "🇲🇳", telecom: "Mobicom", server: "Ulaanbaatar" },
+    { name: "Montenegro", flag: "🇲🇪", telecom: "Telenor Montenegro", server: "Podgorica" },
+    { name: "Morocco", flag: "🇲🇦", telecom: "Maroc Telecom", server: "Casablanca" },
+    { name: "Mozambique", flag: "🇲🇿", telecom: "Vodacom", server: "Maputo" },
+    { name: "Myanmar", flag: "🇲🇲", telecom: "MPT", server: "Yangon" },
+    { name: "Namibia", flag: "🇳🇦", telecom: "MTC Namibia", server: "Windhoek" },
+    { name: "Nauru", flag: "🇳🇷", telecom: "Digicel Nauru", server: "Yaren" },
+    { name: "Nepal", flag: "🇳🇵", telecom: "Ncell", server: "Kathmandu" },
+    { name: "Netherlands", flag: "🇳🇱", telecom: "KPN", server: "Amsterdam" },
+    { name: "New Zealand", flag: "🇳🇿", telecom: "Spark", server: "Wellington" },
+    { name: "Nicaragua", flag: "🇳🇮", telecom: "Claro", server: "Managua" },
+    { name: "Niger", flag: "🇳🇪", telecom: "Orange Niger", server: "Niamey" },
+    { name: "Nigeria", flag: "🇳🇬", telecom: "MTN Nigeria", server: "Lagos" },
+    { name: "North Macedonia", flag: "🇲🇰", telecom: "Makedonski Telekom", server: "Skopje" },
+    { name: "Norway", flag: "🇳🇴", telecom: "Telenor", server: "Oslo" },
+    { name: "Oman", flag: "🇴🇲", telecom: "Omantel", server: "Muscat" },
+    { name: "Pakistan", flag: "🇵🇰", telecom: "Jazz", server: "Islamabad" },
+    { name: "Palau", flag: "🇵🇼", telecom: "PNCC", server: "Koror" },
+    { name: "Panama", flag: "🇵🇦", telecom: "Cable & Wireless", server: "Panama City" },
+    { name: "Papua New Guinea", flag: "🇵🇬", telecom: "Digicel PNG", server: "Port Moresby" },
+    { name: "Paraguay", flag: "🇵🇾", telecom: "Tigo", server: "Asunción" },
+    { name: "Peru", flag: "🇵🇪", telecom: "Movistar", server: "Lima" },
+    { name: "Philippines", flag: "🇵🇭", telecom: "Globe Telecom", server: "Manila" },
+    { name: "Poland", flag: "🇵🇱", telecom: "Orange Polska", server: "Warsaw" },
+    { name: "Portugal", flag: "🇵🇹", telecom: "MEO", server: "Lisbon" },
+    { name: "Qatar", flag: "🇶🇦", telecom: "Ooredoo", server: "Doha" },
+    { name: "Romania", flag: "🇷🇴", telecom: "Orange Romania", server: "Bucharest" },
+    { name: "Russia", flag: "🇷🇺", telecom: "Rostelecom", server: "Moscow" },
+    { name: "Rwanda", flag: "🇷🇼", telecom: "MTN Rwanda", server: "Kigali" },
+    { name: "Saint Kitts and Nevis", flag: "🇰🇳", telecom: "Digicel", server: "Basseterre" },
+    { name: "Saint Lucia", flag: "🇱🇨", telecom: "Digicel", server: "Castries" },
+    { name: "Saint Vincent and the Grenadines", flag: "🇻🇨", telecom: "Digicel", server: "Kingstown" },
+    { name: "Samoa", flag: "🇼🇸", telecom: "Digicel Samoa", server: "Apia" },
+    { name: "San Marino", flag: "🇸🇲", telecom: "Telecom Italia San Marino", server: "San Marino" },
+    { name: "Sao Tome and Principe", flag: "🇸🇹", telecom: "CST", server: "São Tomé" },
+    { name: "Saudi Arabia", flag: "🇸🇦", telecom: "STC", server: "Riyadh" },
+    { name: "Senegal", flag: "🇸🇳", telecom: "Orange Senegal", server: "Dakar" },
+    { name: "Serbia", flag: "🇷🇸", telecom: "Telekom Srbija", server: "Belgrade" },
+    { name: "Seychelles", flag: "🇸🇨", telecom: "Cable & Wireless", server: "Victoria" },
+    { name: "Sierra Leone", flag: "🇸🇱", telecom: "Orange Sierra Leone", server: "Freetown" },
+    { name: "Singapore", flag: "🇸🇬", telecom: "Singtel", server: "Singapore" },
+    { name: "Slovakia", flag: "🇸🇰", telecom: "Orange Slovakia", server: "Bratislava" },
+    { name: "Slovenia", flag: "🇸🇮", telecom: "Telekom Slovenije", server: "Ljubljana" },
+    { name: "Solomon Islands", flag: "🇸🇧", telecom: "Our Telekom", server: "Honiara" },
+    { name: "Somalia", flag: "🇸🇴", telecom: "Hormuud", server: "Mogadishu" },
+    { name: "South Africa", flag: "🇿🇦", telecom: "Vodacom", server: "Johannesburg" },
+    { name: "South Sudan", flag: "🇸🇸", telecom: "MTN South Sudan", server: "Juba" },
+    { name: "Spain", flag: "🇪🇸", telecom: "Movistar", server: "Madrid" },
+    { name: "Sri Lanka", flag: "🇱🇰", telecom: "Dialog", server: "Colombo" },
+    { name: "Sudan", flag: "🇸🇩", telecom: "Zain Sudan", server: "Khartoum" },
+    { name: "Suriname", flag: "🇸🇷", telecom: "Telesur", server: "Paramaribo" },
+    { name: "Sweden", flag: "🇸🇪", telecom: "Telia", server: "Stockholm" },
+    { name: "Switzerland", flag: "🇨🇭", telecom: "Swisscom", server: "Zurich" },
+    { name: "Taiwan", flag: "🇹🇼", telecom: "Chunghwa Telecom", server: "Taipei" },
+    { name: "Tajikistan", flag: "🇹🇯", telecom: "Tcell", server: "Dushanbe" },
+    { name: "Tanzania", flag: "🇹🇿", telecom: "Vodacom Tanzania", server: "Dar es Salaam" },
+    { name: "Thailand", flag: "🇹🇭", telecom: "AIS", server: "Bangkok" },
+    { name: "East Timor", flag: "🇹🇱", telecom: "Timor Telecom", server: "Dili" },
+    { name: "Togo", flag: "🇹🇬", telecom: "Togocel", server: "Lomé" },
+    { name: "Tonga", flag: "🇹🇴", telecom: "Digicel Tonga", server: "Nuku'alofa" },
+    { name: "Trinidad and Tobago", flag: "🇹🇹", telecom: "Digicel", server: "Port of Spain" },
+    { name: "Tunisia", flag: "🇹🇳", telecom: "Tunisie Telecom", server: "Tunis" },
+    { name: "Turkey", flag: "🇹🇷", telecom: "Türk Telekom", server: "Istanbul" },
+    { name: "Turkmenistan", flag: "🇹🇲", telecom: "TM Cell", server: "Ashgabat" },
+    { name: "Tuvalu", flag: "🇹🇻", telecom: "TTC", server: "Funafuti" },
+    { name: "Uganda", flag: "🇺🇬", telecom: "MTN Uganda", server: "Kampala" },
+    { name: "Ukraine", flag: "🇺🇦", telecom: "Kyivstar", server: "Kyiv" },
+    { name: "United Arab Emirates", flag: "🇦🇪", telecom: "Etisalat", server: "Dubai" },
+    { name: "United Kingdom", flag: "🇬🇧", telecom: "BT Group", server: "London" },
+    { name: "United States", flag: "🇺🇸", telecom: "AT&T", server: "New York" },
+    { name: "Uruguay", flag: "🇺🇾", telecom: "Antel", server: "Montevideo" },
+    { name: "Uzbekistan", flag: "🇺🇿", telecom: "Ucell", server: "Tashkent" },
+    { name: "Vanuatu", flag: "🇻🇺", telecom: "Digicel Vanuatu", server: "Port Vila" },
+    { name: "Vatican City", flag: "🇻🇦", telecom: "Vatican Telecom", server: "Vatican City" },
+    { name: "Venezuela", flag: "🇻🇪", telecom: "Movistar", server: "Caracas" },
+    { name: "Vietnam", flag: "🇻🇳", telecom: "Viettel", server: "Hanoi" },
+    { name: "Yemen", flag: "🇾🇪", telecom: "Yemen Mobile", server: "Sana'a" },
+    { name: "Zambia", flag: "🇿🇲", telecom: "MTN Zambia", server: "Lusaka" },
+    { name: "Zimbabwe", flag: "🇿🇼", telecom: "Econet", server: "Harare" }
+  ];
+  
+  // Load data
+  const empVerification = emp.verification || {};
+  const verifiedCountries = empVerification.countries || {};
+  const codeGenerationCount = empVerification.codeCount || 0;
+  const adminAssignedCode = empVerification.adminCode || '';
+  const isLocked = empVerification.locked || false;
+  const savedPhone = empVerification.phone || '';
+  const phoneVerified = empVerification.phoneVerified || false;
+  const phoneLocked = empVerification.phoneLocked || false;
+  const verifiedCount = Object.keys(verifiedCountries).length;
+  
+  let phoneTimerInterval = null;
+  let phoneProgressInterval = null;
+  let codeProgressInterval = null;
+  
+  // ==================== Phone Handler ====================
+  window.handlePhoneInput = function(input) {
+    if (phoneLocked && phoneVerified) {
+      input.value = savedPhone;
+      return;
+    }
+    
+    let phone = input.value.replace(/\D/g, '');
+    
+    if (phone.length > 12) {
+      phone = phone.substring(0, 12);
+    }
+    
+    let formatted = '';
+    if (phone.length > 0) {
+      formatted = '+ ' + phone.substring(0, 2) + ' ' + phone.substring(2, 12);
+    }
+    input.value = formatted;
+    
+    const phoneStatus = document.getElementById('vPhoneStatus');
+    const phoneBox = document.getElementById('vPhoneBox');
+    const phoneDisplay = document.getElementById('vPhoneDisplay');
+    const progressBar = document.getElementById('vPhoneProgress');
+    const progressFill = document.getElementById('vPhoneProgressFill');
+    
+    if (phoneTimerInterval) { clearInterval(phoneTimerInterval); phoneTimerInterval = null; }
+    if (phoneProgressInterval) { clearInterval(phoneProgressInterval); phoneProgressInterval = null; }
+    
+    if (phone.length < 12) {
+      if (phoneStatus) { phoneStatus.innerHTML = '<span style="color:rgba(255,255,255,0.4);">Enter 12 digits</span>'; phoneStatus.style.display = 'block'; }
+      if (phoneBox) { phoneBox.style.borderColor = 'rgba(255,255,255,0.1)'; phoneBox.style.background = 'rgba(0,0,0,0.4)'; }
+      if (phoneDisplay) { phoneDisplay.style.background = 'rgba(0,0,0,0.4)'; phoneDisplay.style.color = '#fff'; }
+      if (progressBar) { progressBar.style.display = 'none'; }
+      if (progressFill) { progressFill.style.width = '0%'; }
+      return;
+    }
+    
+    if (phoneStatus) { phoneStatus.innerHTML = '<span style="color:#ff5252;">⏳ Verifying...</span>'; phoneStatus.style.display = 'block'; }
+    if (phoneBox) { phoneBox.style.borderColor = '#ff5252'; phoneBox.style.background = 'rgba(255,82,82,0.08)'; }
+    if (progressBar) { progressBar.style.display = 'block'; }
+    if (progressFill) { progressFill.style.width = '0%'; progressFill.style.background = '#ff5252'; }
+    
+    var startTime = Date.now();
+    var duration = 7000;
+    
+    phoneProgressInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var percent = Math.min((elapsed / duration) * 100, 100);
+      
+      if (progressFill) { progressFill.style.width = percent + '%'; }
+      
+      if (elapsed >= 2000 && elapsed < 5000) {
+        if (phoneStatus) { phoneStatus.innerHTML = '<span style="color:#ff9800;">🔍 Checking network...</span>'; }
+      } else if (elapsed >= 5000) {
+        if (phoneStatus) { phoneStatus.innerHTML = '<span style="color:#ff9800;">📡 Connecting to carrier...</span>'; }
+      }
+      
+      if (elapsed >= duration) {
+        clearInterval(phoneProgressInterval);
+        phoneProgressInterval = null;
+        
+        var maskedPhone = '+ ' + phone.substring(0, 2) + ' ××××××××××';
+        
+        db.ref("employees/" + emp.id + "/verification").update({ 
+          phone: formatted, 
+          phoneVerified: true, 
+          phoneVerifiedAt: Date.now(),
+          phoneLocked: true
+        });
+        
+        var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+        if (empRef) { 
+          if (!empRef.verification) empRef.verification = {}; 
+          empRef.verification.phone = formatted; 
+          empRef.verification.phoneVerified = true; 
+          empRef.verification.phoneVerifiedAt = Date.now();
+          empRef.verification.phoneLocked = true;
+        }
+        
+        if (phoneStatus) { phoneStatus.innerHTML = '<span style="color:#4caf50;">✅ Verified & Secured</span>'; }
+        if (phoneBox) { phoneBox.style.borderColor = '#4caf50'; phoneBox.style.background = 'rgba(76,175,80,0.08)'; }
+        if (phoneDisplay) { 
+          phoneDisplay.style.background = 'rgba(76,175,80,0.1)'; 
+          phoneDisplay.style.backdropFilter = 'blur(10px)'; 
+          phoneDisplay.style.webkitBackdropFilter = 'blur(10px)';
+          phoneDisplay.style.border = '2px solid rgba(76,175,80,0.3)';
+          phoneDisplay.style.color = '#4caf50';
+          phoneDisplay.value = maskedPhone;
+          phoneDisplay.disabled = true;
+          phoneDisplay.style.opacity = '1';
+          phoneDisplay.style.cursor = 'not-allowed';
+        }
+        if (progressFill) { progressFill.style.background = '#4caf50'; progressFill.style.width = '100%'; }
+        
+        setTimeout(function() {
+          if (progressBar) { progressBar.style.display = 'none'; }
+        }, 2000);
+      }
+    }, 100);
+  };
+  
+  // ==================== Generate Code ====================
+  window.generateVerificationCode = function() {
+    if (isLocked) { showModal("Verification", "Verification locked by admin.", "locked"); return; }
+    
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    var currentCount = (empRef?.verification?.codeCount || 0);
+    
+    if (currentCount >= 3 && !adminAssignedCode) {
+      showModal("Code Limit", "Maximum code generation limit reached (3 codes). Contact admin.", "error");
+      return;
+    }
+    
+    var codeBox = document.getElementById('vCodeBox');
+    var codeDisplay = document.getElementById('vCodeDisplay');
+    var codeProgressBar = document.getElementById('vCodeProgress');
+    var codeProgressFill = document.getElementById('vCodeProgressFill');
+    var codeStatus = document.getElementById('vCodeStatus');
+    var generateBtn = document.querySelector('button[onclick="generateVerificationCode()"]');
+    
+    if (codeBox) codeBox.style.display = 'block';
+    if (codeDisplay) { codeDisplay.textContent = '----------'; codeDisplay.style.color = '#fff'; }
+    if (codeProgressBar) codeProgressBar.style.display = 'block';
+    if (codeProgressFill) { codeProgressFill.style.width = '0%'; codeProgressFill.style.background = '#ff9800'; }
+    if (codeStatus) { codeStatus.style.display = 'block'; codeStatus.innerHTML = '<span style="color:#ff9800;">⏳ Generating secure code...</span>'; }
+    if (generateBtn) { generateBtn.disabled = true; generateBtn.style.opacity = '0.5'; }
+    
+    if (codeProgressInterval) { clearInterval(codeProgressInterval); }
+    
+    var startTime = Date.now();
+    var duration = 7000;
+    
+    codeProgressInterval = setInterval(function() {
+      var elapsed = Date.now() - startTime;
+      var percent = Math.min((elapsed / duration) * 100, 100);
+      
+      if (codeProgressFill) { codeProgressFill.style.width = percent + '%'; }
+      
+      if (elapsed >= 2500 && elapsed < 4500) {
+        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">🔐 Encrypting...</span>'; }
+      } else if (elapsed >= 4500) {
+        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">✅ Finalizing...</span>'; }
+      }
+      
+      if (elapsed >= duration) {
+        clearInterval(codeProgressInterval);
+        codeProgressInterval = null;
+        
+        var code = '';
+        for (var i = 0; i < 10; i++) { code += Math.floor(Math.random() * 10); }
+        var newCount = currentCount + 1;
+        
+        var codeKey = 'code_' + newCount;
+        var codeData = {};
+        codeData[codeKey] = { code: code, used: false, usedFor: '', generatedAt: Date.now() };
+        
+        db.ref("employees/" + emp.id + "/verification").update(codeData);
+        db.ref("employees/" + emp.id + "/verification/codeCount").set(newCount);
+        
+        if (empRef) { 
+          if (!empRef.verification) empRef.verification = {}; 
+          if (!empRef.verification[codeKey]) empRef.verification[codeKey] = {};
+          empRef.verification[codeKey] = { code: code, used: false, usedFor: '', generatedAt: Date.now() };
+          empRef.verification.codeCount = newCount;
+        }
+        
+        if (codeDisplay) { codeDisplay.textContent = code; codeDisplay.style.color = '#4caf50'; }
+        if (codeProgressFill) { codeProgressFill.style.background = '#4caf50'; codeProgressFill.style.width = '100%'; }
+        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#4caf50;">✅ Code Ready</span>'; }
+        if (generateBtn) { generateBtn.disabled = false; generateBtn.style.opacity = '1'; }
+        
+        var codeCountEl = document.getElementById('vCodeCount');
+        if (codeCountEl) codeCountEl.textContent = 'Codes: ' + newCount + ' / 3';
+        
+        setTimeout(function() {
+          if (codeProgressBar) codeProgressBar.style.display = 'none';
+          if (codeStatus) codeStatus.style.display = 'none';
+        }, 2000);
+        
+        renderVList();
+      }
+    }, 100);
+  };
+  
+  // ==================== Verify Country ====================
+  window.verifyCountryCode = function(countryName, input) {
+    if (isLocked) { showModal("Verification", "Verification locked.", "locked"); input.value = ''; return; }
+    
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    var val = input.value.trim();
+    
+    if (val === '') {
+      input.className = 'v-input';
+      return;
+    }
+    
+    var currentVerified = empRef?.verification?.countries || {};
+    var currentVerifiedCount = Object.keys(currentVerified).length;
+    
+    if (!currentVerified[countryName] && currentVerifiedCount >= 3) {
+      showModal("Country Limit", "You can only verify up to 3 countries.", "warning");
+      input.value = '';
+      return;
+    }
+    
+    var matchedCode = null;
+    var matchedCodeKey = '';
+    for (var i = 1; i <= 3; i++) {
+      var key = 'code_' + i;
+      var codeData = empRef?.verification?.[key];
+      if (codeData && codeData.code === val && !codeData.used) {
+        matchedCode = codeData.code;
+        matchedCodeKey = key;
+        break;
+      }
+    }
+    
+    if (!matchedCode && adminAssignedCode && val === adminAssignedCode) {
+      matchedCode = adminAssignedCode;
+    }
+    
+    if (matchedCode) {
+      input.className = 'v-input v-success';
+      currentVerified[countryName] = matchedCode;
+      
+      var updates = {};
+      updates['countries/' + countryName] = matchedCode;
+      if (matchedCodeKey) {
+        updates[matchedCodeKey + '/used'] = true;
+        updates[matchedCodeKey + '/usedFor'] = countryName;
+        updates[matchedCodeKey + '/usedAt'] = Date.now();
+      }
+      
+      db.ref("employees/" + emp.id + "/verification").update(updates);
+      
+      if (empRef) { 
+        if (!empRef.verification) empRef.verification = {}; 
+        if (!empRef.verification.countries) empRef.verification.countries = {};
+        empRef.verification.countries[countryName] = matchedCode;
+        if (matchedCodeKey) {
+          if (!empRef.verification[matchedCodeKey]) empRef.verification[matchedCodeKey] = {};
+          empRef.verification[matchedCodeKey].used = true;
+          empRef.verification[matchedCodeKey].usedFor = countryName;
+        }
+      }
+      
+      showCongratsAnimation(countryName);
+      renderVList();
+    } else {
+      input.className = 'v-input v-error';
+      setTimeout(function() { input.value = ''; input.className = 'v-input'; }, 900);
+    }
+  };
+  
+  // ==================== Telecom Popup ====================
+  window.showTelecomInfo = function(countryName) {
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    var verified = empRef?.verification?.countries || {};
+    
+    if (!verified[countryName]) return;
+    
+    var countryData = countries.find(function(c) { return c.name === countryName; });
+    if (!countryData) return;
+    
+    var existingPopup = document.getElementById('vTelecomPopup');
+    if (existingPopup) existingPopup.remove();
+    
+    var popup = document.createElement('div');
+    popup.id = 'vTelecomPopup';
+    popup.innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:36px; margin-bottom:6px;">${countryData.flag}</div>
+        <div style="font-size:16px; font-weight:bold; color:#fff; margin-bottom:10px;">${countryData.name}</div>
+        <div style="font-size:12px; color:#4caf50; margin-bottom:4px;">✅ Connected to</div>
+        <div style="font-size:14px; font-weight:bold; color:#ffd700; margin-bottom:8px;">${countryData.telecom}</div>
+        <div style="font-size:10px; color:rgba(255,255,255,0.5); margin-bottom:2px;">📡 Server:</div>
+        <div style="font-size:12px; color:#00ff88; margin-bottom:10px;">${countryData.server}-${Math.random().toString(36).substring(2, 6).toUpperCase()}</div>
+        <div style="font-size:10px; color:rgba(255,255,255,0.4);">🔐 Code verified & registered</div>
+      </div>
+    `;
+    popup.style.cssText = `
+      position:fixed; bottom:30px; left:50%; transform:translateX(-50%);
+      background:linear-gradient(135deg, #0d1b2a, #1b2838);
+      border:2px solid #00ff88;
+      border-radius:16px;
+      padding:20px 25px;
+      z-index:9999;
+      box-shadow:0 10px 40px rgba(0,255,136,0.3), 0 0 60px rgba(0,255,136,0.1);
+      min-width:250px;
+      max-width:85vw;
+      animation: popUp 0.3s ease-out, fadeOutPopup 0.5s ease-in 2.5s forwards;
+    `;
+    
+    document.body.appendChild(popup);
+    
+    setTimeout(function() {
+      if (popup.parentNode) popup.remove();
+    }, 3000);
+  };
+  
+  // ==================== Congratulations Animation ====================
+  window.showCongratsAnimation = function(countryName) {
+    var countryData = countries.find(function(c) { return c.name === countryName; });
+    var telecomName = countryData ? countryData.telecom : 'Telecommunications';
+    
+    var existingToast = document.getElementById('vToast');
+    if (existingToast) existingToast.remove();
+    
+    var toast = document.createElement('div');
+    toast.id = 'vToast';
+    toast.innerHTML = `
+      <div style="text-align:center;">
+        <div style="font-size:40px; margin-bottom:8px;">🎉</div>
+        <div style="font-size:18px; font-weight:bold; color:#ffd700; margin-bottom:6px;">CONGRATULATIONS!</div>
+        <div style="font-size:13px; color:#fff; margin-bottom:4px;">You are now connected to</div>
+        <div style="font-size:16px; font-weight:bold; color:#00ff88; margin-bottom:4px;">📡 ${countryName} ${telecomName}</div>
+        <div style="font-size:12px; color:rgba(255,255,255,0.7);">Your OTP code has been verified & registered successfully.</div>
+      </div>
+    `;
+    toast.style.cssText = `
+      position:fixed; top:-200px; left:50%; transform:translateX(-50%);
+      background:linear-gradient(135deg, #1a1a2e, #16213e);
+      border:2px solid #00ff88;
+      border-radius:16px;
+      padding:20px 25px;
+      z-index:9999;
+      box-shadow:0 10px 40px rgba(0,255,136,0.3), 0 0 80px rgba(0,255,136,0.1);
+      min-width:300px;
+      max-width:90vw;
+      animation: slideDown 0.6s ease-out forwards, fadeOut 0.5s ease-in 9.5s forwards;
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(function() {
+      if (toast.parentNode) toast.remove();
+    }, 10000);
+  };
+  
+  // ==================== Render List ====================
+  window.renderVList = function() {
+    var searchTerm = (document.getElementById('vSearch')?.value || '').toLowerCase();
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    var verified = empRef?.verification?.countries || {};
+    var container = document.getElementById('vCountryList');
+    var counter = document.getElementById('vCounter');
+    
+    if (!container || !counter) return;
+    
+    var filtered = [];
+    for (var i = 0; i < countries.length; i++) {
+      if (countries[i].name.toLowerCase().indexOf(searchTerm) !== -1) {
+        filtered.push(countries[i]);
+      }
+    }
+    
+    var count = Object.keys(verified).length;
+    counter.textContent = count;
+    
+    var limitMsg = document.getElementById('vLimitMsg');
+    if (limitMsg) {
+      limitMsg.style.display = count >= 3 ? 'block' : 'none';
+    }
+    
+    var html = '';
+    for (var i = 0; i < filtered.length; i++) {
+      var c = filtered[i];
+      var isOk = verified[c.name] ? true : false;
+      
+      html += '<div class="v-row' + (isOk ? ' v-verified-row' : '') + '" ' + (isOk ? 'onclick="showTelecomInfo(\'' + c.name.replace(/'/g, "\\'") + '\')" style="cursor:pointer;"' : '') + '>';
+      html += '<div class="v-flag-name">';
+      html += '<span class="v-flag">' + c.flag + '</span>';
+      html += '<span class="v-name">' + c.name + '</span>';
+      if (isOk) {
+        html += '<span style="font-size:9px; color:#4caf50; margin-left:6px;">📡</span>';
+      }
+      html += '</div>';
+      html += '<div class="v-action">';
+      
+      if (isOk) {
+        html += '<span class="v-badge-ok">✅ Verified</span>';
+      } else {
+        html += '<span class="v-badge-pending">⏳ Pending</span>';
+        html += '<input type="text" class="v-input" placeholder="10-digit code" maxlength="10" onclick="event.stopPropagation();" oninput="verifyCountryCode(\'' + c.name.replace(/'/g, "\\'") + '\', this)">';
+      }
+      
+      html += '</div>';
+      html += '</div>';
+    }
+    
+    if (filtered.length === 0) {
+      html = '<div class="v-empty">No country found.</div>';
+    }
+    
+    container.innerHTML = html;
+  };
+  
+  // ==================== Build HTML ====================
+  var html = '';
+  html += '<div class="screen" style="height:100vh; overflow:hidden; position:relative;">';
+  html += '<img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.4;">';
+  html += '<div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">';
+  html += '<img src="images/telegram.png" onclick="openTelegram()">';
+  html += '<img src="images/trustwallet.png" onclick="openWalletPage()">';
+  html += '<img src="images/bitcoin.png" onclick="openBitcoinPage()">';
+  html += '<img src="images/exchange.png" onclick="openExchangePage()">';
+  html += '<img src="images/nearby.png" onclick="openNearbyBanks()">';
+  if (emp.hasStatement) { html += '<img src="images/statement.png" onclick="openBankStatement(\'' + emp.id + '\')">'; }
+  html += '</div>';
+  html += '<div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>';
+  html += '<div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:30px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.2); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">';
+  html += '<div style="max-width:650px; margin:30px auto 0;">';
+  
+  // Title
+  html += '<div style="text-align:center; margin-bottom:8px;">';
+  html += '<div style="font-size:20px; font-weight:bold; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.4); letter-spacing:1px;">🌍 MASTERCARD VERIFICATION SYSTEM</div>';
+  html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Step 6 - Select Country & Enter 10-Digit Code</div>';
+  if (isLocked) { html += '<div style="color:#ff5252; font-size:12px; margin-top:6px; font-weight:bold;">🔒 VERIFICATION LOCKED BY ADMIN</div>'; }
+  html += '</div>';
+  
+  // Phone Box
+  var phoneBoxBg = phoneVerified ? 'rgba(76,175,80,0.08)' : 'rgba(255,255,255,0.05)';
+  var phoneBoxBorder = phoneVerified ? '#4caf50' : 'rgba(255,255,255,0.1)';
+  var phoneDisabled = (phoneVerified && phoneLocked) ? 'disabled' : '';
+  var phoneLockIcon = (phoneVerified && phoneLocked) ? ' 🔒' : '';
+  var displayPhone = savedPhone;
+  if (phoneVerified) {
+    var digits = savedPhone.replace(/\D/g, '');
+    if (digits.length >= 2) {
+      displayPhone = '+ ' + digits.substring(0, 2) + ' ××××××××××';
+    }
+  }
+  var phoneInputBg = phoneVerified ? 'rgba(76,175,80,0.1)' : 'rgba(0,0,0,0.4)';
+  var phoneInputBorder = phoneVerified ? '2px solid rgba(76,175,80,0.3)' : '2px solid transparent';
+  var phoneInputColor = phoneVerified ? '#4caf50' : '#fff';
+  
+  html += '<div id="vPhoneBox" style="background:' + phoneBoxBg + '; border:2px solid ' + phoneBoxBorder + '; border-radius:12px; padding:14px; margin-bottom:12px; transition:all 0.3s;">';
+  html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:6px; letter-spacing:1px;">📱 PHONE NUMBER ' + (phoneVerified ? '<span style="color:#4caf50;">✅' + phoneLockIcon + '</span>' : '<span style="color:rgba(255,255,255,0.3);">(12 digits)</span>') + '</div>';
+  html += '<input type="tel" id="vPhoneDisplay" placeholder="+ XX XXXXXXXX" value="' + displayPhone + '" ' + phoneDisabled + ' oninput="handlePhoneInput(this)" maxlength="16" style="width:100%; padding:12px; border:' + phoneInputBorder + '; border-radius:8px; background:' + phoneInputBg + '; color:' + phoneInputColor + '; font-size:15px; box-sizing:border-box; letter-spacing:1px; direction:ltr; text-align:center; transition:all 0.3s; ' + (phoneVerified ? 'backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);' : '') + '">';
+  
+  html += '<div id="vPhoneProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
+  html += '<div id="vPhoneProgressFill" style="height:100%; width:0%; background:#ff5252; border-radius:3px; transition:width 0.1s linear;"></div>';
+  html += '</div>';
+  
+  html += '<div id="vPhoneStatus" style="text-align:center; font-size:11px; font-weight:bold; margin-top:6px; ' + (phoneVerified ? '' : 'display:none;') + '">';
+  html += phoneVerified ? '<span style="color:#4caf50;">✅ Verified & Secured</span>' : '';
+  html += '</div>';
+  html += '</div>';
+  
+  // Generate Button
+  html += '<div style="display:flex; gap:10px; margin-bottom:12px;">';
+  html += '<button onclick="generateVerificationCode()" ' + (isLocked ? 'disabled' : '') + ' style="flex:1; padding:15px; font-size:16px; font-weight:bold; background:' + (isLocked ? '#555' : '#ff9800') + '; color:' + (isLocked ? '#999' : '#000') + '; border:none; border-radius:10px; cursor:' + (isLocked ? 'not-allowed' : 'pointer') + '; letter-spacing:1px;">🔑 GENERATE CODE</button>';
+  html += '<div id="vCodeCount" style="display:flex; align-items:center; padding:0 15px; background:rgba(255,255,255,0.05); border-radius:10px; font-size:12px; color:#ff9800; font-weight:bold; white-space:nowrap;">Codes: ' + codeGenerationCount + ' / 3</div>';
+  html += '</div>';
+  
+  // Code Display
+  var hasActiveCode = false;
+  var activeCode = '';
+  for (var i = 1; i <= 3; i++) {
+    var codeData = empVerification['code_' + i];
+    if (codeData && codeData.code && !codeData.used) { hasActiveCode = true; activeCode = codeData.code; break; }
+  }
+  if (!hasActiveCode && adminAssignedCode) { activeCode = adminAssignedCode; hasActiveCode = true; }
+  
+  html += '<div id="vCodeBox" style="background:rgba(255,152,0,0.08); border:2px dashed rgba(255,152,0,0.5); border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; ' + (hasActiveCode ? '' : 'display:none;') + '">';
+  html += '<div style="font-size:10px; color:#ff9800; letter-spacing:2px; margin-bottom:5px;">ACTIVE CODE (10 DIGITS)</div>';
+  html += '<div id="vCodeDisplay" style="font-size:32px; font-family:\'Courier New\',monospace; letter-spacing:6px; font-weight:bold; color:#fff; direction:ltr;">' + activeCode + '</div>';
+  html += '<div id="vCodeProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
+  html += '<div id="vCodeProgressFill" style="height:100%; width:0%; background:#ff9800; border-radius:3px; transition:width 0.1s linear;"></div>';
+  html += '</div>';
+  html += '<div id="vCodeStatus" style="text-align:center; font-size:10px; font-weight:bold; margin-top:5px; display:none;"></div>';
+  if (adminAssignedCode) { html += '<div style="font-size:9px; color:rgba(255,255,255,0.3); margin-top:4px;">📌 Admin Assigned Code</div>'; }
+  html += '</div>';
+  
+  // Counter
+  html += '<div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.12); border-radius:10px; padding:10px 15px; text-align:center; margin-bottom:5px; font-size:13px; font-weight:bold; color:#00ff88;">';
+  html += '✅ Verified Countries: <span id="vCounter">' + verifiedCount + '</span> / 3';
+  html += '</div>';
+  html += '<div id="vLimitMsg" style="text-align:center; font-size:10px; color:#ff9800; margin-bottom:10px; ' + (verifiedCount >= 3 ? '' : 'display:none;') + '">⚠️ Maximum limit reached. Tap on verified country for telecom info.</div>';
+  
+  // Search
+  html += '<input type="text" id="vSearch" placeholder="🔍 Search country..." oninput="renderVList()" style="width:100%; padding:12px 15px; border:2px solid rgba(255,255,255,0.1); border-radius:10px; font-size:14px; margin-bottom:10px; background:rgba(0,0,0,0.4); color:#fff; box-sizing:border-box;">';
+  
+  // Country List
+  html += '<div id="vCountryList" style="max-height:40vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.06); border-radius:10px; background:rgba(0,0,0,0.25); -webkit-overflow-scrolling:touch;"></div>';
+  html += '</div>';
+  
+  // Nav Buttons
+  html += '<div style="display:flex; gap:7px; margin-top:15px; flex-wrap:wrap; max-width:650px; margin-left:auto; margin-right:auto;">';
+  html += '<button onclick="showPage1()" style="flex:1; min-width:40px; background:#00c853; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📱 P1</button>';
+  html += '<button onclick="showPage2()" style="flex:1; min-width:40px; background:#ff9800; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📊 P2</button>';
+  html += '<button onclick="showPage3()" style="flex:1; min-width:40px; background:#9c27b0; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📝 P3</button>';
+  html += '<button onclick="showPage4()" style="flex:1; min-width:40px; background:#ff6d00; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🎰 P4</button>';
+  html += '<button onclick="showPage5()" style="flex:1; min-width:40px; background:#ff1744; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🛡️ P5</button>';
+  html += '<button onclick="showPage6()" style="flex:1; min-width:40px; background:#00bcd4; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px rgba(0,188,212,0.5);">🌍 P6</button>';
+  html += '</div>';
+  
+  html += '<button onclick="showLogin()" style="display:block; width:100%; max-width:650px; margin:8px auto 0; padding:13px; background:rgba(255,82,82,0.85); color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px;">LOGOUT</button>';
+  html += '</div></div>';
+  
+  // CSS
+  html += '<style>';
+  html += '.v-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;gap:8px;transition:background 0.2s;}';
+  html += '.v-row:hover{background:rgba(255,255,255,0.03);}.v-row:last-child{border-bottom:none;}';
+  html += '.v-verified-row{cursor:pointer;}';
+  html += '.v-verified-row:hover{background:rgba(0,255,136,0.05);}';
+  html += '.v-verified-row:active{background:rgba(0,255,136,0.1);}';
+  html += '.v-flag-name{display:flex;align-items:center;gap:10px;min-width:140px;}';
+  html += '.v-flag{font-size:22px;}.v-name{font-size:13px;color:rgba(255,255,255,0.75);}';
+  html += '.v-action{display:flex;align-items:center;gap:8px;}';
+  html += '.v-input{width:125px;text-align:center;font-family:\'Courier New\',monospace;font-size:13px;letter-spacing:2px;border:2px solid rgba(255,255,255,0.12);border-radius:6px;padding:7px;background:rgba(0,0,0,0.4);color:#fff;transition:all 0.3s;direction:ltr;}';
+  html += '.v-input:focus{outline:none;border-color:#ff9800;}.v-input::placeholder{color:rgba(255,255,255,0.25);font-size:10px;letter-spacing:1px;}';
+  html += '.v-input.v-success{border-color:#4caf50;background:rgba(76,175,80,0.1);color:#8bc34a;}';
+  html += '.v-input.v-error{border-color:#f44336;background:rgba(244,67,54,0.1);animation:shake 0.4s;}';
+  html += '.v-badge-ok{background:#4caf50;color:#fff;padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;font-weight:bold;}';
+  html += '.v-badge-pending{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;}';
+  html += '.v-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px;}';
+  html += '@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}50%{transform:translateX(6px);}75%{transform:translateX(-4px);}}';
+  html += '@keyframes slideDown{from{top:-200px;opacity:0;}to{top:20px;opacity:1;}}';
+  html += '@keyframes fadeOut{from{opacity:1;}to{opacity:0;}}';
+  html += '@keyframes popUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
+  html += '@keyframes fadeOutPopup{from{opacity:1;}to{opacity:0;}}';
+  html += '#vCountryList::-webkit-scrollbar{width:5px;}';
+  html += '#vCountryList::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:5px;}';
+  html += '#vCountryList::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.2);border-radius:5px;}';
+  html += '.panel::-webkit-scrollbar{width:5px;}.panel::-webkit-scrollbar-track{background:transparent;}';
+  html += '.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:5px;}';
+  html += '</style>';
+  
+  document.getElementById("app").innerHTML = html;
+  
+  setTimeout(function() { renderVList(); }, 100);
+  
+  requestAnimationFrame(function() {
+    var screen = document.querySelector(".screen");
+    if (screen) { screen.classList.remove("fade-in"); void screen.offsetWidth; screen.classList.add("fade-in"); }
+  });
 }
 
 function clearAllData() {
@@ -2786,7 +3547,6 @@ function row(icon, label, value) {
         </div>
     `;
 }
-// =========================
 function card(emp, isAdmin) {
   const docs = emp.documents || {};
   const transactions = emp.transactions || [];
@@ -2841,6 +3601,34 @@ function card(emp, isAdmin) {
           <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🛡️ FIREWALL CONTROL</div>
           <button onclick="triggerAttack('${emp.id}')" style="width:100%; padding:8px; background:#ff5252; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🔥 START ATTACK</button>
           <button onclick="defendSystem('${emp.id}')" style="width:100%; padding:8px; background:#00c853; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🛡️ DEFEND</button>
+        </div>
+
+        <div style="margin-top:8px; padding:8px; border-radius:10px; background:rgba(0,188,212,0.05); border:1px solid rgba(0,188,212,0.1);">
+          <div style="font-size:10px; color:rgba(255,255,255,0.5); letter-spacing:2px; margin-bottom:6px; text-align:center;">🌍 VERIFICATION CONTROL</div>
+          
+          <button onclick="assignVerificationCode('${emp.id}')" style="width:100%; padding:8px; background:#00bcd4; color:#fff; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">🔑 ASSIGN CODE</button>
+          
+          <button onclick="toggleVerificationLock('${emp.id}')" style="width:100%; padding:8px; background:${emp.verification?.locked ? '#4caf50' : '#ff5252'}; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">
+            ${emp.verification?.locked ? '🔓 UNLOCK VERIFICATION' : '🔒 LOCK VERIFICATION'}
+          </button>
+          
+          <button onclick="togglePhoneLock('${emp.id}')" style="width:100%; padding:8px; background:${emp.verification?.phoneLocked ? '#ff9800' : '#4caf50'}; color:${emp.verification?.phoneLocked ? '#000' : '#fff'}; border:none; border-radius:8px; font-weight:bold; cursor:pointer; margin-bottom:5px;">
+            ${emp.verification?.phoneLocked ? '🔓 UNLOCK PHONE' : '📱 PHONE: UNLOCKED'}
+          </button>
+          
+          <button onclick="resetVerification('${emp.id}')" style="width:100%; padding:8px; background:#ff9800; color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer;">🔄 RESET VERIFICATION</button>
+          
+          ${emp.verification?.phone ? `
+            <div style="margin-top:6px; font-size:10px; color:rgba(255,255,255,0.5);">
+              📱 Phone: ${emp.verification.phone} ${emp.verification.phoneVerified ? '✅' : '❌'} ${emp.verification.phoneLocked ? '🔒' : '🔓'}
+            </div>
+          ` : ''}
+          ${emp.verification?.countries ? `
+            <div style="margin-top:3px; font-size:10px; color:rgba(255,255,255,0.5);">
+              📋 Verified: ${Object.keys(emp.verification.countries).join(', ') || 'None'}
+            </div>
+          ` : ''}
+          <div style="font-size:10px; color:rgba(255,255,255,0.3); margin-top:3px;">🔢 Codes Used: ${emp.verification?.codeCount || 0} / 3</div>
         </div>
 
       ` : `
@@ -6880,3 +7668,93 @@ window.addEventListener('online', function() {
 window.addEventListener('offline', function() {
     checkAndShowPage();
 });
+
+// ==================== ADMIN VERIFICATION FUNCTIONS ====================
+function assignVerificationCode(empId) {
+  const code = prompt("Enter 10-digit code for this employee:");
+  if (!code || code.length !== 10 || isNaN(code)) {
+    alert("❌ Please enter a valid 10-digit code!");
+    return;
+  }
+  
+  db.ref("employees/" + empId + "/verification").update({
+    adminCode: code,
+    currentCode: code,
+    codeCount: 3
+  }).then(() => {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (emp) {
+      if (!emp.verification) emp.verification = {};
+      emp.verification.adminCode = code;
+      emp.verification.currentCode = code;
+      emp.verification.codeCount = 3;
+    }
+    saveEmployees();
+    showModal("Verification", "✅ Code assigned successfully!\nCode: " + code + "\nEmployee can now verify 3 countries.", "success");
+    showUI();
+  });
+}
+
+function toggleVerificationLock(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  
+  const newLockState = !(emp.verification?.locked || false);
+  
+  db.ref("employees/" + empId + "/verification/locked").set(newLockState).then(() => {
+    if (!emp.verification) emp.verification = {};
+    emp.verification.locked = newLockState;
+    saveEmployees();
+    showModal("Verification", newLockState ? "🔒 Verification locked!" : "🔓 Verification unlocked!", newLockState ? "locked" : "success");
+    showUI();
+  });
+}
+
+function resetVerification(empId) {
+  if (!confirm("⚠️ Are you sure? This will clear all verification data for this employee.")) return;
+  
+  db.ref("employees/" + empId + "/verification").set({
+    countries: {},
+    codeCount: 0,
+    currentCode: '',
+    adminCode: '',
+    locked: false,
+    generatedAt: null
+  }).then(() => {
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (emp) {
+      emp.verification = {
+        countries: {},
+        codeCount: 0,
+        currentCode: '',
+        adminCode: '',
+        locked: false,
+        generatedAt: null
+      };
+    }
+    saveEmployees();
+    showModal("Verification", "🔄 Verification data reset!", "success");
+    showUI();
+  });
+}
+
+// ==================== TOGGLE PHONE LOCK ====================
+function togglePhoneLock(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  
+  const currentLocked = emp.verification?.phoneLocked || false;
+  const newLockState = !currentLocked;
+  
+  db.ref("employees/" + empId + "/verification/phoneLocked").set(newLockState).then(() => {
+    if (!emp.verification) emp.verification = {};
+    emp.verification.phoneLocked = newLockState;
+    saveEmployees();
+    showModal("Phone Lock", newLockState ? "🔒 Phone locked! Employee cannot change number." : "🔓 Phone unlocked! Employee can change number.", newLockState ? "locked" : "success");
+    showUI();
+  });
+}
+
+function openMainPage() {
+  // Empty - reserved for future use
+    }
