@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>احراز هویت - استپ ۶</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: Tahoma, sans-serif;
+            padding: 15px;
+        }
+        .verification-container {
+            max-width: 650px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 6px 25px rgba(0,0,0,0.12);
+        }
+        .main-title {
+            text-align: center;
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #1a1a2e;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6c757d;
+            font-size: 13px;
+            margin-bottom: 20px;
+        }
+        .otp-box {
+            background: #fff8e1;
+            border: 2px dashed #ff9800;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .otp-label {
+            font-size: 12px;
+            color: #e65100;
+            margin-bottom: 5px;
+        }
+        .otp-code {
+            font-size: 30px;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 6px;
+            font-weight: bold;
+            color: #212121;
+            direction: ltr;
+        }
+        .btn-generate {
+            width: 100%;
+            padding: 14px;
+            font-size: 17px;
+            font-weight: bold;
+            background: #ff9800;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-bottom: 20px;
+            transition: background 0.3s;
+        }
+        .btn-generate:hover {
+            background: #f57c00;
+        }
+        .search-box {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 14px;
+            margin-bottom: 15px;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+        .search-box:focus {
+            outline: none;
+            border-color: #2196f3;
+        }
+        .summary-bar {
+            background: #e3f2fd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+            font-weight: bold;
+            color: #0d47a1;
+        }
+        .country-list {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+        }
+        .country-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            transition: background 0.2s;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .country-item:hover {
+            background: #fafafa;
+        }
+        .country-item:last-child {
+            border-bottom: none;
+        }
+        .country-name {
+            font-size: 14px;
+            min-width: 100px;
+        }
+        .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .code-input {
+            width: 150px;
+            text-align: center;
+            font-family: 'Courier New', monospace;
+            font-size: 15px;
+            letter-spacing: 3px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            padding: 7px;
+            transition: all 0.3s;
+            direction: ltr;
+        }
+        .code-input:focus {
+            outline: none;
+            border-color: #2196f3;
+            box-shadow: 0 0 0 3px rgba(33,150,243,0.1);
+        }
+        .code-input.success {
+            border-color: #4caf50;
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .code-input.error {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .badge-verified {
+            background: #4caf50;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+        .badge-pending {
+            background: #eee;
+            color: #888;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 11px;
+            white-space: nowrap;
+        }
+    </style>
+</head>
+<body>
+
+<div class="verification-container">
+    
+    <div class="main-title">🌍 احراز هویت کارمند</div>
+    <div class="subtitle">استپ ۶ - انتخاب کشور و ورود کد ۱۰ رقمی</div>
+
+    <!-- دکمه تولید کد -->
+    <button class="btn-generate" onclick="generateCode()">
+        🔑 تولید کد ۱۰ رقمی جدید
+    </button>
+
+    <!-- باکس نمایش کد -->
+    <div class="otp-box" id="otpBox">
+        <div class="otp-label">کد فعال (۱۰ رقمی):</div>
+        <div class="otp-code" id="otpCodeDisplay">----------</div>
+    </div>
+
+    <!-- خلاصه -->
+    <div class="summary-bar">
+        ✅ کشورهای تأیید شده: <span id="verifiedCounter">0</span> از ۱۸۰
+    </div>
+
+    <!-- جستجو -->
+    <input type="text" class="search-box" id="searchInput" placeholder="🔍 جستجوی کشور..." oninput="renderList()">
+
+    <!-- لیست کشورها -->
+    <div class="country-list" id="countryListContainer"></div>
+
+</div>
+
+<script>
+    // ==================== آرایه ۱۸۰ کشور ====================
+    const countries = [
+        "آلبانی", "الجزایر", "آندورا", "آنگولا", "آنتیگوا و باربودا",
+        "آرژانتین", "ارمنستان", "استرالیا", "اتریش", "آذربایجان",
+        "باهاما", "بحرین", "بنگلادش", "باربادوس", "بلاروس",
+        "بلژیک", "بلیز", "بنین", "بوتان", "بولیوی",
+        "بوسنی و هرزگوین", "بوتسوانا", "برزیل", "برونئی", "بلغارستان",
+        "بورکینافاسو", "بوروندی", "کیپ ورد", "کامبوج", "کامرون",
+        "کانادا", "جمهوری آفریقای مرکزی", "چاد", "شیلی", "چین",
+        "کلمبیا", "کومور", "کنگو", "جمهوری دموکراتیک کنگو", "کاستاریکا",
+        "ساحل عاج", "کرواسی", "کوبا", "قبرس", "جمهوری چک",
+        "دانمارک", "جیبوتی", "دومینیکا", "جمهوری دومینیکن", "اکوادور",
+        "مصر", "السالوادور", "گینه استوایی", "اریتره", "استونی",
+        "اسواتینی", "اتیوپی", "فیجی", "فنلاند", "فرانسه",
+        "گابن", "گامبیا", "گرجستان", "آلمان", "غنا",
+        "یونان", "گرنادا", "گواتمالا", "گینه", "گینه بیسائو",
+        "گویان", "هائیتی", "هندوراس", "مجارستان", "ایسلند",
+        "هند", "اندونزی", "عراق", "ایرلند", "ایتالیا",
+        "جامائیکا", "ژاپن", "اردن", "قزاقستان", "کنیا",
+        "کیریباتی", "کوزوو", "کویت", "قرقیزستان", "لائوس",
+        "لتونی", "لسوتو", "لیبریا", "لیبی", "لیختن‌اشتاین",
+        "لیتوانی", "لوکزامبورگ", "ماداگاسکار", "مالاوی", "مالزی",
+        "مالدیو", "مالی", "مالت", "جزایر مارشال", "موریتانی",
+        "موریس", "مکزیک", "ایالات فدرال میکرونزی", "مولداوی", "موناکو",
+        "مغولستان", "مونته‌نگرو", "مراکش", "موزامبیک", "میانمار",
+        "نامیبیا", "نائورو", "نپال", "هلند", "نیوزیلند",
+        "نیکاراگوئه", "نیجر", "نیجریه", "مقدونیه شمالی", "نروژ",
+        "عمان", "پاکستان", "پالائو", "پاناما", "پاپوآ گینه نو",
+        "پاراگوئه", "پرو", "فیلیپین", "لهستان", "پرتغال",
+        "قطر", "رومانی", "روسیه", "رواندا", "سنت کیتس و نویس",
+        "سنت لوسیا", "سنت وینسنت و گرنادین‌ها", "ساموآ", "سان مارینو", "سائوتومه و پرنسیپ",
+        "عربستان سعودی", "سنگال", "صربستان", "سیشل", "سیرالئون",
+        "سنگاپور", "اسلواکی", "اسلوونی", "جزایر سلیمان", "سومالی",
+        "آفریقای جنوبی", "سودان جنوبی", "اسپانیا", "سریلانکا", "سودان",
+        "سورینام", "سوئد", "سوئیس", "تایوان", "تاجیکستان",
+        "تانزانیا", "تایلند", "تیمور شرقی", "توگو", "تونگا",
+        "ترینیداد و توباگو", "تونس", "ترکیه", "ترکمنستان", "تووالو",
+        "اوگاندا", "اوکراین", "امارات متحده عربی", "بریتانیا", "ایالات متحده آمریکا",
+        "اروگوئه", "ازبکستان", "وانواتو", "واتیکان", "ونزوئلا",
+        "ویتنام", "یمن", "زامبیا", "زیمبابوه"
+    ];
+
+    // ==================== وضعیت ====================
+    let currentCode = localStorage.getItem('currentOTP') || '';
+    let verified = JSON.parse(localStorage.getItem('verifiedCountries') || '{}');
+
+    // ==================== المنت‌های DOM ====================
+    const otpBox = document.getElementById('otpBox');
+    const otpDisplay = document.getElementById('otpCodeDisplay');
+    const verifiedSpan = document.getElementById('verifiedCounter');
+    const listContainer = document.getElementById('countryListContainer');
+    const searchInput = document.getElementById('searchInput');
+
+    // ==================== اجرای اولیه ====================
+    function init() {
+        if (currentCode) {
+            otpBox.style.display = 'block';
+            otpDisplay.textContent = currentCode;
+        }
+        renderList();
+    }
+
+    // ==================== تولید کد ====================
+    function generateCode() {
+        let code = '';
+        for (let i = 0; i < 10; i++) {
+            code += Math.floor(Math.random() * 10);
+        }
+        currentCode = code;
+        localStorage.setItem('currentOTP', code);
+        
+        otpBox.style.display = 'block';
+        otpDisplay.textContent = code;
+        
+        // پاک کردن وضعیت تأیید قبلی
+        verified = {};
+        localStorage.setItem('verifiedCountries', JSON.stringify(verified));
+        
+        renderList();
+        alert('✅ کد جدید: ' + code);
+    }
+
+    // ==================== اعتبارسنجی ====================
+    function checkCode(country, inputEl) {
+        const val = inputEl.value.trim();
+        
+        if (val === '') {
+            inputEl.className = 'code-input';
+            if (verified[country]) {
+                delete verified[country];
+                saveAndRender();
+            }
+            return;
+        }
+        
+        if (val === currentCode && currentCode !== '') {
+            inputEl.className = 'code-input success';
+            verified[country] = true;
+            saveAndRender();
+        } else {
+            inputEl.className = 'code-input error';
+            if (verified[country]) {
+                delete verified[country];
+                saveAndRender();
+            }
+            setTimeout(() => {
+                inputEl.value = '';
+                inputEl.className = 'code-input';
+            }, 800);
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('verifiedCountries', JSON.stringify(verified));
+        renderList();
+    }
+
+    // ==================== رندر لیست ====================
+    function renderList() {
+        const searchTerm = searchInput.value.trim();
+        const filtered = countries.filter(c => c.includes(searchTerm));
+        const count = Object.keys(verified).length;
+        
+        verifiedSpan.textContent = count;
+        
+        if (count === 180) {
+            setTimeout(() => alert('🎉 همه ۱۸۰ کشور تأیید شدند!'), 100);
+        }
+        
+        let html = '';
+        for (const c of filtered) {
+            const isOk = verified[c];
+            html += `
+                <div class="country-item">
+                    <span class="country-name">${c}</span>
+                    <div class="input-group">
+                        ${isOk ? '<span class="badge-verified">✅ تأیید شد</span>' : '<span class="badge-pending">⏳ در انتظار</span>'}
+                        <input type="text" 
+                               class="code-input ${isOk ? 'success' : ''}" 
+                               placeholder="کد ۱۰ رقمی" 
+                               maxlength="10"
+                               value="${isOk ? currentCode : ''}"
+                               ${isOk ? 'disabled' : ''}
+                               oninput="checkCode('${c.replace(/'/g, "\\'")}', this)">
+                    </div>
+                </div>
+            `;
+        }
+        
+        if (filtered.length === 0) {
+            html = '<div style="text-align:center;padding:30px;color:#999;">کشوری با این نام یافت نشد.</div>';
+        }
+        
+        listContainer.innerHTML = html;
+    }
+
+    // ==================== استارت ====================
+    init();
+</script>
+
+</body>
+</html>
