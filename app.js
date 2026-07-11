@@ -2046,18 +2046,19 @@ function renderPage2(lines, emp) {
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       
-      <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:20px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
+      <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
         
-        <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+        <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px; max-height:75vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; overscroll-behavior:contain;">
           <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📊 DASHBOARD</div>
           
-          <div style="max-height:50vh; overflow-y:auto; padding-right:5px;">
-            ${lines.map(line => `
-              <div class="stat-box" style="background:rgba(0,255,136,0.05); border:1px solid rgba(0,255,136,0.1); border-radius:10px; padding:12px; margin-bottom:10px; text-align:center; font-size:15px; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.2);">
-                ${line}
+          ${lines.map(line => `
+            <div class="stat-box" style="margin-bottom:10px;">
+              <label style="color:#00ff88; font-size:12px; display:block; margin-bottom:4px;">${line.split(':')[0] || line}</label>
+              <div style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.15); font-size:13px; text-align:center; letter-spacing:0.5px;">
+                ${line.includes(':') ? line.split(':').slice(1).join(':').trim() : line}
               </div>
-            `).join('')}
-          </div>
+            </div>
+          `).join('')}
         </div>
         
         <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
@@ -2085,24 +2086,47 @@ function renderPage2(lines, emp) {
 }
 
 function showPage3() {
-    if (!currentUser || !currentUser.emp) {
+    if (!currentUser) {
+        showLogin();
+        return;
+    }
+    if (!currentUser.emp && !currentUser.isAdmin) {
         showLogin();
         return;
     }
     
-    const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
-    let currentLang = localStorage.getItem('noteLang') || 'fa';
+    const empId = currentUser?.emp?.id || (currentUser.isAdmin && employees.length > 0 ? employees[0].id : null);
+    if (!empId) {
+        showLogin();
+        return;
+    }
     
-    const adminNote = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
+    // READ DIRECTLY FROM FIREBASE
+    db.ref("employees/" + empId).once("value").then(snapshot => {
+        const empData = snapshot.val();
+        if (!empData) {
+            showLogin();
+            return;
+        }
+        renderPage3(empId, empData);
+    });
+}
+
+function renderPage3(empId, empData) {
+    let currentLang = empData.noteLang || 'fa';
+    
+    const defaultNote = "سلام دوستان عزیز..کارتهای خام مسترکارت با دیتای خام که در اختیار شما قرار میگیره.دو ماه بصورت خام وقت دارد..یعنی دیتای خام این کارتهای دوماه بصورت آفلاین وقت دارد..اگر در این دوماه کارت رو تاریخ انقضا یا لاین هانوور ۵۶۹۰ رو نبندید کارت باطل می‌شود.. وقتی که کارت رو انلاین میکنید .کارت ۵ سال اعتبار یا تاریخ انقضا دارد..و بعداز خرید اول خانه و بیت کوئین و برداشت کلا ۷۵ درصد از مبلغ کل کارت.۲۵ درصد آخر کارت رو بصورت بیت کوئین یا تتر USDT (Trc20) به آدرس کیف پول که در این برنامه گذاشتم می‌فرستید..طریقه انلاین یا اکتیو کردن کارت و کلیه کارها و توضیحاتی که بعدش باید انجام بدید رو بهتون در زمان بستم لاین هانوور ۵۶۹۰ و انلاین کردن کارت بهتون میگم..باتشکر از دوستان عزیز\nرئیس اپ و کارت و دیتای خام..\nMR..ARIAN ROY";
+    
+    const adminNote = empData.note || defaultNote;
     const hasAdminNote = adminNote && adminNote.trim() !== '';
 
     window.changeNoteLanguage = async function(lang) {
         const noteBox = document.getElementById('noteContent');
         if (!noteBox) return;
         
-        localStorage.setItem('noteLang', lang);
+        db.ref("employees/" + empId + "/noteLang").set(lang);
         
-        const originalText = localStorage.getItem('userNote') || "سلام! این یادداشت شماست. هر چیزی که دوست دارید بنویسید.";
+        const originalText = empData.note || defaultNote;
         
         if (lang === 'fa') {
             noteBox.textContent = originalText;
@@ -2111,7 +2135,7 @@ function showPage3() {
         }
         
         try {
-            noteBox.textContent = "⏳ ترجمه...";
+            noteBox.textContent = "⏳ Translating...";
             const translated = await translateText(originalText, lang);
             noteBox.textContent = translated;
         } catch (error) {
@@ -2151,44 +2175,44 @@ function showPage3() {
                 <img src="images/bitcoin.png" onclick="openBitcoinPage()">
                 <img src="images/exchange.png" onclick="openExchangePage()">
                 <img src="images/nearby.png" onclick="openNearbyBanks()">
-                ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+                ${empData.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${empId}')">` : ''}
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:100px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
+            <div class="panel" style="position:relative; z-index:1; padding:10px; padding-bottom:120px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
                 
-                <div class="cyber-panel" style="padding:15px; margin-top:40px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
+                <div class="cyber-panel" style="padding:12px; margin-top:30px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
                     
-                    <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center;">
-                        <button class="lang-btn" data-lang="fa" onclick="changeNoteLanguage('fa')" style="background:${currentLang === 'fa' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇮🇷 فارسی</button>
-                        <button class="lang-btn" data-lang="en" onclick="changeNoteLanguage('en')" style="background:${currentLang === 'en' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇬🇧 English</button>
-                        <button class="lang-btn" data-lang="ru" onclick="changeNoteLanguage('ru')" style="background:${currentLang === 'ru' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇷🇺 Русский</button>
-                        <button class="lang-btn" data-lang="ar" onclick="changeNoteLanguage('ar')" style="background:${currentLang === 'ar' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 14px; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🇸🇦 العربية</button>
+                    <div style="display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; justify-content:center;">
+                        <button class="lang-btn" data-lang="fa" onclick="changeNoteLanguage('fa')" style="background:${currentLang === 'fa' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:4px 10px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer;">🇮🇷</button>
+                        <button class="lang-btn" data-lang="en" onclick="changeNoteLanguage('en')" style="background:${currentLang === 'en' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:4px 10px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer;">🇬🇧</button>
+                        <button class="lang-btn" data-lang="ru" onclick="changeNoteLanguage('ru')" style="background:${currentLang === 'ru' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:4px 10px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer;">🇷🇺</button>
+                        <button class="lang-btn" data-lang="ar" onclick="changeNoteLanguage('ar')" style="background:${currentLang === 'ar' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:4px 10px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer;">🇸🇦</button>
                     </div>
                     
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📝 My Notes</div>
+                    <div class="cyber-title" style="font-size:14px; text-align:center; margin-bottom:8px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📝 My Notes</div>
                     
-                    <div id="noteContent" style="padding:15px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); min-height:120px; max-height:35vh; overflow-y:auto; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:14px; white-space:pre-wrap; word-break:break-word; line-height:1.6;">
+                    <div id="noteContent" style="padding:12px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); height:55vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-word; line-height:1.7; padding-bottom:75px;">
                         ${displayText}
                     </div>
                     
                     ${hasAdminNote ? `
-                        <div style="margin-top:10px; font-size:12px; color:rgba(255,255,255,0.4); text-align:center;">
+                        <div style="margin-top:6px; font-size:10px; color:rgba(255,255,255,0.4); text-align:center;">
                             📌 Admin Note
                         </div>
                     ` : ''}
                 </div>
                 
-                <div style="display:flex; gap:10px; margin-top:15px; margin-bottom:10px; flex-wrap:wrap;">
-                    <button onclick="showPage1()" style="flex:1; min-width:60px; background:rgba(0,200,83,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📱 Page 1</button>
-                    <button onclick="showPage2()" style="flex:1; min-width:60px; background:rgba(255,152,0,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📊 Page 2</button>
-                    <button onclick="showPage3()" style="flex:1; min-width:60px; background:rgba(156,39,176,0.85); color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">📝 Page 3</button>
-                    <button onclick="showPage4()" style="flex:1; min-width:60px; background:#ff6d00; color:white; border:none; padding:12px 8px; border-radius:10px; font-weight:bold; font-size:12px; cursor:pointer;">🎰 Page 4</button>
+                <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
+                    <button onclick="showPage1()" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
+                    <button onclick="showPage2()" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P2</button>
+                    <button onclick="showPage3()" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P3</button>
+                    <button onclick="showPage4()" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
+                    <button onclick="showPage5()" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
+                    <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
                 </div>
                 
-                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
-                <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
-                <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
+                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">LOGOUT</button>
             </div>
         </div>
     `;
@@ -2202,6 +2226,7 @@ function showPage3() {
         }
     });
 }
+
 function toggleWheelLock(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
@@ -3478,26 +3503,28 @@ function saveUserNote() {
     
     const note = document.getElementById('noteText').value;
     
-    // ===== ذخیره در Firebase =====
     db.ref("employees/" + emp.id + "/note").set(note)
         .then(() => {
-            alert("✅ یادداشت ذخیره شد!");
+            const empRef = employees.find(e => String(e.id) === String(emp.id));
+            if (empRef) empRef.note = note;
+            saveEmployees();
+            
+            showModal("Note Saved", "✅ یادداشت ذخیره شد!", "success");
         })
         .catch(err => {
-            alert("❌ خطا در ذخیره: " + err.message);
+            showModal("Error", "❌ خطا در ذخیره: " + err.message, "error");
         });
 }
 function saveNoteAdmin(empId) {
     const note = document.getElementById('noteTextAdmin').value;
     
-    // ===== ذخیره در Firebase برای هر کارمند =====
     db.ref("employees/" + empId + "/note").set(note)
         .then(() => {
-            alert("✅ یادداشت ذخیره شد!");
+            showModal("Note Saved", "✅ یادداشت ذخیره شد!", "success");
             showAdminPage();
         })
         .catch(err => {
-            alert("❌ خطا در ذخیره: " + err.message);
+            showModal("Error", "❌ " + err.message, "error");
         });
 }
 function clearNote() {
@@ -7432,17 +7459,16 @@ let currentPage = 1;
 // ==========================================
 
 function editDashboard(empId) {
-  // خواندن مقادیر فعلی از Firebase
   db.ref("employees/" + empId + "/dashboard").once("value").then(snap => {
     const d = snap.val() || {};
     
     document.getElementById("app").innerHTML = `
       <div class="screen" style="height:100vh; overflow:hidden;">
         <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-        <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
-          <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
+        <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+          <div class="cyber-panel" style="padding:15px; margin-bottom:20px; max-height:60vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; overscroll-behavior:contain;">
             <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-              🌍 All Employees in the World
+              🌍 Edit Dashboard
             </div>
             
             <div class="stat-box" style="margin-bottom:10px;">
@@ -7451,32 +7477,31 @@ function editDashboard(empId) {
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Employees Label</label>
-              <input id="dashEmployees" value="${d.employeesLabel || 'Employees'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashEmployees" value="${d.employeesLabel || '👥 Employees: 9'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Total Balance (Fake Number)</label>
-              <input id="dashBalance" value="${d.balanceLabel || 'Total Balance'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-              <div style="font-size:10px; color:#ffd700; margin-top:4px;">💡 Write the full line e.g. "💰 Total Balance: 196,556,722 €"</div>
+              <label style="color:#00ff88;">Total Balance Label</label>
+              <input id="dashBalance" value="${d.balanceLabel || '💰 Total Balance: 13,872,825 €'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Today Transactions Label</label>
-              <input id="dashTransactions" value="${d.transactionsLabel || 'Today Transactions'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashTransactions" value="${d.transactionsLabel || '📈 Today Transactions: 22'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Online Label</label>
-              <input id="dashOnline" value="${d.onlineLabel || 'Online'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashOnline" value="${d.onlineLabel || '🟢 Online: 2'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Offline Label</label>
-              <input id="dashOffline" value="${d.offlineLabel || 'Offline'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashOffline" value="${d.offlineLabel || '🔴 Offline: 7'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Your Rank Label</label>
-              <input id="dashRank" value="${d.rankLabel || 'Your Rank'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashRank" value="${d.rankLabel || '🏆 Your Rank: #2 of 9'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
             <div class="stat-box" style="margin-bottom:10px;">
               <label style="color:#00ff88;">Today Score Label</label>
-              <input id="dashScore" value="${d.scoreLabel || 'Today Score'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+              <input id="dashScore" value="${d.scoreLabel || '⭐ Today Score: 47'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
             </div>
           </div>
           
@@ -7492,49 +7517,63 @@ function editDashboard(empId) {
     `;
   });
 }
-function savePage2() {
-    const text = document.getElementById('page2text').value;
-    localStorage.setItem('page2text', text);
-    alert("✅ Page 2 ذخیره شد!");
-    showAdminPage();
+
+// ==================== SAVE DASHBOARD ====================
+function saveDashboard(empId) {
+  const dashboardData = {
+    title: document.getElementById('dashTitle')?.value || "📊 MASTERCARD COMMERZBANK",
+    employeesLabel: document.getElementById('dashEmployees')?.value || "👥 Employees: 9",
+    balanceLabel: document.getElementById('dashBalance')?.value || "💰 Total Balance: 13,872,825 €",
+    transactionsLabel: document.getElementById('dashTransactions')?.value || "📈 Today Transactions: 22",
+    onlineLabel: document.getElementById('dashOnline')?.value || "🟢 Online: 2",
+    offlineLabel: document.getElementById('dashOffline')?.value || "🔴 Offline: 7",
+    rankLabel: document.getElementById('dashRank')?.value || "🏆 Your Rank: #2 of 9",
+    scoreLabel: document.getElementById('dashScore')?.value || "⭐ Today Score: 47"
+  };
+
+  db.ref("employees/" + empId + "/dashboard").set(dashboardData)
+    .then(() => {
+      showModal("Dashboard", "✅ Dashboard saved!", "success");
+      showAdminPage();
+    })
+    .catch(err => {
+      showModal("Error", "❌ " + err.message, "error");
+    });
 }
 
 function editNotePage(empId) {
-    const currentNote = localStorage.getItem('userNote') || "";
-
     pushPage(() => editNotePage(empId));
 
-    document.getElementById("app").innerHTML = `
-        <div class="screen" style="height:100vh; overflow:hidden;">
-            <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-            <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
-                <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
-                    <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-                        📝 Edit Note (for all employees)
+    // Read from Firebase
+    db.ref("employees/" + empId + "/note").once("value").then(snapshot => {
+        const currentNote = snapshot.val() || "";
+        
+        document.getElementById("app").innerHTML = `
+            <div class="screen" style="height:100vh; overflow:hidden;">
+                <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
+                <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
+                    <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
+                        <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
+                            📝 Edit Note
+                        </div>
+                        
+                        <div class="stat-box" style="margin-bottom:10px;">
+                            <label style="color:#00ff88;">Write your note:</label>
+                            <textarea id="noteTextAdmin" rows="10" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px; resize:vertical;">${currentNote}</textarea>
+                        </div>
                     </div>
                     
-                    <div class="stat-box" style="margin-bottom:10px;">
-                        <label style="color:#00ff88;">Write your note:</label>
-                        <textarea id="noteTextAdmin" rows="10" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px; resize:vertical;">${currentNote}</textarea>
-                    </div>
+                    <button onclick="saveNoteAdmin('${empId}')" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                        💾 Save Note
+                    </button>
+                    
+                    <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
+                        ⬅ Back
+                    </button>
                 </div>
-                
-                <button onclick="saveNoteAdmin()" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                    💾 Save Note
-                </button>
-                
-                <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                    ⬅ Back
-                </button>
             </div>
-        </div>
-    `;
-}
-function saveNoteAdmin() {
-    const note = document.getElementById('noteTextAdmin').value;
-    localStorage.setItem('userNote', note);
-    alert("✅ یادداشت ذخیره شد!");
-    showAdminPage();
+        `;
+    });
 }
 
 // ==========================================
