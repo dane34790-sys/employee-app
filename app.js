@@ -72,6 +72,16 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("INIT ERROR:", e);
   }
 });
+// ========== TRANSLATE FUNCTION ==========
+async function translateText(text, targetLang) {
+  try {
+    const response = await fetch(`https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`);
+    const data = await response.json();
+    return data[0].map(item => item[0]).join('');
+  } catch (error) {
+    return text;
+  }
+}
 
 function formatNumber(n){
   n = String(n || "0");
@@ -1998,40 +2008,75 @@ function showPage2() {
     return;
   }
   const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
+  const empId = emp.id;
 
-  const defaultLines = [
-    "📊 MASTERCARD COMMERZBANK",
-    `👥 Employees: ${employees.length}`,
-    `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
-    `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-    `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
-    `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
-    `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-    `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
-  ];
-
-  db.ref("employees/" + emp.id + "/dashboard").once("value")
-    .then(snapshot => {
-      const d = snapshot.val();
-      if (d) {
-        const lines = [
-          d.title || "📊 MASTERCARD COMMERZBANK",
-          d.employeesLabel || `👥 Employees: ${employees.length}`,
-          d.balanceLabel || `💰 Total Balance: ${formatNumber(employees.reduce((sum, e) => sum + (e.balance || 0), 0))} €`,
-          d.transactionsLabel || `📈 Today Transactions: ${employees.reduce((sum, e) => sum + (e.transactions?.length || 0), 0)}`,
-          d.onlineLabel || `🟢 Online: ${employees.filter(e => e.status === "ONLINE").length}`,
-          d.offlineLabel || `🔴 Offline: ${employees.filter(e => e.status === "OFFLINE").length}`,
-          d.rankLabel || `🏆 Your Rank: #${employees.sort((a, b) => (b.balance || 0) - (a.balance || 0)).findIndex(e => e.id === emp.id) + 1} of ${employees.length}`,
-          d.scoreLabel || `⭐ Today Score: ${Math.floor(Math.random() * 50) + 10}`
-        ];
-        renderPage2(lines, emp);
-      } else {
-        renderPage2(defaultLines, emp);
-      }
+  db.ref("employees/" + empId + "/page2Note").once("value")
+    .then(noteSnapshot => {
+      const noteData = noteSnapshot.val() || {};
+      const noteText = noteData.text || "";
+      
+      db.ref("employees/" + empId).once("value")
+        .then(snapshot => {
+          const empData = snapshot.val() || {};
+          empData.page2Note = noteData;
+          renderPage2(empId, empData, emp);
+        });
     })
-    .catch(() => renderPage2(defaultLines, emp));
+    .catch(() => {
+      renderPage2(empId, {}, emp);
+    });
 }
-function renderPage2(lines, emp) {
+function renderPage2(empId, empData, emp) {
+  let currentLang = empData.noteLang || 'fa';
+  
+  const defaultNote = "No notes yet...";
+  const adminNote = empData.page2Note?.text || defaultNote;
+
+  window.changeNoteLanguage = async function(lang) {
+    const noteBox = document.getElementById('noteContentPage2');
+    if (!noteBox) return;
+    
+    db.ref("employees/" + empId + "/noteLang").set(lang);
+    
+    const originalText = empData.page2Note?.text || defaultNote;
+    
+    if (lang === 'fa') {
+      noteBox.textContent = originalText;
+      updateButtons(lang);
+      return;
+    }
+    
+    try {
+      noteBox.textContent = "⏳ Translating...";
+      const translated = await translateText(originalText, lang);
+      noteBox.textContent = translated;
+    } catch (error) {
+      noteBox.textContent = originalText;
+    }
+    
+    updateButtons(lang);
+  };
+
+  function updateButtons(lang) {
+    document.querySelectorAll('.lang-btn-page2').forEach(btn => {
+      btn.style.background = 'rgba(255,255,255,0.1)';
+    });
+    const activeBtn = document.querySelector(`.lang-btn-page2[data-lang="${lang}"]`);
+    if (activeBtn) {
+      activeBtn.style.background = '#00c853';
+    }
+  }
+
+  let displayText = adminNote;
+  if (currentLang !== 'fa') {
+    translateText(adminNote, currentLang).then(translated => {
+      const noteBox = document.getElementById('noteContentPage2');
+      if (noteBox) {
+        noteBox.textContent = translated;
+      }
+    });
+  }
+
   document.getElementById("app").innerHTML = `
     <div class="screen" style="height:100vh; overflow:hidden; position:relative;">
       <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
@@ -2042,35 +2087,38 @@ function renderPage2(lines, emp) {
         <img src="images/bitcoin.png" onclick="openBitcoinPage()">
         <img src="images/exchange.png" onclick="openExchangePage()">
         <img src="images/nearby.png" onclick="openNearbyBanks()">
-        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${empId}')">` : ''}
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       
-      <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
+      <div class="panel" style="position:relative; z-index:1; padding:10px; padding-bottom:120px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.15); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);">
         
-        <div class="cyber-panel" style="padding:15px; margin-top:40px; margin-bottom:20px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px; max-height:75vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; overscroll-behavior:contain;">
-          <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📊 DASHBOARD</div>
+        <div class="cyber-panel" style="padding:12px; margin-top:30px; background:rgba(255,255,255,0.08); backdrop-filter:blur(2px); -webkit-backdrop-filter:blur(2px); border:1px solid rgba(0,255,136,0.15); border-radius:15px;">
           
-          ${lines.map(line => `
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88; font-size:12px; display:block; margin-bottom:4px;">${line.split(':')[0] || line}</label>
-              <div style="width:100%; padding:10px; border-radius:8px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.15); font-size:13px; text-align:center; letter-spacing:0.5px;">
-                ${line.includes(':') ? line.split(':').slice(1).join(':').trim() : line}
-              </div>
-            </div>
-          `).join('')}
+          <div style="display:flex; gap:4px; margin-bottom:8px; flex-wrap:wrap; justify-content:center;">
+            <button class="lang-btn-page2" data-lang="fa" onclick="changeNoteLanguage('fa')" style="background:${currentLang === 'fa' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🇮🇷 فارسی</button>
+            <button class="lang-btn-page2" data-lang="en" onclick="changeNoteLanguage('en')" style="background:${currentLang === 'en' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🇬🇧 English</button>
+            <button class="lang-btn-page2" data-lang="ru" onclick="changeNoteLanguage('ru')" style="background:${currentLang === 'ru' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🇷🇺 Русский</button>
+            <button class="lang-btn-page2" data-lang="ar" onclick="changeNoteLanguage('ar')" style="background:${currentLang === 'ar' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:6px 12px; border-radius:6px; font-weight:bold; font-size:12px; cursor:pointer;">🇸🇦 العربية</button>
+          </div>
+          
+          <div class="cyber-title" style="font-size:14px; text-align:center; margin-bottom:8px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">💳 ONLINE CARD</div>
+          
+          <div id="noteContentPage2" style="padding:12px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); height:55vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-word; line-height:1.7; padding-bottom:75px;">
+            ${displayText}
+          </div>
         </div>
         
-        <div style="display:flex; gap:10px; margin-top:10px; margin-bottom:10px;">
-          <button onclick="showPage1()" style="flex:1; background:rgba(0,200,83,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📱 Page 1</button>
-          <button onclick="showPage2()" style="flex:1; background:rgba(255,152,0,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📊 Page 2</button>
-          <button onclick="showPage3()" style="flex:1; background:rgba(156,39,176,0.8); color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">📝 Page 3</button>
-          <button onclick="showPage4()" style="flex:1; background:#ff6d00; color:white; border:none; padding:12px; border-radius:10px; font-weight:bold; font-size:13px; cursor:pointer;">🎰 Page 4</button>
+        <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
+          <button onclick="showPage1()" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
+          <button onclick="showPage2()" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P2</button>
+          <button onclick="showPage3()" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P3</button>
+          <button onclick="showPage4()" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
+          <button onclick="showPage5()" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
+          <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
         </div>
         
-        <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:rgba(255,82,82,0.8); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
-        <button onclick="showPage5()" style="width:100%; margin-top:5px; padding:10px; background:#ff1744; color:white; border:none; border-radius:8px; font-size:11px; cursor:pointer;">🛡️ Page 5</button>
-        <button onclick="showPage6()" style="width:100%; margin-top:5px; padding:10px; background:#00bcd4; color:white; border:none; border-radius:8px; font-size:11px; cursor:pointer;">🌍 Page 6</button>
+        <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">LOGOUT</button>
       </div>
     </div>
   `;
@@ -2084,6 +2132,171 @@ function renderPage2(lines, emp) {
     }
   });
 }
+
+function openAdminNoteEditor(empId) {
+  // گرفتن Note فعلی از Firebase
+  db.ref("employees/" + empId + "/adminNote").once("value")
+    .then((snapshot) => {
+      const note = snapshot.val() || {};
+      const currentNote = note.text || "";
+      
+      // نمایش پنجره ویرایش با استایل شیشه‌ای
+      const editorHTML = `
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(10px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        ">
+          <div style="
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 20px;
+            padding: 30px 20px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.3);
+          ">
+            <div style="
+              color: white;
+              font-size: 22px;
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 25px;
+              letter-spacing: 1px;
+            ">✏️ Edit Employee Note</div>
+            
+            <div style="
+              color: rgba(255, 255, 255, 0.7);
+              font-size: 13px;
+              margin-bottom: 8px;
+            ">Employee ID: ${empId}</div>
+            
+            <textarea id="adminNoteInput" style="
+              width: 100%;
+              height: 250px;
+              background: rgba(255, 255, 255, 0.1);
+              border: 1px solid rgba(255, 255, 255, 0.2);
+              border-radius: 15px;
+              color: white;
+              padding: 15px;
+              font-size: 15px;
+              resize: vertical;
+              outline: none;
+              line-height: 1.6;
+              -webkit-backdrop-filter: blur(5px);
+              backdrop-filter: blur(5px);
+            " placeholder="Write your note here...">${currentNote}</textarea>
+            
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+              <button onclick="saveAdminNote('${empId}')" style="
+                flex: 1;
+                background: rgba(0, 200, 83, 0.9);
+                color: white;
+                border: none;
+                padding: 14px;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+              ">💾 Save Note</button>
+              
+              <button onclick="closeNoteEditor()" style="
+                flex: 1;
+                background: rgba(255, 82, 82, 0.9);
+                color: white;
+                border: none;
+                padding: 14px;
+                border-radius: 12px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+              ">❌ Cancel</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.getElementById("noteEditorContainer").innerHTML = editorHTML;
+    });
+}
+
+function saveAdminNote(empId) {
+  const noteText = document.getElementById("adminNoteInput").value;
+  
+  db.ref("employees/" + empId + "/adminNote").set({
+    text: noteText,
+    updatedAt: Date.now(),
+    adminId: currentUser?.emp?.id || "admin"
+  })
+  .then(() => {
+    alert("✅ Note saved successfully!");
+    closeNoteEditor();
+  })
+  .catch((error) => {
+    alert("❌ Error: " + error.message);
+  });
+}
+
+function closeNoteEditor() {
+  document.getElementById("noteEditorContainer").innerHTML = "";
+}
+
+function openAdminPanel() {
+  const empId = prompt("Enter Employee ID to send note:");
+  if (!empId) return;
+  
+  const noteText = prompt("Enter note for employee:", "");
+  if (noteText === null) return;
+  
+  // Save to Firebase
+  db.ref("employees/" + empId + "/adminNote").set({
+    text: noteText,
+    timestamp: Date.now(),
+    adminId: currentUser.emp.id
+  })
+  .then(() => {
+    alert("✅ Note sent successfully!");
+  })
+  .catch((error) => {
+    alert("❌ Error: " + error.message);
+  });
+}
+function updateOnlineDetails() {
+  const empId = prompt("Enter Employee ID to update details:");
+  if (!empId) return;
+  
+  const lines = [];
+  for (let i = 0; i < 5; i++) {
+    const label = prompt(`Enter label for line ${i + 1}:`, "");
+    if (!label) break;
+    const value = prompt(`Enter value for "${label}":`, "");
+    lines.push({ label, value });
+  }
+  
+  if (lines.length > 0) {
+    db.ref("employees/" + empId + "/onlineDetails").set({
+      lines: lines,
+      updatedAt: Date.now()
+    })
+    .then(() => {
+      alert("✅ Online Details updated!");
+    })
+    .catch((error) => {
+      alert("❌ Error: " + error.message);
+    });
+  }
+}
+
 
 function showPage3() {
     if (!currentUser) {
@@ -2190,7 +2403,7 @@ function renderPage3(empId, empData) {
                         <button class="lang-btn" data-lang="ar" onclick="changeNoteLanguage('ar')" style="background:${currentLang === 'ar' ? '#00c853' : 'rgba(255,255,255,0.1)'}; color:white; border:1px solid rgba(0,255,136,0.2); padding:4px 10px; border-radius:6px; font-weight:bold; font-size:10px; cursor:pointer;">🇸🇦</button>
                     </div>
                     
-                    <div class="cyber-title" style="font-size:14px; text-align:center; margin-bottom:8px; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.3);">📝 My Notes</div>
+                    <div class="cyber-title" style="font-size:14px; text-align:center; margin-bottom:8px; color:#ff9800; text-shadow:0 0 20px rgba(255,152,0,0.3);">💳 OFFLINE CARD</div>
                     
                     <div id="noteContent" style="padding:12px; border-radius:10px; background:rgba(0,255,136,0.03); border:1px solid rgba(0,255,136,0.08); height:55vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; color:#00ff88; text-shadow:0 0 10px rgba(0,255,136,0.15); font-family:monospace; font-size:13px; white-space:pre-wrap; word-break:break-word; line-height:1.7; padding-bottom:75px;">
                         ${displayText}
@@ -2746,6 +2959,8 @@ function showPage6() {
   
   // ==================== 180 Countries with Real Telecom Data ====================
   const countries = [
+    { name: "Iraq", flag: "🇮🇶", telecom: "Zain Iraq", server: "Baghdad" },
+    { name: "Iran", flag: "🇮🇷", telecom: "MCI", server: "Tehran" },
     { name: "Albania", flag: "🇦🇱", telecom: "Vodafone Albania", server: "Tirana" },
     { name: "Algeria", flag: "🇩🇿", telecom: "Mobilis", server: "Algiers" },
     { name: "Andorra", flag: "🇦🇩", telecom: "Andorra Telecom", server: "Andorra la Vella" },
@@ -2823,7 +3038,6 @@ function showPage6() {
     { name: "Iceland", flag: "🇮🇸", telecom: "Nova", server: "Reykjavik" },
     { name: "India", flag: "🇮🇳", telecom: "BSNL", server: "Mumbai" },
     { name: "Indonesia", flag: "🇮🇩", telecom: "Telkomsel", server: "Jakarta" },
-    { name: "Iraq", flag: "🇮🇶", telecom: "Zain Iraq", server: "Baghdad" },
     { name: "Ireland", flag: "🇮🇪", telecom: "Vodafone Ireland", server: "Dublin" },
     { name: "Italy", flag: "🇮🇹", telecom: "TIM", server: "Rome" },
     { name: "Jamaica", flag: "🇯🇲", telecom: "Digicel", server: "Kingston" },
@@ -2942,7 +3156,10 @@ function showPage6() {
   const verifiedCountries = empVerification.countries || {};
   const codeGenerationCount = empVerification.codeCount || 0;
   const adminAssignedCode = empVerification.adminCode || '';
-  const isLocked = empVerification.locked || false;
+  
+  // ====== تعریف isLocked ======
+  const isLocked = empVerification.locked || false;  // ← این رو اضافه کن
+  
   const savedPhone = empVerification.phone || '';
   const phoneVerified = empVerification.phoneVerified || false;
   const phoneLocked = empVerification.phoneLocked || false;
@@ -2952,12 +3169,28 @@ function showPage6() {
   let phoneProgressInterval = null;
   let codeProgressInterval = null;
   
-  // ==================== Phone Handler ====================
-  window.handlePhoneInput = function(input) {
-    if (phoneLocked && phoneVerified) {
-      input.value = savedPhone;
-      return;
-    }
+// ==================== PHONE TOGGLE ====================
+window.togglePhoneSwitch = function() {
+  var switchEl = document.querySelector('div[onclick="togglePhoneSwitch()"]');
+  var phoneBox = document.getElementById('vPhoneBox');
+  var phoneInput = document.getElementById('vPhoneDisplay');
+  if (switchEl && switchEl.innerHTML === '🟢') {
+    switchEl.innerHTML = '🔴'; switchEl.style.background = '#555';
+    if (phoneBox) phoneBox.style.opacity = '0.4';
+    if (phoneInput) phoneInput.disabled = true;
+  } else {
+    if (switchEl) { switchEl.innerHTML = '🟢'; switchEl.style.background = '#4caf50'; }
+    if (phoneBox) phoneBox.style.opacity = '1';
+    if (phoneInput) phoneInput.disabled = false;
+  }
+};
+
+// ==================== Phone Handler ====================
+window.handlePhoneInput = function(input) {
+  if (phoneLocked && phoneVerified) {
+    input.value = savedPhone;
+    return;
+  }
     
     let phone = input.value.replace(/\D/g, '');
     
@@ -3055,24 +3288,50 @@ function showPage6() {
   
   // ==================== Generate Code ====================
   window.generateVerificationCode = function() {
-    if (isLocked) { showModal("Verification", "Verification locked by admin.", "locked"); return; }
+    console.log("🔑 OTP 2 clicked");
     
-    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
-    var currentCount = (empRef?.verification?.codeCount || 0);
-    
-    if (currentCount >= 3 && !adminAssignedCode) {
-      showModal("Code Limit", "Maximum code generation limit reached (3 codes). Contact admin.", "error");
-      return;
+    // ====== چک کن isLocked ======
+    if (typeof isLocked === 'undefined') {
+        isLocked = false;
     }
     
+    if (isLocked) { 
+        showModal("Verification", "Verification locked by admin.", "locked"); 
+        return; 
+    }
+    
+    // ====== چک کن تلفن ثبت شده ======
+    if (!phoneVerified || !phoneLocked) {
+        showModal("Phone Required", "Please verify your phone number first.", "warning");
+        return;
+    }
+    
+    // ====== پیدا کردن کاربر ======
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    if (!empRef) {
+        console.error("❌ empRef not found");
+        return;
+    }
+    
+    // ====== گرفتن تعداد کدها ======
+    var currentCount = empRef.verification?.codeCount || 0;
+    console.log("📊 Current codeCount:", currentCount);
+    
+    if (currentCount >= 3) {
+        showModal("Code Limit", "Maximum code generation limit reached (3 codes).", "error");
+        return;
+    }
+    
+    // ====== نمایش کادر قهوه‌ای ======
     var codeBox = document.getElementById('vCodeBox');
+    if (codeBox) codeBox.style.display = 'block';
+    
     var codeDisplay = document.getElementById('vCodeDisplay');
     var codeProgressBar = document.getElementById('vCodeProgress');
     var codeProgressFill = document.getElementById('vCodeProgressFill');
     var codeStatus = document.getElementById('vCodeStatus');
     var generateBtn = document.querySelector('button[onclick="generateVerificationCode()"]');
     
-    if (codeBox) codeBox.style.display = 'block';
     if (codeDisplay) { codeDisplay.textContent = '----------'; codeDisplay.style.color = '#fff'; }
     if (codeProgressBar) codeProgressBar.style.display = 'block';
     if (codeProgressFill) { codeProgressFill.style.width = '0%'; codeProgressFill.style.background = '#ff9800'; }
@@ -3085,126 +3344,373 @@ function showPage6() {
     var duration = 7000;
     
     codeProgressInterval = setInterval(function() {
-      var elapsed = Date.now() - startTime;
-      var percent = Math.min((elapsed / duration) * 100, 100);
-      
-      if (codeProgressFill) { codeProgressFill.style.width = percent + '%'; }
-      
-      if (elapsed >= 2500 && elapsed < 4500) {
-        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">🔐 Encrypting...</span>'; }
-      } else if (elapsed >= 4500) {
-        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">✅ Finalizing...</span>'; }
-      }
-      
-      if (elapsed >= duration) {
-        clearInterval(codeProgressInterval);
-        codeProgressInterval = null;
+        var elapsed = Date.now() - startTime;
+        var percent = Math.min((elapsed / duration) * 100, 100);
         
-        var code = '';
-        for (var i = 0; i < 10; i++) { code += Math.floor(Math.random() * 10); }
-        var newCount = currentCount + 1;
+        if (codeProgressFill) { codeProgressFill.style.width = percent + '%'; }
         
-        var codeKey = 'code_' + newCount;
-        var codeData = {};
-        codeData[codeKey] = { code: code, used: false, usedFor: '', generatedAt: Date.now() };
-        
-        db.ref("employees/" + emp.id + "/verification").update(codeData);
-        db.ref("employees/" + emp.id + "/verification/codeCount").set(newCount);
-        
-        if (empRef) { 
-          if (!empRef.verification) empRef.verification = {}; 
-          if (!empRef.verification[codeKey]) empRef.verification[codeKey] = {};
-          empRef.verification[codeKey] = { code: code, used: false, usedFor: '', generatedAt: Date.now() };
-          empRef.verification.codeCount = newCount;
+        if (elapsed >= 2500 && elapsed < 4500) {
+            if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">🔐 Encrypting...</span>'; }
+        } else if (elapsed >= 4500) {
+            if (codeStatus) { codeStatus.innerHTML = '<span style="color:#ff9800;">✅ Finalizing...</span>'; }
         }
         
-        if (codeDisplay) { codeDisplay.textContent = code; codeDisplay.style.color = '#4caf50'; }
-        if (codeProgressFill) { codeProgressFill.style.background = '#4caf50'; codeProgressFill.style.width = '100%'; }
-        if (codeStatus) { codeStatus.innerHTML = '<span style="color:#4caf50;">✅ Code Ready</span>'; }
-        if (generateBtn) { generateBtn.disabled = false; generateBtn.style.opacity = '1'; }
-        
-        var codeCountEl = document.getElementById('vCodeCount');
-        if (codeCountEl) codeCountEl.textContent = 'Codes: ' + newCount + ' / 3';
-        
-        setTimeout(function() {
-          if (codeProgressBar) codeProgressBar.style.display = 'none';
-          if (codeStatus) codeStatus.style.display = 'none';
-        }, 2000);
-        
-        renderVList();
-      }
+        if (elapsed >= duration) {
+            clearInterval(codeProgressInterval);
+            codeProgressInterval = null;
+            
+            var code = '';
+            for (var i = 0; i < 10; i++) { 
+                code += Math.floor(Math.random() * 10); 
+            }
+            console.log("✅ New code:", code);
+            
+            var newCount = currentCount + 1;
+            var codeKey = 'code_' + newCount;
+            
+            // ====== ذخیره در دیتابیس ======
+            var updates = {};
+            updates[codeKey] = { 
+                code: code, 
+                used: false, 
+                usedFor: '', 
+                generatedAt: Date.now() 
+            };
+            updates['codeCount'] = newCount;
+            
+            db.ref("employees/" + emp.id + "/verification").update(updates)
+                .then(function() {
+                    console.log("✅ Database updated");
+                    
+                    // ====== آپدیت آبجکت محلی ======
+                    if (empRef) {
+                        if (!empRef.verification) empRef.verification = {};
+                        empRef.verification[codeKey] = { 
+                            code: code, 
+                            used: false, 
+                            usedFor: '', 
+                            generatedAt: Date.now() 
+                        };
+                        empRef.verification.codeCount = newCount;
+                    }
+                    
+                    // ====== نمایش کد ======
+                    if (codeDisplay) {
+                        codeDisplay.textContent = code;
+                        codeDisplay.style.color = '#4caf50';
+                    }
+                    if (codeProgressFill) {
+                        codeProgressFill.style.background = '#4caf50';
+                        codeProgressFill.style.width = '100%';
+                    }
+                    if (codeStatus) {
+                        codeStatus.innerHTML = '<span style="color:#4caf50;">✅ Code Ready</span>';
+                    }
+                    if (generateBtn) {
+                        generateBtn.disabled = false;
+                        generateBtn.style.opacity = '1';
+                    }
+                    
+                    var codeCountEl = document.getElementById('vCodeCount');
+                    if (codeCountEl) {
+                        codeCountEl.textContent = 'Codes: ' + newCount + ' / 3';
+                    }
+                    
+                    // ====== قفل کردن دکمه بعد از ۳ تا کد ======
+                    if (newCount >= 3) {
+                        if (generateBtn) {
+                            generateBtn.disabled = true;
+                            generateBtn.style.opacity = '0.5';
+                            generateBtn.textContent = '🔒 LOCKED';
+                        }
+                    }
+                    
+                    setTimeout(function() {
+                        if (codeProgressBar) codeProgressBar.style.display = 'none';
+                        if (codeStatus) codeStatus.style.display = 'none';
+                    }, 2000);
+                    
+                    renderVList();
+                })
+                .catch(function(err) {
+                    console.error("❌ Error updating DB:", err);
+                });
+        }
     }, 100);
-  };
+};
   
-  // ==================== Verify Country ====================
-  window.verifyCountryCode = function(countryName, input) {
-    if (isLocked) { showModal("Verification", "Verification locked.", "locked"); input.value = ''; return; }
+// ==================== Generate Destination Code (Origin) ====================
+window.generateDestCode = function() {
+    console.log("📍 OTP 1 clicked");
+    
+    if (typeof isLocked === 'undefined') {
+        isLocked = false;
+    }
+    
+    if (isLocked) { 
+        showModal("Verification", "Verification locked by admin.", "locked"); 
+        return; 
+    }
+    
+    if (!phoneVerified || !phoneLocked) {
+        showModal("Phone Required", "Please verify your phone number first.", "warning");
+        return;
+    }
+    
+    // ====== چک کن که قبلاً استفاده نشده باشه ======
+    var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
+    var code0Data = empRef?.verification?.code_0;
+    
+    // اگه کد قبلاً استفاده شده (used: true) یا وجود داره، دیگه کد جدید نده
+    if (code0Data && code0Data.used === true) {
+        showModal("OTP 1 Used", "This OTP has already been used for verification.", "warning");
+        return;
+    }
+    
+    // ====== اگه کد قبلاً تولید شده ولی استفاده نشده، دوباره تولید نکن ======
+    if (code0Data && code0Data.code && !code0Data.used) {
+        // فقط کد موجود رو نمایش بده
+        var destDisplay = document.getElementById('vDestDisplay');
+        var destBox = document.getElementById('vDestBox');
+        if (destBox) destBox.style.display = 'block';
+        if (destDisplay) {
+            destDisplay.textContent = code0Data.code;
+            destDisplay.style.color = '#4caf50';
+        }
+        showModal("OTP 1 Ready", "Your OTP 1 code is already generated and ready to use.", "info");
+        return;
+    }
+    
+    // ====== نمایش کادر آبی ======
+    var destBox = document.getElementById('vDestBox');
+    if (destBox) destBox.style.display = 'block';
+    
+    var destDisplay = document.getElementById('vDestDisplay');
+    var destProgress = document.getElementById('vDestProgress');
+    var destFill = document.getElementById('vDestProgressFill');
+    var destStatus = document.getElementById('vDestStatus');
+    var btn = document.getElementById('btnDestGenerate');
+    
+    if (destDisplay) { destDisplay.textContent = '----------'; destDisplay.style.color = '#fff'; }
+    if (destProgress) destProgress.style.display = 'block';
+    if (destFill) { destFill.style.width = '0%'; destFill.style.background = '#2196f3'; }
+    if (destStatus) { destStatus.style.display = 'block'; destStatus.innerHTML = '<span style="color:#2196f3;">⏳ Generating origin code...</span>'; }
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.5'; }
+    
+    var startTime = Date.now();
+    var duration = 7000;
+    
+    var destInterval = setInterval(function() {
+        var elapsed = Date.now() - startTime;
+        var percent = Math.min((elapsed / duration) * 100, 100);
+        if (destFill) destFill.style.width = percent + '%';
+        
+        if (elapsed >= 3000 && elapsed < 5000) {
+            if (destStatus) destStatus.innerHTML = '<span style="color:#2196f3;">🔐 Encrypting...</span>';
+        } else if (elapsed >= 5000) {
+            if (destStatus) destStatus.innerHTML = '<span style="color:#2196f3;">✅ Finalizing...</span>';
+        }
+        
+        if (elapsed >= duration) {
+            clearInterval(destInterval);
+            
+            var code = '';
+            for (var i = 0; i < 10; i++) { code += Math.floor(Math.random() * 10); }
+            
+            // ====== ذخیره در دیتابیس ======
+            db.ref("employees/" + emp.id + "/verification/code_0").set({ 
+                code: code, 
+                used: false, 
+                usedFor: '', 
+                generatedAt: Date.now() 
+            });
+            
+            // ====== آپدیت آبجکت محلی ======
+            if (empRef) {
+                if (!empRef.verification) empRef.verification = {};
+                empRef.verification.code_0 = { 
+                    code: code, 
+                    used: false, 
+                    usedFor: '', 
+                    generatedAt: Date.now() 
+                };
+                console.log("✅ code_0 saved to local:", empRef.verification.code_0);
+            }
+            
+            // ====== نمایش کد ======
+            if (destDisplay) { 
+                destDisplay.textContent = code; 
+                destDisplay.style.color = '#4caf50'; 
+            }
+            if (destFill) { 
+                destFill.style.background = '#4caf50'; 
+                destFill.style.width = '100%'; 
+            }
+            if (destStatus) { 
+                destStatus.innerHTML = '<span style="color:#4caf50;">✅ Origin Code Ready</span>'; 
+            }
+            if (btn) { 
+                btn.disabled = true; 
+                btn.style.opacity = '0.5'; 
+                btn.textContent = '🔒 LOCKED'; 
+            }
+            
+            setTimeout(function() {
+                if (destProgress) destProgress.style.display = 'none';
+                if (destStatus) destStatus.style.display = 'none';
+            }, 2000);
+            
+            renderVList();
+        }
+    }, 100);
+};
+
+// ==================== Verify Country ====================
+window.verifyCountryCode = function(countryName, input) {
+    if (isLocked) { 
+        showModal("Verification", "Verification locked.", "locked"); 
+        input.value = ''; 
+        return; 
+    }
+    
+    var val = input.value.trim();
+    if (val === '') {
+        input.className = 'v-input';
+        return;
+    }
+    
+    console.log("🔍 Verifying code:", val, "for country:", countryName);
     
     var empRef = employees.find(function(e) { return String(e.id) === String(emp.id); });
-    var val = input.value.trim();
-    
-    if (val === '') {
-      input.className = 'v-input';
-      return;
+    if (!empRef) {
+        console.error("❌ empRef not found!");
+        return;
     }
     
-    var currentVerified = empRef?.verification?.countries || {};
-    var currentVerifiedCount = Object.keys(currentVerified).length;
-    
-    if (!currentVerified[countryName] && currentVerifiedCount >= 3) {
-      showModal("Country Limit", "You can only verify up to 3 countries.", "warning");
-      input.value = '';
-      return;
-    }
-    
-    var matchedCode = null;
-    var matchedCodeKey = '';
-    for (var i = 1; i <= 3; i++) {
-      var key = 'code_' + i;
-      var codeData = empRef?.verification?.[key];
-      if (codeData && codeData.code === val && !codeData.used) {
-        matchedCode = codeData.code;
-        matchedCodeKey = key;
-        break;
-      }
-    }
-    
-    if (!matchedCode && adminAssignedCode && val === adminAssignedCode) {
-      matchedCode = adminAssignedCode;
-    }
-    
-    if (matchedCode) {
-      input.className = 'v-input v-success';
-      currentVerified[countryName] = matchedCode;
-      
-      var updates = {};
-      updates['countries/' + countryName] = matchedCode;
-      if (matchedCodeKey) {
-        updates[matchedCodeKey + '/used'] = true;
-        updates[matchedCodeKey + '/usedFor'] = countryName;
-        updates[matchedCodeKey + '/usedAt'] = Date.now();
-      }
-      
-      db.ref("employees/" + emp.id + "/verification").update(updates);
-      
-      if (empRef) { 
-        if (!empRef.verification) empRef.verification = {}; 
-        if (!empRef.verification.countries) empRef.verification.countries = {};
-        empRef.verification.countries[countryName] = matchedCode;
-        if (matchedCodeKey) {
-          if (!empRef.verification[matchedCodeKey]) empRef.verification[matchedCodeKey] = {};
-          empRef.verification[matchedCodeKey].used = true;
-          empRef.verification[matchedCodeKey].usedFor = countryName;
+    // ====== گرفتن دیتا از دیتابیس ======
+    db.ref("employees/" + emp.id + "/verification").get().then(function(snapshot) {
+        var verification = snapshot.val() || {};
+        console.log("📦 Full verification from DB:", verification);
+        
+        // ====== بررسی محدودیت ۳ کشور ======
+        var currentVerified = verification.countries || {};
+        var currentVerifiedCount = Object.keys(currentVerified).length;
+        
+        if (!currentVerified[countryName] && currentVerifiedCount >= 3) {
+            showModal("Country Limit", "You can only verify up to 3 countries.", "warning");
+            input.value = '';
+            return;
         }
-      }
-      
-      showCongratsAnimation(countryName);
-      renderVList();
-    } else {
-      input.className = 'v-input v-error';
-      setTimeout(function() { input.value = ''; input.className = 'v-input'; }, 900);
-    }
-  };
+        
+        // ====== چک کردن ALL codes ======
+        var matchedCode = null;
+        var matchedKey = null;
+        
+        var allKeys = ['code_0', 'code_1', 'code_2', 'code_3', 'originCode'];
+        
+        for (var i = 0; i < allKeys.length; i++) {
+            var key = allKeys[i];
+            var data = verification[key];
+            
+            if (data && typeof data === 'object' && data.code) {
+                console.log("🔑 Checking", key, ":", data.code, "used:", data.used);
+                
+                if (data.code === val && data.used !== true) {
+                    matchedCode = data.code;
+                    matchedKey = key;
+                    console.log("✅ MATCH found in:", key);
+                    break;
+                }
+            }
+        }
+        
+        // ====== Admin Code ======
+        if (!matchedCode && adminAssignedCode && val === adminAssignedCode) {
+            matchedCode = adminAssignedCode;
+            matchedKey = 'admin';
+            console.log("✅ MATCH found in: admin code");
+        }
+        
+        // ====== نتیجه ======
+        if (matchedCode) {
+            console.log("✅✅✅ Verifying with key:", matchedKey);
+            input.className = 'v-input v-success';
+            
+            var updates = {};
+            updates['countries/' + countryName] = matchedCode;
+            
+            if (matchedKey === 'admin') {
+                // کد ادمین نیازی به آپدیت نداره
+            } else if (matchedKey === 'originCode') {
+                updates['originCodeUsed'] = true;
+            } else if (matchedKey) {
+                updates[matchedKey + '/used'] = true;
+                updates[matchedKey + '/usedFor'] = countryName;
+                updates[matchedKey + '/usedAt'] = Date.now();
+            }
+            
+            db.ref("employees/" + emp.id + "/verification").update(updates)
+                .then(function() {
+                    console.log("✅ Database updated successfully");
+                    
+                    // آپدیت آبجکت محلی
+                    if (empRef) {
+                        if (!empRef.verification) empRef.verification = {};
+                        if (!empRef.verification.countries) empRef.verification.countries = {};
+                        empRef.verification.countries[countryName] = matchedCode;
+                        
+                        if (matchedKey && matchedKey !== 'admin' && matchedKey !== 'originCode') {
+                            if (empRef.verification[matchedKey]) {
+                                empRef.verification[matchedKey].used = true;
+                                empRef.verification[matchedKey].usedFor = countryName;
+                            }
+                        }
+                        if (matchedKey === 'originCode') {
+                            empRef.verification.originCodeUsed = true;
+                        }
+                    }
+                    
+                    // ====== اگر کد از OTP 1 (code_0) استفاده شد، دکمه رو قفل کن ======
+                    if (matchedKey === 'code_0') {
+                        var btn = document.getElementById('btnDestGenerate');
+                        if (btn) {
+                            btn.disabled = true;
+                            btn.style.opacity = '0.5';
+                            btn.textContent = '🔒 LOCKED';
+                        }
+                        // کادر آبی رو مخفی کن
+                        var destBox = document.getElementById('vDestBox');
+                        if (destBox) {
+                            setTimeout(function() {
+                                destBox.style.display = 'none';
+                            }, 2000);
+                        }
+                    }
+                    
+                    showCongratsAnimation(countryName);
+                    renderVList();
+                    
+                    setTimeout(function() {
+                        input.value = '';
+                        input.className = 'v-input';
+                    }, 500);
+                })
+                .catch(function(err) {
+                    console.error("❌ Error updating DB:", err);
+                });
+            
+        } else {
+            console.log("❌ No match found for code:", val);
+            input.className = 'v-input v-error';
+            setTimeout(function() { 
+                input.value = ''; 
+                input.className = 'v-input'; 
+            }, 900);
+        }
+    }).catch(function(err) {
+        console.error("❌ Error reading DB:", err);
+    });
+};
   
   // ==================== Telecom Popup ====================
   window.showTelecomInfo = function(countryName) {
@@ -3303,9 +3809,9 @@ function showPage6() {
     
     var filtered = [];
     for (var i = 0; i < countries.length; i++) {
-      if (countries[i].name.toLowerCase().indexOf(searchTerm) !== -1) {
-        filtered.push(countries[i]);
-      }
+        if (countries[i].name.toLowerCase().indexOf(searchTerm) !== -1) {
+            filtered.push(countries[i]);
+        }
     }
     
     var count = Object.keys(verified).length;
@@ -3313,182 +3819,235 @@ function showPage6() {
     
     var limitMsg = document.getElementById('vLimitMsg');
     if (limitMsg) {
-      limitMsg.style.display = count >= 3 ? 'block' : 'none';
+        limitMsg.style.display = count >= 3 ? 'block' : 'none';
     }
     
     var html = '';
     for (var i = 0; i < filtered.length; i++) {
-      var c = filtered[i];
-      var isOk = verified[c.name] ? true : false;
-      
-      html += '<div class="v-row' + (isOk ? ' v-verified-row' : '') + '" ' + (isOk ? 'onclick="showTelecomInfo(\'' + c.name.replace(/'/g, "\\'") + '\')" style="cursor:pointer;"' : '') + '>';
-      html += '<div class="v-flag-name">';
-      html += '<span class="v-flag">' + c.flag + '</span>';
-      html += '<span class="v-name">' + c.name + '</span>';
-      if (isOk) {
-        html += '<span style="font-size:9px; color:#4caf50; margin-left:6px;">📡</span>';
-      }
-      html += '</div>';
-      html += '<div class="v-action">';
-      
-      if (isOk) {
-        html += '<span class="v-badge-ok">✅ Verified</span>';
-      } else {
-        html += '<span class="v-badge-pending">⏳ Pending</span>';
-        html += '<input type="text" class="v-input" placeholder="10-digit code" maxlength="10" onclick="event.stopPropagation();" oninput="verifyCountryCode(\'' + c.name.replace(/'/g, "\\'") + '\', this)">';
-      }
-      
-      html += '</div>';
-      html += '</div>';
+        var c = filtered[i];
+        var isOk = verified[c.name] ? true : false;
+        
+        html += '<div class="v-row' + (isOk ? ' v-verified-row' : '') + '" ' + (isOk ? 'onclick="showTelecomInfo(\'' + c.name.replace(/'/g, "\\'") + '\')" style="cursor:pointer;"' : '') + '>';
+        html += '<div class="v-flag-name">';
+        html += '<span class="v-flag">' + c.flag + '</span>';
+        html += '<span class="v-name">' + c.name + '</span>';
+        if (isOk) {
+            html += '<span style="font-size:9px; color:#4caf50; margin-left:6px;">📡</span>';
+        }
+        html += '</div>';
+        html += '<div class="v-action">';
+        
+        if (isOk) {
+            html += '<span class="v-badge-ok">✅ Verified</span>';
+        } else {
+            html += '<span class="v-badge-pending">⏳ Pending</span>';
+            html += '<input type="text" class="v-input" placeholder="10-digit code" maxlength="10" onclick="event.stopPropagation();" oninput="verifyCountryCode(\'' + c.name.replace(/'/g, "\\'") + '\', this)">';
+        }
+        
+        html += '</div>';
+        html += '</div>';
     }
     
     if (filtered.length === 0) {
-      html = '<div class="v-empty">No country found.</div>';
+        html = '<div class="v-empty">No country found.</div>';
     }
     
     container.innerHTML = html;
-  };
+    
+    // ====== آپدیت وضعیت دکمه‌ها ======
+    var isPhoneVerified = phoneVerified && phoneLocked;
+    var btn1 = document.querySelector('button[onclick="generateVerificationCode()"]');
+    var btn2 = document.getElementById('btnDestGenerate');
+    
+    if (btn1) {
+        if (!isPhoneVerified) {
+            btn1.disabled = true;
+            btn1.style.opacity = '0.5';
+            btn1.style.background = '#555';
+            btn1.style.color = '#999';
+        } else {
+            btn1.disabled = false;
+            btn1.style.opacity = '1';
+            btn1.style.background = '#ff9800';
+            btn1.style.color = '#000';
+        }
+    }
+    
+    if (btn2) {
+        if (!isPhoneVerified) {
+            btn2.disabled = true;
+            btn2.style.opacity = '0.5';
+            btn2.style.background = '#555';
+        } else {
+            btn2.disabled = false;
+            btn2.style.opacity = '1';
+            btn2.style.background = '#2196f3';
+        }
+    }
+};
   
   // ==================== Build HTML ====================
-  var html = '';
-  html += '<div class="screen" style="height:100vh; overflow:hidden; position:relative;">';
-  html += '<img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.4;">';
-  html += '<div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">';
-  html += '<img src="images/telegram.png" onclick="openTelegram()">';
-  html += '<img src="images/trustwallet.png" onclick="openWalletPage()">';
-  html += '<img src="images/bitcoin.png" onclick="openBitcoinPage()">';
-  html += '<img src="images/exchange.png" onclick="openExchangePage()">';
-  html += '<img src="images/nearby.png" onclick="openNearbyBanks()">';
-  if (emp.hasStatement) { html += '<img src="images/statement.png" onclick="openBankStatement(\'' + emp.id + '\')">'; }
-  html += '</div>';
-  html += '<div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>';
-  html += '<div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:30px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.2); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">';
-  html += '<div style="max-width:650px; margin:30px auto 0;">';
-  
-  // Title
-  html += '<div style="text-align:center; margin-bottom:8px;">';
-  html += '<div style="font-size:20px; font-weight:bold; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.4); letter-spacing:1px;">🌍 MASTERCARD VERIFICATION SYSTEM</div>';
-  html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Step 6 - Select Country & Enter 10-Digit Code</div>';
-  if (isLocked) { html += '<div style="color:#ff5252; font-size:12px; margin-top:6px; font-weight:bold;">🔒 VERIFICATION LOCKED BY ADMIN</div>'; }
-  html += '</div>';
-  
-  // Phone Box
-  var phoneBoxBg = phoneVerified ? 'rgba(76,175,80,0.08)' : 'rgba(255,255,255,0.05)';
-  var phoneBoxBorder = phoneVerified ? '#4caf50' : 'rgba(255,255,255,0.1)';
-  var phoneDisabled = (phoneVerified && phoneLocked) ? 'disabled' : '';
-  var phoneLockIcon = (phoneVerified && phoneLocked) ? ' 🔒' : '';
-  var displayPhone = savedPhone;
-  if (phoneVerified) {
-    var digits = savedPhone.replace(/\D/g, '');
-    if (digits.length >= 2) {
-      displayPhone = '+ ' + digits.substring(0, 2) + ' ××××××××××';
-    }
+var html = '';
+html += '<div class="screen" style="height:100vh; overflow:hidden; position:relative;">';
+html += '<img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.4;">';
+html += '<div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">';
+html += '<img src="images/telegram.png" onclick="openTelegram()">';
+html += '<img src="images/trustwallet.png" onclick="openWalletPage()">';
+html += '<img src="images/bitcoin.png" onclick="openBitcoinPage()">';
+html += '<img src="images/exchange.png" onclick="openExchangePage()">';
+html += '<img src="images/nearby.png" onclick="openNearbyBanks()">';
+if (emp.hasStatement) { html += '<img src="images/statement.png" onclick="openBankStatement(\'' + emp.id + '\')">'; }
+html += '</div>';
+html += '<div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>';
+html += '<div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:30px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.2); backdrop-filter:blur(4px); -webkit-backdrop-filter:blur(4px);">';
+html += '<div style="max-width:650px; margin:30px auto 0;">';
+
+// Title
+html += '<div style="text-align:center; margin-bottom:8px;">';
+html += '<div style="font-size:20px; font-weight:bold; color:#00ff88; text-shadow:0 0 20px rgba(0,255,136,0.4); letter-spacing:1px;">🌍 MASTERCARD VERIFICATION SYSTEM</div>';
+html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-top:4px;">Step 6 - Select Country & Enter 10-Digit Code</div>';
+if (isLocked) { html += '<div style="color:#ff5252; font-size:12px; margin-top:6px; font-weight:bold;">🔒 VERIFICATION LOCKED BY ADMIN</div>'; }
+html += '</div>';
+
+// Phone Box
+var phoneBoxBg = phoneVerified ? 'rgba(76,175,80,0.08)' : 'rgba(255,255,255,0.05)';
+var phoneBoxBorder = phoneVerified ? '#4caf50' : 'rgba(255,255,255,0.1)';
+var phoneDisabled = (phoneVerified && phoneLocked) ? 'disabled' : '';
+var phoneLockIcon = (phoneVerified && phoneLocked) ? ' 🔒' : '';
+var displayPhone = savedPhone;
+if (phoneVerified) {
+  var digits = savedPhone.replace(/\D/g, '');
+  if (digits.length >= 2) {
+    displayPhone = '+ ' + digits.substring(0, 2) + ' ××××××××××';
   }
-  var phoneInputBg = phoneVerified ? 'rgba(76,175,80,0.1)' : 'rgba(0,0,0,0.4)';
-  var phoneInputBorder = phoneVerified ? '2px solid rgba(76,175,80,0.3)' : '2px solid transparent';
-  var phoneInputColor = phoneVerified ? '#4caf50' : '#fff';
-  
-  html += '<div id="vPhoneBox" style="background:' + phoneBoxBg + '; border:2px solid ' + phoneBoxBorder + '; border-radius:12px; padding:14px; margin-bottom:12px; transition:all 0.3s;">';
-  html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:6px; letter-spacing:1px;">📱 PHONE NUMBER ' + (phoneVerified ? '<span style="color:#4caf50;">✅' + phoneLockIcon + '</span>' : '<span style="color:rgba(255,255,255,0.3);">(12 digits)</span>') + '</div>';
-  html += '<input type="tel" id="vPhoneDisplay" placeholder="+ XX XXXXXXXX" value="' + displayPhone + '" ' + phoneDisabled + ' oninput="handlePhoneInput(this)" maxlength="16" style="width:100%; padding:12px; border:' + phoneInputBorder + '; border-radius:8px; background:' + phoneInputBg + '; color:' + phoneInputColor + '; font-size:15px; box-sizing:border-box; letter-spacing:1px; direction:ltr; text-align:center; transition:all 0.3s; ' + (phoneVerified ? 'backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);' : '') + '">';
-  
-  html += '<div id="vPhoneProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
-  html += '<div id="vPhoneProgressFill" style="height:100%; width:0%; background:#ff5252; border-radius:3px; transition:width 0.1s linear;"></div>';
-  html += '</div>';
-  
-  html += '<div id="vPhoneStatus" style="text-align:center; font-size:11px; font-weight:bold; margin-top:6px; ' + (phoneVerified ? '' : 'display:none;') + '">';
-  html += phoneVerified ? '<span style="color:#4caf50;">✅ Verified & Secured</span>' : '';
-  html += '</div>';
-  html += '</div>';
-  
-  // Generate Button
-  html += '<div style="display:flex; gap:10px; margin-bottom:12px;">';
-  html += '<button onclick="generateVerificationCode()" ' + (isLocked ? 'disabled' : '') + ' style="flex:1; padding:15px; font-size:16px; font-weight:bold; background:' + (isLocked ? '#555' : '#ff9800') + '; color:' + (isLocked ? '#999' : '#000') + '; border:none; border-radius:10px; cursor:' + (isLocked ? 'not-allowed' : 'pointer') + '; letter-spacing:1px;">🔑 GENERATE CODE</button>';
-  html += '<div id="vCodeCount" style="display:flex; align-items:center; padding:0 15px; background:rgba(255,255,255,0.05); border-radius:10px; font-size:12px; color:#ff9800; font-weight:bold; white-space:nowrap;">Codes: ' + codeGenerationCount + ' / 3</div>';
-  html += '</div>';
-  
-  // Code Display
-  var hasActiveCode = false;
-  var activeCode = '';
-  for (var i = 1; i <= 3; i++) {
-    var codeData = empVerification['code_' + i];
-    if (codeData && codeData.code && !codeData.used) { hasActiveCode = true; activeCode = codeData.code; break; }
-  }
-  if (!hasActiveCode && adminAssignedCode) { activeCode = adminAssignedCode; hasActiveCode = true; }
-  
-  html += '<div id="vCodeBox" style="background:rgba(255,152,0,0.08); border:2px dashed rgba(255,152,0,0.5); border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; ' + (hasActiveCode ? '' : 'display:none;') + '">';
-  html += '<div style="font-size:10px; color:#ff9800; letter-spacing:2px; margin-bottom:5px;">ACTIVE CODE (10 DIGITS)</div>';
-  html += '<div id="vCodeDisplay" style="font-size:32px; font-family:\'Courier New\',monospace; letter-spacing:6px; font-weight:bold; color:#fff; direction:ltr;">' + activeCode + '</div>';
-  html += '<div id="vCodeProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
-  html += '<div id="vCodeProgressFill" style="height:100%; width:0%; background:#ff9800; border-radius:3px; transition:width 0.1s linear;"></div>';
-  html += '</div>';
-  html += '<div id="vCodeStatus" style="text-align:center; font-size:10px; font-weight:bold; margin-top:5px; display:none;"></div>';
-  if (adminAssignedCode) { html += '<div style="font-size:9px; color:rgba(255,255,255,0.3); margin-top:4px;">📌 Admin Assigned Code</div>'; }
-  html += '</div>';
-  
-  // Counter
-  html += '<div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.12); border-radius:10px; padding:10px 15px; text-align:center; margin-bottom:5px; font-size:13px; font-weight:bold; color:#00ff88;">';
-  html += '✅ Verified Countries: <span id="vCounter">' + verifiedCount + '</span> / 3';
-  html += '</div>';
-  html += '<div id="vLimitMsg" style="text-align:center; font-size:10px; color:#ff9800; margin-bottom:10px; ' + (verifiedCount >= 3 ? '' : 'display:none;') + '">⚠️ Maximum limit reached. Tap on verified country for telecom info.</div>';
-  
-  // Search
-  html += '<input type="text" id="vSearch" placeholder="🔍 Search country..." oninput="renderVList()" style="width:100%; padding:12px 15px; border:2px solid rgba(255,255,255,0.1); border-radius:10px; font-size:14px; margin-bottom:10px; background:rgba(0,0,0,0.4); color:#fff; box-sizing:border-box;">';
-  
-  // Country List
-  html += '<div id="vCountryList" style="max-height:40vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.06); border-radius:10px; background:rgba(0,0,0,0.25); -webkit-overflow-scrolling:touch;"></div>';
-  html += '</div>';
-  
-  // Nav Buttons
-  html += '<div style="display:flex; gap:7px; margin-top:15px; flex-wrap:wrap; max-width:650px; margin-left:auto; margin-right:auto;">';
-  html += '<button onclick="showPage1()" style="flex:1; min-width:40px; background:#00c853; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📱 P1</button>';
-  html += '<button onclick="showPage2()" style="flex:1; min-width:40px; background:#ff9800; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📊 P2</button>';
-  html += '<button onclick="showPage3()" style="flex:1; min-width:40px; background:#9c27b0; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📝 P3</button>';
-  html += '<button onclick="showPage4()" style="flex:1; min-width:40px; background:#ff6d00; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🎰 P4</button>';
-  html += '<button onclick="showPage5()" style="flex:1; min-width:40px; background:#ff1744; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🛡️ P5</button>';
-  html += '<button onclick="showPage6()" style="flex:1; min-width:40px; background:#00bcd4; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px rgba(0,188,212,0.5);">🌍 P6</button>';
-  html += '</div>';
-  
-  html += '<button onclick="showLogin()" style="display:block; width:100%; max-width:650px; margin:8px auto 0; padding:13px; background:rgba(255,82,82,0.85); color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px;">LOGOUT</button>';
-  html += '</div></div>';
-  
-  // CSS
-  html += '<style>';
-  html += '.v-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;gap:8px;transition:background 0.2s;}';
-  html += '.v-row:hover{background:rgba(255,255,255,0.03);}.v-row:last-child{border-bottom:none;}';
-  html += '.v-verified-row{cursor:pointer;}';
-  html += '.v-verified-row:hover{background:rgba(0,255,136,0.05);}';
-  html += '.v-verified-row:active{background:rgba(0,255,136,0.1);}';
-  html += '.v-flag-name{display:flex;align-items:center;gap:10px;min-width:140px;}';
-  html += '.v-flag{font-size:22px;}.v-name{font-size:13px;color:rgba(255,255,255,0.75);}';
-  html += '.v-action{display:flex;align-items:center;gap:8px;}';
-  html += '.v-input{width:125px;text-align:center;font-family:\'Courier New\',monospace;font-size:13px;letter-spacing:2px;border:2px solid rgba(255,255,255,0.12);border-radius:6px;padding:7px;background:rgba(0,0,0,0.4);color:#fff;transition:all 0.3s;direction:ltr;}';
-  html += '.v-input:focus{outline:none;border-color:#ff9800;}.v-input::placeholder{color:rgba(255,255,255,0.25);font-size:10px;letter-spacing:1px;}';
-  html += '.v-input.v-success{border-color:#4caf50;background:rgba(76,175,80,0.1);color:#8bc34a;}';
-  html += '.v-input.v-error{border-color:#f44336;background:rgba(244,67,54,0.1);animation:shake 0.4s;}';
-  html += '.v-badge-ok{background:#4caf50;color:#fff;padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;font-weight:bold;}';
-  html += '.v-badge-pending{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;}';
-  html += '.v-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px;}';
-  html += '@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}50%{transform:translateX(6px);}75%{transform:translateX(-4px);}}';
-  html += '@keyframes slideDown{from{top:-200px;opacity:0;}to{top:20px;opacity:1;}}';
-  html += '@keyframes fadeOut{from{opacity:1;}to{opacity:0;}}';
-  html += '@keyframes popUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
-  html += '@keyframes fadeOutPopup{from{opacity:1;}to{opacity:0;}}';
-  html += '#vCountryList::-webkit-scrollbar{width:5px;}';
-  html += '#vCountryList::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:5px;}';
-  html += '#vCountryList::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.2);border-radius:5px;}';
-  html += '.panel::-webkit-scrollbar{width:5px;}.panel::-webkit-scrollbar-track{background:transparent;}';
-  html += '.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:5px;}';
-  html += '</style>';
-  
-  document.getElementById("app").innerHTML = html;
-  
-  setTimeout(function() { renderVList(); }, 100);
-  
-  requestAnimationFrame(function() {
-    var screen = document.querySelector(".screen");
-    if (screen) { screen.classList.remove("fade-in"); void screen.offsetWidth; screen.classList.add("fade-in"); }
-  });
+}
+var phoneInputBg = phoneVerified ? 'rgba(76,175,80,0.1)' : 'rgba(0,0,0,0.4)';
+var phoneInputBorder = phoneVerified ? '2px solid rgba(76,175,80,0.3)' : '2px solid transparent';
+var phoneInputColor = phoneVerified ? '#4caf50' : '#fff';
+
+html += '<div style="display:flex; align-items:center; gap:10px; margin-bottom:12px;">';
+html += '<div id="vPhoneBox" style="background:' + phoneBoxBg + '; border:2px solid ' + phoneBoxBorder + '; border-radius:12px; padding:14px; margin-bottom:12px; transition:all 0.3s;">';
+html += '<div style="font-size:11px; color:rgba(255,255,255,0.4); margin-bottom:6px; letter-spacing:1px;">📱 PHONE NUMBER ' + (phoneVerified ? '<span style="color:#4caf50;">✅' + phoneLockIcon + '</span>' : '<span style="color:rgba(255,255,255,0.3);">(12 digits)</span>') + '</div>';
+html += '<input type="tel" id="vPhoneDisplay" placeholder="+ XX XXXXXXXX" value="' + displayPhone + '" ' + phoneDisabled + ' oninput="handlePhoneInput(this)" maxlength="16" style="width:100%; padding:12px; border:' + phoneInputBorder + '; border-radius:8px; background:' + phoneInputBg + '; color:' + phoneInputColor + '; font-size:15px; box-sizing:border-box; letter-spacing:1px; direction:ltr; text-align:center; transition:all 0.3s; ' + (phoneVerified ? 'backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);' : '') + '">';
+html += '<div id="vPhoneProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
+html += '<div id="vPhoneProgressFill" style="height:100%; width:0%; background:#ff5252; border-radius:3px; transition:width 0.1s linear;"></div>';
+html += '</div>';
+html += '<div id="vPhoneStatus" style="text-align:center; font-size:11px; font-weight:bold; margin-top:6px; ' + (phoneVerified ? '' : 'display:none;') + '">';
+html += phoneVerified ? '<span style="color:#4caf50;">✅ Verified & Secured</span>' : '';
+html += '</div>';
+html += '</div>';
+html += '<div onclick="togglePhoneSwitch()" style="width:44px; height:44px; border-radius:50%; background:#4caf50; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:20px; box-shadow:0 0 15px rgba(0,0,0,0.3);">🟢</div>';
+html += '</div>';
+
+// ====== تشخیص ثبت تلفن برای قفل دکمه‌ها ======
+var isPhoneVerified = phoneVerified && phoneLocked;
+
+// Generate Button
+html += '<div style="display:flex; gap:10px; margin-bottom:12px;">';
+html += '<button onclick="generateVerificationCode()" ' + (!isPhoneVerified ? 'disabled' : '') + ' style="flex:1; padding:10px; font-size:12px; font-weight:bold; background:' + (!isPhoneVerified ? '#555' : '#ff9800') + '; color:' + (!isPhoneVerified ? '#999' : '#000') + '; border:none; border-radius:10px; cursor:' + (!isPhoneVerified ? 'not-allowed' : 'pointer') + '; letter-spacing:1px;">🔑 OTP 2</button>';
+html += '<button id="btnDestGenerate" onclick="generateDestCode()" ' + (!isPhoneVerified ? 'disabled' : '') + ' style="flex:1; padding:10px; font-size:12px; font-weight:bold; background:' + (!isPhoneVerified ? '#555' : '#2196f3') + '; color:#fff; border:none; border-radius:10px; cursor:' + (!isPhoneVerified ? 'not-allowed' : 'pointer') + '; letter-spacing:1px;">📍 OTP 1</button>';
+html += '<div id="vCodeCount" style="display:flex; align-items:center; padding:0 15px; background:rgba(255,255,255,0.05); border-radius:10px; font-size:12px; color:#ff9800; font-weight:bold; white-space:nowrap;">Codes: ' + codeGenerationCount + ' / 3</div>';
+html += '</div>';
+
+// ====== پیام راهنما ======
+html += '<div style="text-align:center; margin-bottom:10px;">';
+if (!isPhoneVerified) {
+    html += '<div style="font-size:11px; color:rgba(255,255,255,0.3);">📱 Please verify your phone number first</div>';
+} else {
+    html += '<div style="font-size:11px; color:#4caf50;">✅ Phone verified! Click OTP 1 or OTP 2 to generate code</div>';
+}
+html += '</div>';
+
+// Code Display - کادر قهوه‌ای (OTP 2)
+var hasActiveCode = false;
+var activeCode = '';
+for (var i = 1; i <= 3; i++) {
+  var codeData = empVerification['code_' + i];
+  if (codeData && codeData.code && !codeData.used) { hasActiveCode = true; activeCode = codeData.code; break; }
+}
+if (!hasActiveCode && adminAssignedCode) { activeCode = adminAssignedCode; hasActiveCode = true; }
+
+html += '<div id="vCodeBox" style="background:rgba(255,152,0,0.08); border:2px dashed rgba(255,152,0,0.5); border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; ' + (hasActiveCode ? '' : 'display:none;') + '">';
+html += '<div style="font-size:10px; color:#ff9800; letter-spacing:2px; margin-bottom:5px;">🎯 Destination Country OTP</div>';
+html += '<div id="vCodeDisplay" style="font-size:32px; font-family:\'Courier New\',monospace; letter-spacing:6px; font-weight:bold; color:#fff; direction:ltr;">' + activeCode + '</div>';
+html += '<div id="vCodeProgress" style="margin-top:8px; height:6px; background:rgba(255,255,255,0.1); border-radius:3px; overflow:hidden; display:none;">';
+html += '<div id="vCodeProgressFill" style="height:100%; width:0%; background:#ff9800; border-radius:3px; transition:width 0.1s linear;"></div>';
+html += '</div>';
+html += '<div id="vCodeStatus" style="text-align:center; font-size:10px; font-weight:bold; margin-top:5px; display:none;"></div>';
+if (adminAssignedCode) { html += '<div style="font-size:9px; color:rgba(255,255,255,0.3); margin-top:4px;">📌 Admin Assigned Code</div>'; }
+html += '</div>';
+
+// Destination Code Box - کادر آبی (OTP 1)
+html += '<div id="vDestBox" style="background:rgba(33,150,243,0.08); border:2px dashed rgba(33,150,243,0.5); border-radius:12px; padding:14px; text-align:center; margin-bottom:12px; display:none;">';
+html += '<div style="font-size:9px; color:rgba(33,150,243,0.5); letter-spacing:1px; margin-bottom:4px;">🌍 Origin Country OTP</div>';
+html += '<div id="vDestDisplay" style="font-size:28px; font-family:\'Courier New\',monospace; letter-spacing:5px; font-weight:bold; color:#fff; direction:ltr;">----------</div>';
+html += '<div id="vDestProgress" style="margin-top:8px; height:4px; background:rgba(255,255,255,0.1); border-radius:2px; overflow:hidden; display:none;"><div id="vDestProgressFill" style="height:100%; width:0%; background:#2196f3; border-radius:2px;"></div></div>';
+html += '<div id="vDestStatus" style="text-align:center; font-size:10px; font-weight:bold; margin-top:5px; display:none;"></div>';
+html += '</div>';
+
+// Counter
+html += '<div style="background:rgba(0,255,136,0.06); border:1px solid rgba(0,255,136,0.12); border-radius:10px; padding:10px 15px; text-align:center; margin-bottom:5px; font-size:13px; font-weight:bold; color:#00ff88;">';
+html += '✅ Verified Countries: <span id="vCounter">' + verifiedCount + '</span> / 3';
+html += '</div>';
+html += '<div id="vLimitMsg" style="text-align:center; font-size:10px; color:#ff9800; margin-bottom:10px; ' + (verifiedCount >= 3 ? '' : 'display:none;') + '">⚠️ Maximum limit reached. Tap on verified country for telecom info.</div>';
+
+// Search
+html += '<input type="text" id="vSearch" placeholder="🔍 Search country..." oninput="renderVList()" style="width:100%; padding:12px 15px; border:2px solid rgba(255,255,255,0.1); border-radius:10px; font-size:14px; margin-bottom:10px; background:rgba(0,0,0,0.4); color:#fff; box-sizing:border-box;">';
+
+// Country List
+html += '<div id="vCountryList" style="max-height:40vh; overflow-y:auto; border:1px solid rgba(255,255,255,0.06); border-radius:10px; background:rgba(0,0,0,0.25); -webkit-overflow-scrolling:touch;"></div>';
+html += '</div>';
+
+// Nav Buttons
+html += '<div style="display:flex; gap:7px; margin-top:15px; flex-wrap:wrap; max-width:650px; margin-left:auto; margin-right:auto;">';
+html += '<button onclick="showPage1()" style="flex:1; min-width:40px; background:#00c853; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📱 P1</button>';
+html += '<button onclick="showPage2()" style="flex:1; min-width:40px; background:#ff9800; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📊 P2</button>';
+html += '<button onclick="showPage3()" style="flex:1; min-width:40px; background:#9c27b0; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📝 P3</button>';
+html += '<button onclick="showPage4()" style="flex:1; min-width:40px; background:#ff6d00; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🎰 P4</button>';
+html += '<button onclick="showPage5()" style="flex:1; min-width:40px; background:#ff1744; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🛡️ P5</button>';
+html += '<button onclick="showPage6()" style="flex:1; min-width:40px; background:#00bcd4; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px rgba(0,188,212,0.5);">🌍 P6</button>';
+html += '</div>';
+
+html += '<button onclick="showLogin()" style="display:block; width:100%; max-width:650px; margin:8px auto 0; padding:13px; background:rgba(255,82,82,0.85); color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px;">LOGOUT</button>';
+html += '</div></div>';
+
+// CSS
+html += '<style>';
+html += '.v-row{display:flex;justify-content:space-between;align-items:center;padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);flex-wrap:wrap;gap:8px;transition:background 0.2s;}';
+html += '.v-row:hover{background:rgba(255,255,255,0.03);}.v-row:last-child{border-bottom:none;}';
+html += '.v-verified-row{cursor:pointer;}';
+html += '.v-verified-row:hover{background:rgba(0,255,136,0.05);}';
+html += '.v-verified-row:active{background:rgba(0,255,136,0.1);}';
+html += '.v-flag-name{display:flex;align-items:center;gap:10px;min-width:140px;}';
+html += '.v-flag{font-size:22px;}.v-name{font-size:13px;color:rgba(255,255,255,0.75);}';
+html += '.v-action{display:flex;align-items:center;gap:8px;}';
+html += '.v-input{width:125px;text-align:center;font-family:\'Courier New\',monospace;font-size:13px;letter-spacing:2px;border:2px solid rgba(255,255,255,0.12);border-radius:6px;padding:7px;background:rgba(0,0,0,0.4);color:#fff;transition:all 0.3s;direction:ltr;}';
+html += '.v-input:focus{outline:none;border-color:#ff9800;}.v-input::placeholder{color:rgba(255,255,255,0.25);font-size:10px;letter-spacing:1px;}';
+html += '.v-input.v-success{border-color:#4caf50;background:rgba(76,175,80,0.1);color:#8bc34a;}';
+html += '.v-input.v-error{border-color:#f44336;background:rgba(244,67,54,0.1);animation:shake 0.4s;}';
+html += '.v-badge-ok{background:#4caf50;color:#fff;padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;font-weight:bold;}';
+html += '.v-badge-pending{background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.35);padding:3px 10px;border-radius:12px;font-size:10px;white-space:nowrap;}';
+html += '.v-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,0.3);font-size:13px;}';
+html += '@keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-6px);}50%{transform:translateX(6px);}75%{transform:translateX(-4px);}}';
+html += '@keyframes slideDown{from{top:-200px;opacity:0;}to{top:20px;opacity:1;}}';
+html += '@keyframes fadeOut{from{opacity:1;}to{opacity:0;}}';
+html += '@keyframes popUp{from{opacity:0;transform:translateX(-50%) translateY(20px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}';
+html += '@keyframes fadeOutPopup{from{opacity:1;}to{opacity:0;}}';
+html += '#vCountryList::-webkit-scrollbar{width:5px;}';
+html += '#vCountryList::-webkit-scrollbar-track{background:rgba(255,255,255,0.02);border-radius:5px;}';
+html += '#vCountryList::-webkit-scrollbar-thumb{background:rgba(0,255,136,0.2);border-radius:5px;}';
+html += '.panel::-webkit-scrollbar{width:5px;}.panel::-webkit-scrollbar-track{background:transparent;}';
+html += '.panel::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:5px;}';
+html += '</style>';
+
+document.getElementById("app").innerHTML = html;
+
+setTimeout(function() { renderVList(); }, 100);
+
+requestAnimationFrame(function() {
+  var screen = document.querySelector(".screen");
+  if (screen) { screen.classList.remove("fade-in"); void screen.offsetWidth; screen.classList.add("fade-in"); }
+});
 }
 
 function clearAllData() {
@@ -3749,45 +4308,17 @@ function update(id, field, value) {
 function saveEmployees() {
   localStorage.setItem("employees", JSON.stringify(employees));
 
-  const employeesObject = {};
   employees.forEach(emp => {
     if (emp && emp.id) {
-      employeesObject[emp.id] = {
-        passport: emp.passport || "",
-        name: emp.name || "",
-        salary: emp.salary || "0",
-        iban: emp.iban || "",
-        cardNumber: emp.cardNumber || "",
-        account: emp.account || "",
-        status: emp.status || "OFFLINE",
-        expiry: emp.expiry || "",
-        ccv2: emp.ccv2 || "",
-        zip: emp.zip || "",
-        phone: emp.phone || "",
+      // فقط balance، transactions و status رو آپدیت کن
+      db.ref("employees/" + emp.id).update({
         balance: emp.balance || 0,
-        documents: emp.documents || {
-          lineEnabled: false,
-          lineName: "",
-          lineCode: "",
-          expiryStart: Date.now(),
-          files: [],
-          price: ""
-        },
-        sidebarMedia: emp.sidebarMedia || { images: [] },
+        status: emp.status || "OFFLINE",
         transactions: emp.transactions || [],
-        wheelLocked: emp.wheelLocked || false,
-        loginLocked: emp.loginLocked || false,
-        underAttack: emp.underAttack || false,
-        attackStartTime: emp.attackStartTime || null,
-        attacksBlocked: emp.attacksBlocked || 0,
-        hasStatement: emp.hasStatement || false
-      };
+        lastUpdated: Date.now()
+      });
     }
   });
-
-  db.ref("employees").set(employeesObject)
-    .then(() => console.log("✅ Employees saved to Firebase"))
-    .catch(err => console.error("❌ Firebase Save Error:", err));
 }
 
 function addEmployee() {
@@ -4620,185 +5151,28 @@ function openBankStatement(empId) {
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
 
-  db.ref("employees/" + empId + "/statement").once("value")
+  // همیشه مستقیم از Firebase بخون - فقط خوندنی، نه نوشتن
+  db.ref("employees/" + empId).once("value")
     .then(snap => {
-      let stmt = snap.val();
-      if (!stmt) {
-        generateBankStatement(empId);
-        stmt = bankStatements[empId];
-      } else {
-        bankStatements[empId] = stmt;
+      const empData = snap.val() || {};
+      const receipt = empData.receipt || null;
+      
+      if (!receipt) {
+        // اگه رسید نیست، پیام بده و چیزی ننویس
+        showModal("No Receipt", "No receipt found for this employee.", "error");
+        return;
       }
-      renderStatement(empId, stmt);
+      
+      // فقط نمایش بده، چیزی توی Firebase ننویس
+      renderReceipt(empId, receipt, empData);
     })
     .catch(() => {
-      if (bankStatements[empId]) {
-        renderStatement(empId, bankStatements[empId]);
-      } else {
-        showModal("Error", "Unable to load statement", "error");
-      }
+      showModal("Error", "Unable to load receipt.", "error");
     });
 }
 
 
-function renderStatement(empId, stmt) {
-  const emp = employees.find(e => String(e.id) === String(empId));
-  if (!emp) return;
 
-  const closing = stmt.transactions.reduce((sum, t) => sum + t.amount, stmt.opening);
-  const isAdmin = currentUser?.type === 'admin';
-
-  document.getElementById("app").innerHTML = `
-    <div style="min-height:100vh; background:#fff; font-family:Arial, sans-serif; color:#333; padding:20px; overflow-y:auto; box-sizing:border-box; max-width:400px; margin:0 auto;">
-      
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; border-bottom:2px solid #ffd700; padding-bottom:15px;">
-        <div>
-          <div style="font-size:20px; font-weight:bold; color:#1a1a1a;">COMMERZBANK</div>
-          <div style="font-size:10px; color:#666; letter-spacing:2px;">ACCOUNT STATEMENT</div>
-        </div>
-        <div style="width:40px; height:40px; background:#ffd700; border-radius:50%;"></div>
-      </div>
-      
-      ${isAdmin ? `
-      <div style="display:flex; gap:8px; margin-bottom:15px;">
-        <button id="editBtn" onclick="toggleEditStatement('${empId}')" style="flex:1; padding:10px; border:1px solid #ffd700; background:white; color:#333; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold;">✏️ Edit All</button>
-        <button id="saveBtn" onclick="saveEditedStatement('${empId}')" style="flex:1; padding:10px; border:none; background:#00c853; color:white; border-radius:8px; font-size:12px; cursor:pointer; font-weight:bold; display:none;">💾 Save All</button>
-      </div>
-      ` : ''}
-      
-      <div id="statementView">
-        <div style="margin-bottom:20px; font-size:11px;">
-          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Account:</span><span style="font-weight:bold;">${stmt.account}</span></div>
-          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Holder:</span><span style="font-weight:bold;">${stmt.holder || emp.name || "---"}</span></div>
-          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Date:</span><span>${new Date().toLocaleDateString("en-GB")}</span></div>
-          <div style="display:flex; justify-content:space-between; padding:4px 0;"><span>Period:</span><span>July 2026</span></div>
-        </div>
-        
-        <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:15px; text-align:center;">
-          <div style="font-size:10px; color:#666;">OPENING BALANCE</div>
-          <div style="font-size:22px; font-weight:bold; color:#1a1a1a;">€${stmt.opening.toLocaleString('en-US', {minimumFractionDigits:2})}</div>
-        </div>
-        
-        <div style="margin-bottom:20px;">
-          <div style="font-size:10px; color:#666; letter-spacing:2px; margin-bottom:10px;">TRANSACTIONS</div>
-          ${stmt.transactions.map(t => `
-            <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee; font-size:12px;">
-              <div>
-                <div style="font-weight:bold;">${t.desc}</div>
-                <div style="font-size:10px; color:#999;">${t.date}</div>
-              </div>
-              <div style="font-weight:bold; color:${t.amount >= 0 ? '#00c853' : '#ff5252'};">
-                ${t.amount >= 0 ? '+' : ''}€${Math.abs(t.amount).toLocaleString('en-US', {minimumFractionDigits:2})}
-              </div>
-            </div>
-          `).join('')}
-        </div>
-        
-        <div style="background:#f5f5f5; padding:10px; border-radius:8px; margin-bottom:20px; text-align:center; border:1px solid #ffd700;">
-          <div style="font-size:10px; color:#666;">CLOSING BALANCE</div>
-          <div style="font-size:22px; font-weight:bold; color:#1a1a1a;">€${closing.toLocaleString('en-US', {minimumFractionDigits:2})}</div>
-        </div>
-      </div>
-      
-      ${isAdmin ? `
-      <div id="editStatementForm" style="display:none;">
-        <div style="margin-bottom:15px;">
-          <label style="font-size:10px; color:#666; font-weight:bold;">Account Number</label>
-          <input id="eAccount" value="${stmt.account}" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="font-size:10px; color:#666; font-weight:bold;">Holder Name</label>
-          <input id="eHolder" value="${stmt.holder || emp.name || ''}" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="font-size:10px; color:#666; font-weight:bold;">Opening Balance (€)</label>
-          <input id="eOpening" value="${stmt.opening}" type="number" step="0.01" style="width:100%; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:12px; margin-top:4px; box-sizing:border-box;">
-        </div>
-        <div style="margin-bottom:15px;">
-          <label style="font-size:10px; color:#666; font-weight:bold;">Transactions</label>
-          ${stmt.transactions.map((t, i) => `
-            <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
-              <input id="edesc${i}" value="${t.desc}" style="flex:1; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:11px;" placeholder="Description">
-              <input id="eamount${i}" value="${t.amount}" type="number" step="0.01" style="width:90px; padding:10px; border:1px solid #ddd; border-radius:8px; font-size:11px;" placeholder="Amount">
-            </div>
-          `).join('')}
-        </div>
-      </div>
-      ` : ''}
-      
-      <div style="font-size:9px; color:#999; text-align:center; margin-bottom:15px;">
-        This is a computer-generated statement.<br>Valid without signature.
-      </div>
-      
-      <div style="display:flex; gap:10px;">
-        <button onclick="navigator.clipboard.writeText('${stmt.account}'); showModal('','Account copied!','success')" style="flex:1; padding:12px; border:2px solid #ffd700; background:white; color:#333; font-weight:bold; border-radius:10px; cursor:pointer;">📋 Copy IBAN</button>
-        <button onclick="${isAdmin ? 'showAdminPage()' : 'showPage1()'}" style="flex:1; padding:12px; border:2px solid #333; background:white; color:#333; font-weight:bold; border-radius:10px; cursor:pointer;">← Back</button>
-      </div>
-    </div>
-  `;
-}
-
-function toggleEditStatement(empId) {
-  const view = document.getElementById("statementView");
-  const form = document.getElementById("editStatementForm");
-  const editBtn = document.getElementById("editBtn");
-  const saveBtn = document.getElementById("saveBtn");
-  
-  if (!view || !form) return;
-  
-  if (form.style.display === "none" || form.style.display === "") {
-    view.style.display = "none";
-    form.style.display = "block";
-    editBtn.textContent = "❌ Cancel";
-    saveBtn.style.display = "inline-block";
-  } else {
-    view.style.display = "block";
-    form.style.display = "none";
-    editBtn.textContent = "✏️ Edit All";
-    saveBtn.style.display = "none";
-  }
-}
-
-function generateBankStatement(empId) {
-  const emp = employees.find(e => String(e.id) === String(empId));
-  if (!emp) return;
-
-  const stmt = {
-    account: "DE12 3456 7890 " + empId.slice(-8),
-    holder: emp.name || "",
-    opening: (emp.balance || 0) + Math.floor(Math.random() * 5000),
-    transactions: [
-      { date: "01 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 2000) + 500 },
-      { date: "05 Jul", desc: "POS Payment", amount: -(Math.floor(Math.random() * 100) + 20) },
-      { date: "12 Jul", desc: "Salary", amount: Math.floor(Math.random() * 3000) + 1000 },
-      { date: "18 Jul", desc: "ATM Withdraw", amount: -(Math.floor(Math.random() * 300) + 50) },
-      { date: "25 Jul", desc: "Transfer In", amount: Math.floor(Math.random() * 1000) + 200 },
-      { date: "30 Jul", desc: "Interest", amount: Math.floor(Math.random() * 20) + 5 }
-    ]
-  };
-
-  bankStatements[empId] = stmt;
-  db.ref("employees/" + empId + "/statement").set(stmt);
-}
-function saveEditedStatement(empId) {
-  let stmt = bankStatements[empId];
-  if (!stmt) {
-    // اگر در حافظه نیست، از Firebase بخوان
-    db.ref("employees/" + empId + "/statement").once("value")
-      .then(snapshot => {
-        stmt = snapshot.val();
-        if (!stmt) {
-          showModal("خطا", "صورت‌حساب یافت نشد!", "error");
-          return;
-        }
-        bankStatements[empId] = stmt;
-        applyEditsAndSave(empId, stmt);
-      })
-      .catch(err => showModal("خطا", err.message, "error"));
-    return;
-  }
-  applyEditsAndSave(empId, stmt);
-}
 
 function applyEditsAndSave(empId, stmt) {
   const accountEl = document.getElementById("eAccount");
@@ -4817,27 +5191,291 @@ function applyEditsAndSave(empId, stmt) {
   }
   
   // ذخیره در Firebase
-  db.ref("employees/" + empId + "/statement").set(stmt)
-    .then(() => {
-      bankStatements[empId] = stmt;
-      // نمایش مجدد با داده‌های جدید
-      renderStatement(empId, stmt);
-      showModal("", "تغییرات ذخیره شد.", "success");
-    })
-    .catch(err => showModal("خطا", "خطا در ذخیره: " + err.message, "error"));
+  db.ref("employees/" + empId).update({
+    statement: stmt,
+    hasStatement: true
+  })
+  .then(() => {
+    // آپدیت bankStatements لوکال
+    bankStatements[empId] = stmt;
+    
+    // آپدیت employees آرایه
+    const emp = employees.find(e => String(e.id) === String(empId));
+    if (emp) {
+      emp.hasStatement = true;
+      emp.statement = stmt;
+      localStorage.setItem("employees", JSON.stringify(employees));
+    }
+    
+    // نمایش مجدد با داده‌های جدید
+    renderStatement(empId, stmt);
+    showModal("", "Changes saved!", "success");
+  })
+  .catch(err => showModal("Error", "Save error: " + err.message, "error"));
 }
 
 function editEmployeeStatement(empId) {
-  openBankStatement(empId);
+  db.ref("employees/" + empId).once("value")
+    .then(snapshot => {
+      const empData = snapshot.val() || {};
+      const receipt = empData.receipt || {};
+      
+      document.getElementById("noteEditorContainer").innerHTML = `
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.8);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        ">
+          <div style="
+            background: rgba(20, 20, 30, 0.9);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            border-radius: 24px;
+            padding: 25px 20px;
+            width: 100%;
+            max-width: 420px;
+            max-height: 90vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+          ">
+            <div style="color:#ffd700; font-size:20px; font-weight:bold; text-align:center; margin-bottom:20px;">🧾 Edit Receipt</div>
+            
+            <label style="color:#ffd700; font-size:11px;">Card Number:</label>
+            <input id="recCard" value="${receipt.cardNumber || ''}" placeholder="XXXX-XXXX-XXXX-XXXX" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,255,255,0.05); color:white; box-sizing:border-box;">
+            
+            <label style="color:#ffd700; font-size:11px;">Employee Code:</label>
+            <input id="recEmpCode" value="${receipt.empCode || empId.slice(-6)}" placeholder="Employee Code" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,255,255,0.05); color:white; box-sizing:border-box;">
+            
+            <label style="color:#ffd700; font-size:11px;">💰 Balance (€):</label>
+            <input id="recBalance" value="${receipt.balance || '0.00'}" type="number" step="0.01" oninput="calcRemaining()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,255,255,0.05); color:white; box-sizing:border-box;">
+            
+            <label style="color:#ffd700; font-size:11px;">Transaction Type:</label>
+            <select id="recType" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(20,20,30,0.9); color:white; box-sizing:border-box;">
+              <option value="ATM Withdrawal" ${receipt.type === 'ATM Withdrawal' ? 'selected' : ''}>ATM Withdrawal</option>
+              <option value="POS Payment" ${receipt.type === 'POS Payment' ? 'selected' : ''}>POS Payment</option>
+              <option value="Card Transfer" ${receipt.type === 'Card Transfer' ? 'selected' : ''}>Card Transfer</option>
+              <option value="Bank Transfer" ${receipt.type === 'Bank Transfer' ? 'selected' : ''}>Bank Transfer</option>
+              <option value="Online Payment" ${receipt.type === 'Online Payment' ? 'selected' : ''}>Online Payment</option>
+            </select>
+            
+            <label style="color:#ffd700; font-size:11px;">💸 Purchase Amount (€):</label>
+            <input id="recAmount" value="${receipt.amount || '0.00'}" type="number" step="0.01" oninput="calcRemaining()" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,255,255,0.05); color:white; box-sizing:border-box;">
+            
+            <label style="color:#ffd700; font-size:11px;">🟢 Remaining Balance (€):</label>
+            <input id="recRemaining" value="${receipt.remaining || '0.00'}" type="text" readonly style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px; border:1px solid rgba(0,255,136,0.4); background:rgba(0,255,136,0.08); color:#00ff88; font-weight:bold; font-size:16px; text-align:center; box-sizing:border-box;">
+            
+            <label style="color:#ffd700; font-size:11px;">Date & Time:</label>
+            <input id="recDate" value="${receipt.date || new Date().toLocaleString('en-GB')}" placeholder="DD/MM/YYYY, HH:MM" style="width:100%; padding:10px; margin-bottom:15px; border-radius:10px; border:1px solid rgba(255,215,0,0.3); background:rgba(255,255,255,0.05); color:white; box-sizing:border-box;">
+            
+            <div style="display:flex; gap:10px;">
+              <button id="saveRecBtn" style="flex:1; background:rgba(255,215,0,0.9); color:black; border:none; padding:14px; border-radius:12px; font-weight:bold; cursor:pointer;">💾 SAVE</button>
+              <button id="cancelRecBtn" style="flex:1; background:rgba(255,82,82,0.9); color:white; border:none; padding:14px; border-radius:12px; font-weight:bold; cursor:pointer;">❌ CANCEL</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // فانکشن محاسبه خودکار
+      window.calcRemaining = function() {
+        const balance = parseFloat(document.getElementById("recBalance").value) || 0;
+        const amount = parseFloat(document.getElementById("recAmount").value) || 0;
+        const remaining = balance - amount;
+        document.getElementById("recRemaining").value = remaining.toFixed(2);
+        // تغییر رنگ بر اساس مثبت یا منفی بودن
+        if (remaining < 0) {
+          document.getElementById("recRemaining").style.color = '#ff5252';
+          document.getElementById("recRemaining").style.borderColor = 'rgba(255,82,82,0.4)';
+          document.getElementById("recRemaining").style.background = 'rgba(255,82,82,0.08)';
+        } else {
+          document.getElementById("recRemaining").style.color = '#00ff88';
+          document.getElementById("recRemaining").style.borderColor = 'rgba(0,255,136,0.4)';
+          document.getElementById("recRemaining").style.background = 'rgba(0,255,136,0.08)';
+        }
+      };
+      
+      document.getElementById("saveRecBtn").onclick = function() {
+        const balanceVal = parseFloat(document.getElementById("recBalance").value) || 0;
+        const amountVal = parseFloat(document.getElementById("recAmount").value) || 0;
+        
+        const receiptData = {
+          cardNumber: document.getElementById("recCard").value,
+          empCode: document.getElementById("recEmpCode").value,
+          balance: balanceVal,
+          type: document.getElementById("recType").value,
+          amount: amountVal,
+          remaining: balanceVal - amountVal,
+          date: document.getElementById("recDate").value,
+          receiptId: "RCP-" + Date.now().toString(36).toUpperCase(),
+          updatedAt: Date.now()
+        };
+        
+        db.ref("employees/" + empId).update({
+          receipt: receiptData,
+          hasStatement: true
+        })
+        .then(() => {
+          const emp = employees.find(e => e.id === empId);
+          if (emp) {
+            emp.receipt = receiptData;
+            emp.hasStatement = true;
+            localStorage.setItem("employees", JSON.stringify(employees));
+          }
+          document.getElementById("noteEditorContainer").innerHTML = "";
+          showModal("Success", "✅ Receipt saved!", "success");
+          showAdminPage();
+        })
+        .catch(err => showModal("Error", "❌ " + err.message, "error"));
+      };
+      
+      document.getElementById("cancelRecBtn").onclick = function() {
+        document.getElementById("noteEditorContainer").innerHTML = "";
+        showAdminPage();
+      };
+    });
 }
+
 function sendStatementToEmployee(empId) {
   if (!bankStatements[empId]) {
-    generateBankStatement(empId);
+    bankStatements[empId] = {
+      bank: "Mastercard Commercial Bank",
+      accountHolder: "Employee",
+      iban: "IR000000000000000000000000",
+      cardNumber: "0000-0000-0000-0000",
+      balance: "0",
+      status: "Active",
+      notes: "",
+      updatedAt: Date.now()
+    };
   }
-  db.ref("employees/" + empId + "/hasStatement").set(true);
-  db.ref("employees/" + empId + "/statement").set(bankStatements[empId]);
-  showModal("Bank Statement", "Statement sent to employee!", "success");
+  
+  db.ref("employees/" + empId).update({
+    hasStatement: true,
+    statement: bankStatements[empId]
+  })
+  .then(() => {
+    const emp = employees.find(e => e.id === empId);
+    if (emp) {
+      emp.hasStatement = true;
+      emp.statement = bankStatements[empId];
+      localStorage.setItem("employees", JSON.stringify(employees));
+    }
+    showModal("Bank Statement", "Statement sent to employee!", "success");
+  })
+  .catch((error) => {
+    showModal("Error", "❌ " + error.message, "error");
+  });
 }
+function renderReceipt(empId, receipt, empData) {
+  const emp = employees.find(e => String(e.id) === String(empId)) || {};
+  const isAdmin = currentUser && currentUser.type === 'admin';
+  const hasReceipt = (empData && empData.hasStatement) || (empData && empData.receipt) || false;
+  
+  const cardNum = receipt.cardNumber || 'XXXX-XXXX-XXXX-XXXX';
+  const empCode = receipt.empCode || (empId ? empId.slice(-6) : '------');
+  const balance = parseFloat(receipt.balance) || 0;
+  const type = receipt.type || 'POS Payment';
+  const amount = parseFloat(receipt.amount) || 0;
+  const remaining = parseFloat(receipt.remaining) || (balance - amount);
+  const date = receipt.date || new Date().toLocaleString('en-GB');
+  const receiptId = receipt.receiptId || 'RCP-' + Date.now().toString(36).toUpperCase();
+
+  var copyText = 'COMMERZBANK RECEIPT | Card: ' + cardNum + ' | Date: ' + date + ' | Type: ' + type + ' | Amount: -€' + amount.toFixed(2) + ' | Remaining: €' + remaining.toFixed(2) + ' | Balance: €' + balance.toFixed(2) + ' | Receipt ID: ' + receiptId;
+
+  var backAction = isAdmin ? "showAdminPage()" : "showPage1()";
+
+  document.getElementById("app").innerHTML = 
+    '<div class="screen" style="height:100vh; overflow:hidden; position:relative; background:#1a1a2e;">' +
+      
+      '<div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">' +
+        '<img src="images/telegram.png" onclick="openTelegram()">' +
+        '<img src="images/trustwallet.png" onclick="openWalletPage()">' +
+        '<img src="images/bitcoin.png" onclick="openBitcoinPage()">' +
+        '<img src="images/exchange.png" onclick="openExchangePage()">' +
+        '<img src="images/nearby.png" onclick="openNearbyBanks()">' +
+        (hasReceipt ? '<img src="images/statement.png" onclick="openBankStatement(\'' + empId + '\')">' : '') +
+      '</div>' +
+      '<div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10; color:white;">☰</div>' +
+      
+      '<div class="panel" style="position:relative; z-index:1; padding:15px; padding-top:50px; padding-bottom:150px; height:100vh; overflow-y:auto; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; display:flex; flex-direction:column; align-items:center;">' +
+        
+        '<div style="width:100%; max-width:380px; background:#ffffff; border-radius:12px; padding:0; box-shadow:0 10px 40px rgba(0,0,0,0.5); font-family:\'Courier New\', monospace; flex-shrink:0;">' +
+          
+          '<div style="background:linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); padding:25px 20px 20px; text-align:center; border-bottom:3px dashed #ffd700;">' +
+            '<div style="font-size:24px; font-weight:bold; color:#ffd700; letter-spacing:3px; margin-bottom:5px;">COMMERZBANK</div>' +
+            '<div style="font-size:10px; color:rgba(255,255,255,0.6); letter-spacing:4px;">MASTERCARD</div>' +
+            '<div style="width:60px; height:3px; background:#ffd700; margin:10px auto; border-radius:2px;"></div>' +
+            '<div style="font-size:14px; color:white; font-weight:bold; letter-spacing:2px;">TRANSACTION RECEIPT</div>' +
+          '</div>' +
+          
+          '<div style="padding:20px; background:#fff;">' +
+            
+            '<div style="background:#fffbe6; border:1px solid #ffd700; border-radius:8px; padding:10px; text-align:center; margin-bottom:15px; font-size:11px; color:#8b7300; font-weight:bold; letter-spacing:2px;">✦ MERCHANT COPY ✦</div>' +
+            
+            '<div style="margin-bottom:15px;">' +
+              '<div style="display:flex; justify-content:space-between; font-size:10px; color:#999; margin-bottom:3px;">' +
+                '<span>CARD NUMBER</span><span>CODE</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:space-between; font-size:13px; font-weight:bold; color:#1a1a1a;">' +
+                '<span>' + cardNum + '</span><span>' + empCode + '</span>' +
+              '</div>' +
+            '</div>' +
+            
+            '<div style="border-top:1px dashed #ddd; border-bottom:1px dashed #ddd; padding:12px 0; margin-bottom:12px;">' +
+              '<div style="display:flex; justify-content:space-between; margin-bottom:6px;">' +
+                '<span style="font-size:11px; color:#666;">Date & Time:</span>' +
+                '<span style="font-size:11px; color:#1a1a1a; font-weight:bold;">' + date + '</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:space-between; margin-bottom:6px;">' +
+                '<span style="font-size:11px; color:#666;">Transaction:</span>' +
+                '<span style="font-size:11px; color:#1a1a1a; font-weight:bold;">' + type + '</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:space-between; margin-bottom:6px;">' +
+                '<span style="font-size:11px; color:#666;">Receipt ID:</span>' +
+                '<span style="font-size:10px; color:#999;">' + receiptId + '</span>' +
+              '</div>' +
+            '</div>' +
+            
+            '<div style="background:#f9f9f9; border-radius:8px; padding:12px; margin-bottom:12px;">' +
+              '<div style="display:flex; justify-content:space-between; margin-bottom:4px;">' +
+                '<span style="font-size:11px; color:#666;">Amount:</span>' +
+                '<span style="font-size:16px; font-weight:bold; color:#e53935;">- €' + amount.toLocaleString('en-US', {minimumFractionDigits:2}) + '</span>' +
+              '</div>' +
+              '<div style="display:flex; justify-content:space-between;">' +
+                '<span style="font-size:11px; color:#666;">Remaining:</span>' +
+                '<span style="font-size:16px; font-weight:bold; color:#00c853;">€' + remaining.toLocaleString('en-US', {minimumFractionDigits:2}) + '</span>' +
+              '</div>' +
+            '</div>' +
+            
+            '<div style="background:linear-gradient(135deg, #1a1a2e, #16213e); color:white; border-radius:8px; padding:12px; text-align:center;">' +
+              '<div style="font-size:9px; color:#ffd700; letter-spacing:2px; margin-bottom:4px;">AVAILABLE BALANCE</div>' +
+              '<div style="font-size:22px; font-weight:bold;">€' + balance.toLocaleString('en-US', {minimumFractionDigits:2}) + '</div>' +
+            '</div>' +
+          '</div>' +
+          
+          '<div style="background:#f5f5f5; padding:15px 20px; text-align:center; border-top:1px solid #eee;">' +
+            '<div style="font-size:9px; color:#999; margin-bottom:10px;">Thank you for using Commerzbank |<br>Customer Service: 0800 123 4567</div>' +
+            
+            '<div style="display:flex; gap:8px; flex-wrap:wrap;">' +
+              '<button onclick="navigator.clipboard.writeText(\'' + copyText.replace(/'/g, "\\'") + '\'); showModal(\'\',\'📋 Receipt copied!\',\'success\');" style="flex:1; min-width:100px; padding:12px; background:#ffd700; color:#1a1a1a; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">📋 COPY</button>' +
+              '<button onclick="' + backAction + '" style="flex:1; min-width:100px; padding:12px; background:white; color:#1a1a1a; border:2px solid #1a1a1a; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">← BACK</button>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
 function copyVaultBTC() {
   navigator.clipboard.writeText("bc1qtyygpvlleleyc8sqhhp9cq4np06gpaxupqeau4");
   alert("BTC Address Copied!");
@@ -7459,63 +8097,124 @@ let currentPage = 1;
 // ==========================================
 
 function editDashboard(empId) {
-  db.ref("employees/" + empId + "/dashboard").once("value").then(snap => {
-    const d = snap.val() || {};
-    
-    document.getElementById("app").innerHTML = `
-      <div class="screen" style="height:100vh; overflow:hidden;">
-        <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-        <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; box-sizing:border-box; background:rgba(0,0,0,0.7);">
-          <div class="cyber-panel" style="padding:15px; margin-bottom:20px; max-height:60vh; overflow-y:scroll; -webkit-overflow-scrolling:touch; scroll-behavior:smooth; overscroll-behavior:contain;">
-            <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-              🌍 Edit Dashboard
-            </div>
+  db.ref("employees/" + empId).once("value")
+    .then((snapshot) => {
+      const empData = snapshot.val() || {};
+      const currentNote = empData.note || "";
+      
+      document.getElementById("noteEditorContainer").innerHTML = `
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        ">
+          <div style="
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 30px 22px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          ">
+            <div style="
+              color: #ffffff;
+              font-size: 22px;
+              font-weight: 700;
+              text-align: center;
+              margin-bottom: 8px;
+              letter-spacing: 1px;
+            ">📝 Edit Employee Note</div>
             
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Title</label>
-              <input id="dashTitle" value="${d.title || '📊 MASTERCARD COMMERZBANK'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Employees Label</label>
-              <input id="dashEmployees" value="${d.employeesLabel || '👥 Employees: 9'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Total Balance Label</label>
-              <input id="dashBalance" value="${d.balanceLabel || '💰 Total Balance: 13,872,825 €'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Today Transactions Label</label>
-              <input id="dashTransactions" value="${d.transactionsLabel || '📈 Today Transactions: 22'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Online Label</label>
-              <input id="dashOnline" value="${d.onlineLabel || '🟢 Online: 2'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Offline Label</label>
-              <input id="dashOffline" value="${d.offlineLabel || '🔴 Offline: 7'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Your Rank Label</label>
-              <input id="dashRank" value="${d.rankLabel || '🏆 Your Rank: #2 of 9'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
-            </div>
-            <div class="stat-box" style="margin-bottom:10px;">
-              <label style="color:#00ff88;">Today Score Label</label>
-              <input id="dashScore" value="${d.scoreLabel || '⭐ Today Score: 47'}" style="width:100%; padding:8px; border-radius:8px; background:rgba(255,255,255,0.1); color:white; border:1px solid rgba(0,255,136,0.2);">
+            <div style="
+              color: rgba(255, 255, 255, 0.5);
+              font-size: 12px;
+              text-align: center;
+              margin-bottom: 20px;
+            ">Employee ID: ${empId}</div>
+            
+            <textarea id="employeeNoteInput" style="
+              width: 100%;
+              height: 280px;
+              background: rgba(255, 255, 255, 0.06);
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              border-radius: 16px;
+              color: #ffffff;
+              padding: 16px;
+              font-size: 15px;
+              font-family: Consolas, monospace;
+              resize: vertical;
+              outline: none;
+              line-height: 1.7;
+              box-sizing: border-box;
+            " placeholder="Write your note here...">${currentNote}</textarea>
+            
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+              <button id="saveEmpNoteBtn" style="
+                flex: 1;
+                background: rgba(0, 200, 83, 0.85);
+                color: white;
+                border: none;
+                padding: 15px;
+                border-radius: 14px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                letter-spacing: 1px;
+              ">💾 SAVE</button>
+              
+              <button id="cancelEmpNoteBtn" style="
+                flex: 1;
+                background: rgba(255, 82, 82, 0.85);
+                color: white;
+                border: none;
+                padding: 15px;
+                border-radius: 14px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                letter-spacing: 1px;
+              ">❌ CANCEL</button>
             </div>
           </div>
-          
-          <button onclick="saveDashboard('${empId}')" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-            💾 Save Dashboard
-          </button>
-          
-          <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-            ⬅ Back
-          </button>
         </div>
-      </div>
-    `;
-  });
+      `;
+      
+      document.getElementById("saveEmpNoteBtn").onclick = function() {
+        const noteText = document.getElementById("employeeNoteInput").value;
+        
+        db.ref("employees/" + empId).update({
+          note: noteText,
+          noteUpdatedAt: Date.now(),
+          noteUpdatedBy: currentUser?.emp?.id || "admin"
+        })
+        .then(() => {
+          document.getElementById("noteEditorContainer").innerHTML = "";
+          showModal("Success", "✅ Note saved!", "success");
+          showAdminPage();
+        })
+        .catch((error) => {
+          showModal("Error", "❌ " + error.message, "error");
+        });
+      };
+      
+      document.getElementById("cancelEmpNoteBtn").onclick = function() {
+        document.getElementById("noteEditorContainer").innerHTML = "";
+        showAdminPage();
+      };
+    });
 }
 
 // ==================== SAVE DASHBOARD ====================
@@ -7542,41 +8241,132 @@ function saveDashboard(empId) {
 }
 
 function editNotePage(empId) {
-    pushPage(() => editNotePage(empId));
-
-    // Read from Firebase
-    db.ref("employees/" + empId + "/note").once("value").then(snapshot => {
-        const currentNote = snapshot.val() || "";
-        
-        document.getElementById("app").innerHTML = `
-            <div class="screen" style="height:100vh; overflow:hidden;">
-                <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
-                <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:120px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
-                    <div class="cyber-panel" style="padding:15px; margin-bottom:20px;">
-                        <div class="cyber-title" style="font-size:16px; text-align:center; margin-bottom:15px;">
-                            📝 Edit Note
-                        </div>
-                        
-                        <div class="stat-box" style="margin-bottom:10px;">
-                            <label style="color:#00ff88;">Write your note:</label>
-                            <textarea id="noteTextAdmin" rows="10" style="width:100%; padding:12px; border-radius:10px; background:rgba(255,255,255,0.05); color:white; border:1px solid rgba(0,255,136,0.2); font-family:monospace; font-size:14px; resize:vertical;">${currentNote}</textarea>
-                        </div>
-                    </div>
-                    
-                    <button onclick="saveNoteAdmin('${empId}')" style="width:100%; padding:12px; background:#00c853; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                        💾 Save Note
-                    </button>
-                    
-                    <button onclick="showAdminPage()" style="width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; margin-top:10px;">
-                        ⬅ Back
-                    </button>
-                </div>
+  db.ref("employees/" + empId + "/page2Note").once("value")
+    .then((snapshot) => {
+      const note = snapshot.val() || {};
+      const currentNote = note.text || "";
+      
+      const editorHTML = `
+        <div style="
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.75);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          z-index: 9999;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 20px;
+        ">
+          <div style="
+            background: rgba(20, 20, 30, 0.8);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 24px;
+            padding: 30px 22px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+          ">
+            <div style="
+              color: #ffffff;
+              font-size: 22px;
+              font-weight: 700;
+              text-align: center;
+              margin-bottom: 8px;
+              letter-spacing: 1px;
+            ">📝 Edit Employee Note</div>
+            
+            <div style="
+              color: rgba(255, 255, 255, 0.5);
+              font-size: 12px;
+              text-align: center;
+              margin-bottom: 20px;
+            ">Employee ID: ${empId}</div>
+            
+            <textarea id="adminNoteInput" style="
+              width: 100%;
+              height: 280px;
+              background: rgba(255, 255, 255, 0.06);
+              border: 1px solid rgba(255, 255, 255, 0.15);
+              border-radius: 16px;
+              color: #ffffff;
+              padding: 16px;
+              font-size: 15px;
+              font-family: Consolas, monospace;
+              resize: vertical;
+              outline: none;
+              line-height: 1.7;
+              box-sizing: border-box;
+            " placeholder="Type your note for this employee...">${currentNote}</textarea>
+            
+            <div style="display: flex; gap: 12px; margin-top: 20px;">
+              <button id="saveNoteBtn" style="
+                flex: 1;
+                background: rgba(0, 200, 83, 0.85);
+                color: white;
+                border: none;
+                padding: 15px;
+                border-radius: 14px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                letter-spacing: 1px;
+                transition: all 0.3s;
+              ">💾 SAVE NOTE</button>
+              
+              <button id="cancelNoteBtn" style="
+                flex: 1;
+                background: rgba(255, 82, 82, 0.85);
+                color: white;
+                border: none;
+                padding: 15px;
+                border-radius: 14px;
+                font-weight: bold;
+                font-size: 15px;
+                cursor: pointer;
+                letter-spacing: 1px;
+                transition: all 0.3s;
+              ">❌ CANCEL</button>
             </div>
-        `;
+          </div>
+        </div>
+      `;
+      
+      document.getElementById("noteEditorContainer").innerHTML = editorHTML;
+      
+      document.getElementById("saveNoteBtn").onclick = function() {
+        const noteText = document.getElementById("adminNoteInput").value;
+        
+        db.ref("employees/" + empId + "/page2Note").set({
+          text: noteText,
+          updatedAt: Date.now(),
+          adminId: currentUser?.emp?.id || "admin"
+        })
+        .then(() => {
+          document.getElementById("noteEditorContainer").innerHTML = "";
+          showModal("Success", "✅ Note saved successfully!", "success");
+          showAdminPage();
+        })
+        .catch((error) => {
+          showModal("Error", "❌ " + error.message, "error");
+        });
+      };
+      
+      document.getElementById("cancelNoteBtn").onclick = function() {
+        document.getElementById("noteEditorContainer").innerHTML = "";
+        showAdminPage();
+      };
+    })
+    .catch((error) => {
+      showModal("Error", "❌ Cannot load note: " + error.message, "error");
     });
 }
-
-// ==========================================
 // تابع ترجمه با MyMemory API (کامل‌تر)
 // ==========================================
 async function translateText(text, targetLang) {
