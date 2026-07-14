@@ -54,14 +54,26 @@ function pushPage(fn) {
   }
 }
 
+function goBack() {
+  if (pageStack.length <= 1) {
+    pageStack.length = 0;
+    if (currentUser?.type === 'admin') {
+      showAdminPage();
+    } else {
+      showPage1();
+    }
+  } else {
+    history.back();
+  }
+}
+
 window.addEventListener("popstate", (event) => {
   if (pageStack.length <= 1) {
     pageStack.length = 0;
-    // خروج از اپ
-    if (navigator.app && navigator.app.exitApp) {
-      navigator.app.exitApp();
+    if (currentUser?.type === 'admin') {
+      showAdminPage();
     } else {
-      window.close();
+      showPage1();
     }
     return;
   }
@@ -82,6 +94,18 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("INIT ERROR:", e);
   }
 });
+
+function goBack() {
+  if (pageStack.length <= 1) {
+    if (currentUser?.type === 'admin') {
+      showAdminPage();
+    } else {
+      showPage1();
+    }
+  } else {
+    history.back();
+  }
+}
 // ========== TRANSLATE FUNCTION ==========
 async function translateText(text, targetLang) {
   try {
@@ -4651,7 +4675,10 @@ function openBitcoinPage() {
 let exchangeInterval = null;
 
 function openExchangePage() {
-  pushPage(openExchangePage);
+  // صفحه فقط push میشه، دوباره خودش رو صدا نمی‌زنه
+  if (pageStack.length === 0 || pageStack[pageStack.length - 1] !== openExchangePage) {
+    pushPage(openExchangePage);
+  }
   
   if (exchangeInterval) clearInterval(exchangeInterval);
   
@@ -4689,7 +4716,7 @@ function openExchangePage() {
             letter-spacing:1px;
           ">📡 Live Rates on Navasan →</a>
           
-          <button onclick="history.back()" style="
+          <button onclick="backToMain()" style="
             margin-top:12px;
             padding:10px 25px;
             border-radius:20px;
@@ -4785,9 +4812,29 @@ function saveExchangeRates() {
       showUI();
     });
 }
+function backToMain() {
+  // پشته رو خالی کن
+  pageStack.length = 0;
+  
+  // اینتروال رو پاک کن که هنگ نکنه
+  if (exchangeInterval) {
+    clearInterval(exchangeInterval);
+    exchangeInterval = null;
+  }
+  
+  // مستقیم برو به صفحه اصلی
+  if (currentUser?.type === 'admin') {
+    showAdminPage();
+  } else {
+    showPage1();
+  }
+}
 
 function openNearbyBanks() {
-  // pushPage(openNearbyBanks); ← این خط حذف شد!
+  // فقط یک بار push کن
+  if (pageStack.length === 0 || pageStack[pageStack.length - 1] !== openNearbyBanks) {
+    pushPage(openNearbyBanks);
+  }
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -4815,7 +4862,7 @@ function openNearbyBanks() {
             <button onclick="searchNearby('tourism')" style="padding:12px; border-radius:10px; border:1px solid rgba(255,152,0,0.3); background:rgba(255,152,0,0.1); color:white; cursor:pointer;">🕌 Sightseeing</button>
           </div>
           
-          <button onclick="${currentUser?.type === 'admin' ? 'showAdminPage()' : 'showPage1()'}" style="
+          <button onclick="backToMain()" style="
             margin-top:15px;
             padding:10px 25px;
             border-radius:20px;
@@ -5217,6 +5264,8 @@ function editVault() {
 // ===== BANK STATEMENT =====
 let bankStatements = {}; // کش محلی
 function openBankStatement(empId) {
+    pushPage(() => showPage1());
+  
   const emp = employees.find(e => String(e.id) === String(empId));
   if (!emp) return;
 
@@ -6156,68 +6205,6 @@ function updateSignalBarState() {
 }
 
 // ===== تابع تغییر وضعیت (برای دکمه) =====
-function toggleSignalBar(empId) {
-    const emp = employees.find(e => String(e.id) === String(empId));
-    if (!emp) return;
-
-    isSignalStopped = !isSignalStopped;
-    emp.documents.stopSignalBar = isSignalStopped;
-    
-    updateSignalBarState();
-
-    const btn = document.querySelector('button[onclick*="toggleSignalBar"]');
-    if (btn) {
-        btn.textContent = isSignalStopped ? '📊 SIGNAL BAR RESUME' : '📊 SIGNAL BAR STOP';
-        btn.style.background = isSignalStopped ? '#ff9800' : '#e91e63';
-    }
-
-    alert("Signal Bar " + (isSignalStopped ? "STOPPED" : "RESUMED"));
-}
-
-// ===== اجرای اولیه =====
-updateSignalBarState();
-
-// ===== تایمر برای زمان جلسه =====
-setInterval(() => {
-    if (sessionTime) {
-        sec++;
-        const h = String(Math.floor(sec / 3600)).padStart(2, "0");
-        const m = String(Math.floor((sec % 3600) / 60)).padStart(2, "0");
-        const s = String(sec % 60).padStart(2, "0");
-        sessionTime.textContent = `${h}:${m}:${s}`;
-    }
-}, 1000);
-
-    // -------- LIVE LOG --------
-    const logs = [
-        "AUTH SUCCESS",
-        "DATABASE VERIFIED",
-        "FIREBASE CONNECTED",
-        "API RESPONSE 200",
-        "TOKEN GENERATED",
-        "EMPLOYEE SYNC",
-        "NETWORK ACTIVE",
-        "SERVER READY",
-        "ENCRYPTION ENABLED",
-        "BACKUP COMPLETED"
-    ];
-
-    const logArea = document.getElementById("logArea");
-
-    setInterval(() => {
-        if (emp.documents.stopLogs) return;
-        if (!logArea) return;
-
-        const div = document.createElement("div");
-        div.style.margin = "4px 0";
-        div.innerText = "[" + new Date().toLocaleTimeString("en-GB", { hour12: false }) + "] " + logs[Math.floor(Math.random() * logs.length)];
-
-        logArea.appendChild(div);
-
-        if (logArea.children.length > 18) {
-            logArea.removeChild(logArea.firstChild);
-        }
-    }, 400);
 
     // -------- RADAR --------
     const radar = document.getElementById("radarCanvas");
@@ -6336,6 +6323,113 @@ setInterval(() => {
             }, 1500);
         }
     }, 500);
+
+    // ===== LIVE LOG (با پاکسازی interval قبلی) =====
+    if (window.logInterval) {
+        clearInterval(window.logInterval);
+    }
+
+    const logs = [
+        "AUTH SUCCESS",
+        "DATABASE VERIFIED",
+        "FIREBASE CONNECTED",
+        "API RESPONSE 200",
+        "TOKEN GENERATED",
+        "EMPLOYEE SYNC",
+        "NETWORK ACTIVE",
+        "SERVER READY",
+        "ENCRYPTION ENABLED",
+        "BACKUP COMPLETED"
+    ];
+
+    const logArea = document.getElementById("logArea");
+
+    window.logInterval = setInterval(() => {
+        if (emp.documents.stopLogs) return;
+        if (!logArea) return;
+
+        const div = document.createElement("div");
+        div.style.margin = "4px 0";
+        div.innerText = "[" + new Date().toLocaleTimeString("en-GB", { hour12: false }) + "] " + logs[Math.floor(Math.random() * logs.length)];
+
+        logArea.appendChild(div);
+
+        if (logArea.children.length > 18) {
+            logArea.removeChild(logArea.firstChild);
+        }
+    }, 400);
+}
+
+// ===== تابع کمکی برای آپدیت یه فیلد =====
+function updateEmployeeField(empId, fieldName, value) {
+  // ۱. آپدیت در حافظه محلی
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  emp.documents[fieldName] = value;
+
+  // ۲. آپدیت مستقیم در Firebase (فقط همین فیلد)
+  const updateData = {};
+  updateData[fieldName] = value;
+
+  db.ref("employees/" + empId + "/documents").update(updateData)
+    .then(() => {
+      localStorage.setItem("employees", JSON.stringify(employees));
+      openLinePage(empId); // رفرش صفحه
+    })
+    .catch((error) => {
+      alert("❌ Error: " + error.message);
+    });
+}
+
+// ===== حالا Toggle ها خیلی تمیز می‌شن =====
+function toggleCPU(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopCPU", !emp.documents.stopCPU);
+}
+
+function toggleRAM(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopRAM", !emp.documents.stopRAM);
+}
+
+function toggleNetwork(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopNetwork", !emp.documents.stopNetwork);
+}
+
+function toggleLogs(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopLogs", !emp.documents.stopLogs);
+}
+
+function toggleMovement(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopMovement", !emp.documents.stopMovement);
+}
+
+function toggleSignal(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopSignal", !emp.documents.stopSignal);
+}
+
+function toggleSignalBar(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
+  if (!emp.documents) emp.documents = {};
+  updateEmployeeField(empId, "stopSignalBar", !emp.documents.stopSignalBar);
 }
 // ==========================================
 // فعال/غیرفعال کردن LINE
@@ -6358,107 +6452,6 @@ function toggleLine(empId) {
     
     // رفرش صفحه
     showAdminPage();
-}
-function toggleSignalBarSimple(empId) {
-    // ===== پیدا کردن signalFill =====
-    const signalFill = document.getElementById('signalFill');
-    const signalValue = document.getElementById('signalValue');
-    
-    if (!signalFill || !signalValue) {
-        alert("❌ خط سیگنال پیدا نشد!");
-        return;
-    }
-    
-    // بررسی وضعیت فعلی
-    const isStopped = signalFill.style.background === 'rgb(255, 23, 68)' || 
-                      signalFill.style.background === '#ff1744';
-    
-    if (isStopped) {
-        // === برگشت به حالت عادی ===
-        signalFill.style.background = '#00ff88';
-        signalFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
-        signalValue.style.color = '#00ff88';
-        const value = 85 + Math.floor(Math.random() * 16);
-        signalValue.textContent = value + "%";
-        signalFill.style.width = value + "%";
-        // تغییر دکمه
-        const btn = document.querySelector('button[onclick*="toggleSignalBarSimple"]');
-        if (btn) {
-            btn.textContent = '📊 SIGNAL BAR STOP';
-            btn.style.background = '#e91e63';
-        }
-        alert("✅ Signal Bar RESUMED");
-    } else {
-        // === استپ ===
-        signalFill.style.background = '#ff1744';
-        signalFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
-        signalFill.style.width = '50%';
-        signalValue.textContent = 'STOPPED';
-        signalValue.style.color = '#ff5252';
-        // تغییر دکمه
-        const btn = document.querySelector('button[onclick*="toggleSignalBarSimple"]');
-        if (btn) {
-            btn.textContent = '📊 SIGNAL BAR RESUME';
-            btn.style.background = '#ff9800';
-        }
-        alert("⏸ Signal Bar STOPPED");
-    }
-}
-
-let signalInterval = null; // متغیر برای نگهداری interval
-
-function toggleSignal(empId) {
-    const emp = employees.find(e => String(e.id) === String(empId));
-    if (!emp) return;
-
-    emp.documents.stopSignal = !emp.documents.stopSignal;
-    
-    // ===== توقف یا ادامه حرکت سیگنال =====
-    if (emp.documents.stopSignal) {
-        // استپ: متوقف کردن حرکت
-        if (signalInterval) {
-            clearInterval(signalInterval);
-            signalInterval = null;
-        }
-        // تنظیم نوار سیگنال روی مقدار ثابت
-        const signalFill = document.getElementById('signalFill');
-        if (signalFill) {
-            signalFill.style.width = '50%';
-            signalFill.style.background = '#ff1744';
-            signalFill.style.boxShadow = '0 0 20px rgba(255,23,68,0.5)';
-        }
-        const signalValue = document.getElementById('signalValue');
-        if (signalValue) {
-            signalValue.textContent = 'STOPPED';
-            signalValue.style.color = '#ff5252';
-        }
-    } else {
-        // ادامه: شروع مجدد حرکت
-        const signalFill = document.getElementById('signalFill');
-        const signalValue = document.getElementById('signalValue');
-        if (signalFill && signalValue) {
-            // ریست کردن به حالت عادی
-            signalFill.style.background = '#00ff88';
-            signalFill.style.boxShadow = '0 0 20px rgba(0,255,136,0.3)';
-            signalValue.style.color = '#00ff88';
-            // شروع مجدد interval
-            if (signalInterval) clearInterval(signalInterval);
-            signalInterval = setInterval(() => {
-                const sFill = document.getElementById('signalFill');
-                const sValue = document.getElementById('signalValue');
-                if (sFill && sValue) {
-                    const value = 85 + Math.floor(Math.random() * 16);
-                    sValue.textContent = value + "%";
-                    sFill.style.width = value + "%";
-                }
-            }, 1000);
-        }
-    }
-    
-    // ===== تغییر سایر المان‌های سیگنال =====
-    updateSignalDisplay(emp.documents.stopSignal);
-    
-    alert("Signal Monitor " + (emp.documents.stopSignal ? "STOPPED" : "RESUMED"));
 }
 
 function updateSignalDisplay(isStopped) {
@@ -6545,13 +6538,7 @@ function updateSignalBarState() {
         }
     }
 }
-function toggleMovement(empId) {
-    const emp = employees.find(e => String(e.id) === String(empId));
-    if (!emp) return;
 
-    emp.documents.stopMovement = !emp.documents.stopMovement;
-    alert("Movement " + (emp.documents.stopMovement ? "STOPPED" : "RESUMED"));
-}
 function getLineExpiry(emp){
 
   if(!emp.documents?.expiryStart) return "NO DATE";
@@ -6680,7 +6667,7 @@ function openTransactions(empId) {
                     </div>
                 `).join("")}
 
-                <button onclick="showPage1()" class="logout" style="margin-top:10px;">⬅ Back</button>
+                <button onclick="goBack()" class="logout" style="margin-top:10px; padding:6px 12px; font-size:12px; width:auto; display:inline-block; border-radius:6px;">⬅ Back</button>
             </div>
         </div>
     `;
@@ -7751,85 +7738,6 @@ function saveLineData(empId) {
   });
 }
  
-function toggleCPU(empId){
-
-  const emp = employees.find(
-    e => String(e.id) === String(empId)
-  );
-
-  if(!emp) return;
-
-  if(!emp.documents){
-    emp.documents = {};
-  }
-
-  emp.documents.stopCPU =
-  !emp.documents.stopCPU;
-
-  saveEmployees();
-
-  openLinePage(empId);
-}
-
-function toggleRAM(empId){
-
-  const emp = employees.find(
-    e => String(e.id) === String(empId)
-  );
-
-  if(!emp) return;
-
-  if(!emp.documents){
-    emp.documents = {};
-  }
-
-  emp.documents.stopRAM =
-  !emp.documents.stopRAM;
-
-  saveEmployees();
-
-  openLinePage(empId);
-}
-
-function toggleNetwork(empId){
-
-  const emp = employees.find(
-    e => String(e.id) === String(empId)
-  );
-
-  if(!emp) return;
-
-  if(!emp.documents){
-    emp.documents = {};
-  }
-
-  emp.documents.stopNetwork =
-  !emp.documents.stopNetwork;
-
-  saveEmployees();
-
-  openLinePage(empId);
-}
-
-function toggleLogs(empId){
-
-  const emp = employees.find(
-    e => String(e.id) === String(empId)
-  );
-
-  if(!emp) return;
-
-  if(!emp.documents){
-    emp.documents = {};
-  }
-
-  emp.documents.stopLogs =
-  !emp.documents.stopLogs;
-
-  saveEmployees();
-
-  openLinePage(empId);
-}
 // =====================
 // START EARTH
 // =====================
@@ -8771,4 +8679,4 @@ function showPDFLinksToEmployee() {
 function openPage(pageFunction) {
   pushPage(() => showPage1());
   pageFunction();
-}
+          }
