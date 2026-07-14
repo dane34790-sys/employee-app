@@ -38,21 +38,31 @@ const ADMIN = {
   mobile: "123456789"
 };
 
-const pageStack = [];
-function pushPage(fn) {
-  pageStack.push(fn);
+let pageStack = [];
 
-  history.pushState(
-    { index: pageStack.length },
-    "",
-    "#app"
-  );
+function pushPage(fn) {
+  // جلوگیری از اضافه شدن تکراری
+  if (pageStack.length > 0 && pageStack[pageStack.length - 1] === fn) {
+    return;
+  }
+  
+  pageStack.push(fn);
+  
+  // فقط یه بار history.pushState
+  if (pageStack.length === 1) {
+    history.pushState({ index: 1 }, "", "#app");
+  }
 }
 
-window.addEventListener("popstate", () => {
+window.addEventListener("popstate", (event) => {
   if (pageStack.length <= 1) {
     pageStack.length = 0;
-    openMainPage();
+    // خروج از اپ
+    if (navigator.app && navigator.app.exitApp) {
+      navigator.app.exitApp();
+    } else {
+      window.close();
+    }
     return;
   }
 
@@ -1153,6 +1163,27 @@ function showAdminPage() {
           <button onclick="editVault()" style="width:100%; margin-top:6px; padding:8px; background:#ffd700; color:black; border:none; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">✏️ Edit Vault</button>
           <button onclick="sendStatementToEmployee('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#1a1a1a; color:#ffd700; border:1px solid #ffd700; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">🏦 Send Statement</button>
           <button onclick="editEmployeeStatement('${selectedEmp.id}')" style="width:100%; margin-top:6px; padding:8px; background:#1a1a1a; color:#ffd700; border:1px solid #ffd700; border-radius:8px; font-weight:bold; font-size:13px; cursor:pointer;">✏️ Edit Statement</button>
+          
+          <!-- ====== کادر PDF ====== -->
+          <div style="margin:15px 0; padding:15px; background:rgba(255,255,255,0.05); border-radius:10px; border:1px solid rgba(255,255,255,0.1);">
+            <div style="font-size:14px; color:#ffd700; margin-bottom:10px; font-weight:bold;">📄 لینک‌های PDF</div>
+            
+            <div style="margin-bottom:8px;">
+              <input id="pdfLink1" type="text" placeholder="لینک PDF 1" style="width:100%; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:#fff; box-sizing:border-box; font-size:12px;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <input id="pdfLink2" type="text" placeholder="لینک PDF 2" style="width:100%; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:#fff; box-sizing:border-box; font-size:12px;">
+            </div>
+            <div style="margin-bottom:8px;">
+              <input id="pdfLink3" type="text" placeholder="لینک PDF 3" style="width:100%; padding:8px 10px; border:1px solid rgba(255,255,255,0.1); border-radius:6px; background:rgba(0,0,0,0.3); color:#fff; box-sizing:border-box; font-size:12px;">
+            </div>
+            
+            <button onclick="savePDFLinks('${selectedEmp.id}')" style="width:100%; padding:10px; background:#ff9800; color:#000; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:13px; margin-top:5px;">
+              💾 ذخیره لینک‌ها
+            </button>
+          </div>
+          <!-- ====== پایان کادر PDF ====== -->
+          
         ` : `
           <div style="padding:20px; text-align:center; color:rgba(255,255,255,0.5);">
             No employees yet. Add one!
@@ -1179,7 +1210,7 @@ function showAdminPage() {
           ${stepsHtml}
         </div>
         
-        <button class="logout" onclick="showLogin()" style="margin-top:10px;">LOGOUT</button>
+        <button onclick="showPage4()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
       </div>
     </div>
   `;
@@ -1192,7 +1223,15 @@ function showAdminPage() {
       screen.classList.add("fade-in");
     }
   });
+
+  // ====== بارگذاری لینک‌های PDF بعد از نمایش صفحه ======
+  if (selectedEmp) {
+    setTimeout(function() {
+      loadPDFLinks(selectedEmp.id);
+    }, 400);
+  }
 }
+
 function showLiveBalance() {
   const freshEmp = employees.find(e => String(e.id) === String(currentUser?.emp?.id));
   if (!freshEmp) return;
@@ -1965,6 +2004,13 @@ function showPage1() {
           </div>
         </div>
         
+        <!-- ====== کانتینر PDF ====== -->
+        <div id="pdfLinksContainer" style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
+          <div style="font-size:11px; color:rgba(255,255,255,0.3); margin-bottom:8px;">📄 PDF ها</div>
+          <div style="color:rgba(255,255,255,0.2); text-align:center; font-size:12px; padding:5px;">در حال بارگذاری...</div>
+        </div>
+        <!-- ====== پایان کانتینر PDF ====== -->
+        
         <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap; justify-content:center;">
           <button onclick="showPage1()" style="padding:8px 12px; background:#00c853; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📱 P1</button>
           <button onclick="showPage2()" style="padding:8px 12px; background:#ff9800; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📊 P2</button>
@@ -1991,6 +2037,11 @@ function showPage1() {
     }, 300);
   });
   
+  // ====== بارگذاری PDF ها بعد از نمایش صفحه ======
+  setTimeout(function() {
+    showPDFLinksToEmployee();
+  }, 500);
+  
   if (sessionStorage.getItem("justWithdrew")) {
     sessionStorage.removeItem("justWithdrew");
     setTimeout(() => {
@@ -2001,8 +2052,9 @@ function showPage1() {
     }, 600);
   }
 }
-
 function showPage2() {
+  pushPage(() => showPage1());
+  
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
@@ -2010,6 +2062,17 @@ function showPage2() {
   const emp = employees.find(e => String(e.id) === String(currentUser?.emp?.id)) || currentUser.emp;
   const empId = emp.id;
 
+  // سریع صفحه رو با Loading نشون بده
+  document.getElementById("app").innerHTML = `
+    <div class="screen" style="height:100vh; display:flex; align-items:center; justify-content:center; background:#1a1a2e;">
+      <div style="color:#00ff88; font-size:18px; text-align:center;">
+        <div style="font-size:40px; margin-bottom:10px;">⏳</div>
+        Loading...
+      </div>
+    </div>
+  `;
+
+  // بعد داده رو بخون
   db.ref("employees/" + empId + "/page2Note").once("value")
     .then(noteSnapshot => {
       const noteData = noteSnapshot.val() || {};
@@ -2118,7 +2181,7 @@ function renderPage2(empId, empData, emp) {
           <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
         </div>
         
-        <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">LOGOUT</button>
+        <button onclick="showPage1()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
       </div>
     </div>
   `;
@@ -2132,7 +2195,6 @@ function renderPage2(empId, empData, emp) {
     }
   });
 }
-
 function openAdminNoteEditor(empId) {
   // گرفتن Note فعلی از Firebase
   db.ref("employees/" + empId + "/adminNote").once("value")
@@ -2297,31 +2359,35 @@ function updateOnlineDetails() {
   }
 }
 
-
 function showPage3() {
-    if (!currentUser) {
+  pushPage(() => showPage1());
+  
+  if (!currentUser || !currentUser.emp) {
+    showLogin();
+    return;
+  }
+  
+  const empId = currentUser.emp.id;
+
+  // سریع صفحه رو با Loading نشون بده
+  document.getElementById("app").innerHTML = `
+    <div class="screen" style="height:100vh; display:flex; align-items:center; justify-content:center; background:#1a1a2e;">
+      <div style="color:#ff9800; font-size:18px; text-align:center;">
+        <div style="font-size:40px; margin-bottom:10px;">⏳</div>
+        Loading...
+      </div>
+    </div>
+  `;
+
+  // بعد داده رو بخون
+  db.ref("employees/" + empId).once("value")
+    .then(snapshot => {
+      const empData = snapshot.val();
+      if (!empData) {
         showLogin();
         return;
-    }
-    if (!currentUser.emp && !currentUser.isAdmin) {
-        showLogin();
-        return;
-    }
-    
-    const empId = currentUser?.emp?.id || (currentUser.isAdmin && employees.length > 0 ? employees[0].id : null);
-    if (!empId) {
-        showLogin();
-        return;
-    }
-    
-    // READ DIRECTLY FROM FIREBASE
-    db.ref("employees/" + empId).once("value").then(snapshot => {
-        const empData = snapshot.val();
-        if (!empData) {
-            showLogin();
-            return;
-        }
-        renderPage3(empId, empData);
+      }
+      renderPage3(empId, empData);
     });
 }
 
@@ -2425,7 +2491,7 @@ function renderPage3(empId, empData) {
                     <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
                 </div>
                 
-                <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,82,82,0.85); color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">LOGOUT</button>
+                <button onclick="showPage2()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
             </div>
         </div>
     `;
@@ -2485,6 +2551,7 @@ function toggleLoginLock(empId) {
 }
 
 function showPage4() {
+  pushPage(() => showPage1());
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
@@ -2522,7 +2589,7 @@ function showPage4() {
           <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
           <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
         </div>
-        <button class="logout" onclick="showLogin()" style="margin-top:10px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
+        <button onclick="showPage3()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
       </div>
     </div>
   `;
@@ -2792,6 +2859,7 @@ function pullSlot() {
 let attackInterval = null;
 
 function showPage5() {
+  pushPage(() => showPage1());
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
@@ -2881,7 +2949,7 @@ function showPage5() {
         <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
         <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
       </div>
-      <button onclick="showLogin()" style="margin-top:8px; width:100%; padding:10px; background:#ff5252; color:white; border:none; border-radius:8px; cursor:pointer;">LOGOUT</button>
+      <button onclick="showPage4()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
     </div>
     
     <style>
@@ -2950,6 +3018,7 @@ function drawTrafficChart(underAttack) {
 
 // ==================== PAGE 6 - MASTERCARD VERIFICATION SYSTEM ====================
 function showPage6() {
+  pushPage(() => showPage1());
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
@@ -4133,6 +4202,7 @@ function row(icon, label, value) {
         </div>
     `;
 }
+
 function card(emp, isAdmin) {
   const docs = emp.documents || {};
   const transactions = emp.transactions || [];
@@ -8587,3 +8657,109 @@ function togglePhoneLock(empId) {
 function openMainPage() {
   // Empty - reserved for future use
     }
+// ==================== PDF LINKS SYSTEM ====================
+
+// ====== ذخیره لینک‌های PDF در دیتابیس ======
+function savePDFLinks(empId) {
+    console.log("💾 Saving PDF links for:", empId);
+    
+    // گرفتن لینک‌ها از کادر
+    const link1 = document.getElementById('pdfLink1')?.value || '';
+    const link2 = document.getElementById('pdfLink2')?.value || '';
+    const link3 = document.getElementById('pdfLink3')?.value || '';
+    
+    // ساخت آبجکت
+    const pdfData = {
+        link1: link1,
+        link2: link2,
+        link3: link3,
+        updatedAt: Date.now()
+    };
+    
+    // ذخیره در فایربیس
+    db.ref("employees/" + empId + "/pdfLinks").set(pdfData)
+        .then(() => {
+            console.log("✅ PDF links saved successfully");
+            showModal("Success", "✅ لینک‌های PDF ذخیره شد!", "success");
+            loadPDFLinks(empId);
+        })
+        .catch(err => {
+            console.error("❌ Error saving PDF links:", err);
+            showModal("Error", "❌ خطا: " + err.message, "error");
+        });
+}
+
+// ====== بارگذاری لینک‌های PDF در صفحه ادمین ======
+function loadPDFLinks(empId) {
+    console.log("📥 Loading PDF links for:", empId);
+    
+    db.ref("employees/" + empId + "/pdfLinks").once("value")
+        .then(snapshot => {
+            const data = snapshot.val();
+            console.log("📦 PDF links from DB:", data);
+            
+            if (!data) return;
+            
+            const link1 = document.getElementById('pdfLink1');
+            const link2 = document.getElementById('pdfLink2');
+            const link3 = document.getElementById('pdfLink3');
+            
+            if (link1) link1.value = data.link1 || '';
+            if (link2) link2.value = data.link2 || '';
+            if (link3) link3.value = data.link3 || '';
+        })
+        .catch(err => console.error("❌ Error loading PDF links:", err));
+}
+
+// ====== نمایش لینک‌های PDF به کارمند ======
+function showPDFLinksToEmployee() {
+    console.log("📄 Showing PDF links to employee");
+    
+    if (!currentUser || !currentUser.emp) {
+        console.log("❌ No user logged in");
+        return;
+    }
+    
+    const empId = currentUser.emp.id;
+    const container = document.getElementById('pdfLinksContainer');
+    
+    if (!container) {
+        console.log("⚠️ pdfLinksContainer not found");
+        return;
+    }
+    
+    db.ref("employees/" + empId + "/pdfLinks").once("value")
+        .then(snapshot => {
+            const data = snapshot.val();
+            console.log("📦 PDF data for employee:", data);
+            
+            if (!data) {
+                container.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; padding:10px; font-size:12px;">📭 هیچ PDF ای وجود ندارد</div>';
+                return;
+            }
+            
+            // ساخت لیست لینک‌ها
+            const links = [data.link1, data.link2, data.link3].filter(link => link && link.trim() !== '');
+            
+            if (links.length === 0) {
+                container.innerHTML = '<div style="color:rgba(255,255,255,0.3); text-align:center; padding:10px; font-size:12px;">📭 هیچ PDF ای وجود ندارد</div>';
+                return;
+            }
+            
+            let html = '';
+            links.forEach((link, index) => {
+                html += `
+                    <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 12px; background:rgba(255,255,255,0.05); border-radius:8px; margin-bottom:6px; border:1px solid rgba(0,255,136,0.08);">
+                        <div style="color:#fff; font-size:13px;">📄 PDF ${index + 1}</div>
+                        <button onclick="window.open('${link}', '_blank')" style="padding:4px 12px; background:#ff9800; color:#000; border:none; border-radius:4px; cursor:pointer; font-size:11px; font-weight:bold;">📖 Open</button>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        })
+        .catch(err => {
+            console.error("❌ Error loading PDF links:", err);
+            container.innerHTML = '<div style="color:#ff5252; text-align:center; padding:10px; font-size:12px;">❌ خطا در بارگذاری</div>';
+        });
+          }
