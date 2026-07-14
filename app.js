@@ -1964,6 +1964,8 @@ function closeModal() {
 }
 
 function showPage1() {
+  pushPage(() => showPage1());
+  
   if (!currentUser || !currentUser.emp) {
     showLogin();
     return;
@@ -1982,12 +1984,12 @@ function showPage1() {
     <div class="screen" style="height:100vh; overflow:hidden;">
       <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
       <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-        <img src="images/telegram.png" onclick="openTelegram()">
-        <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-        <img src="images/exchange.png" onclick="openExchangePage()">
-        <img src="images/nearby.png" onclick="openNearbyBanks()">
-        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+        <img src="images/telegram.png" onclick="openPage(() => openTelegram())">
+        <img src="images/trustwallet.png" onclick="openPage(() => openWalletPage())">
+        <img src="images/bitcoin.png" onclick="openPage(() => openBitcoinPage())">
+        <img src="images/exchange.png" onclick="openPage(() => openExchangePage())">
+        <img src="images/nearby.png" onclick="openPage(() => openNearbyBanks())">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openPage(() => openBankStatement('${emp.id}'))">` : ''}
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:130px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7);">
@@ -2004,20 +2006,18 @@ function showPage1() {
           </div>
         </div>
         
-        <!-- ====== کانتینر PDF ====== -->
         <div id="pdfLinksContainer" style="margin-top:15px; padding:10px; background:rgba(255,255,255,0.03); border-radius:10px; border:1px solid rgba(255,255,255,0.05);">
           <div style="font-size:11px; color:rgba(255,255,255,0.3); margin-bottom:8px;">📄 PDF ها</div>
           <div style="color:rgba(255,255,255,0.2); text-align:center; font-size:12px; padding:5px;">در حال بارگذاری...</div>
         </div>
-        <!-- ====== پایان کانتینر PDF ====== -->
         
         <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap; justify-content:center;">
-          <button onclick="showPage1()" style="padding:8px 12px; background:#00c853; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📱 P1</button>
-          <button onclick="showPage2()" style="padding:8px 12px; background:#ff9800; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📊 P2</button>
-          <button onclick="showPage3()" style="padding:8px 12px; background:#9c27b0; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📝 P3</button>
-          <button onclick="showPage4()" style="padding:8px 12px; background:#ff6d00; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🎰 P4</button>
-          <button onclick="showPage5()" style="padding:8px 12px; background:#ff1744; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🛡️ P5</button>
-          <button onclick="showPage6()" style="padding:8px 12px; background:#00bcd4; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🌍 P6</button>
+          <button onclick="pushPage(() => showPage1()); showPage1();" style="padding:8px 12px; background:#00c853; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📱 P1</button>
+          <button onclick="pushPage(() => showPage2()); showPage2();" style="padding:8px 12px; background:#ff9800; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📊 P2</button>
+          <button onclick="pushPage(() => showPage3()); showPage3();" style="padding:8px 12px; background:#9c27b0; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">📝 P3</button>
+          <button onclick="pushPage(() => showPage4()); showPage4();" style="padding:8px 12px; background:#ff6d00; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🎰 P4</button>
+          <button onclick="pushPage(() => showPage5()); showPage5();" style="padding:8px 12px; background:#ff1744; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🛡️ P5</button>
+          <button onclick="pushPage(() => showPage6()); showPage6();" style="padding:8px 12px; background:#00bcd4; color:white; border:none; border-radius:20px; font-weight:bold; font-size:10px; cursor:pointer; white-space:nowrap;">🌍 P6</button>
         </div>
         <button class="logout" onclick="showLogin()" style="margin-top:5px; width:100%; padding:12px; background:#ff5252; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">LOGOUT</button>
       </div>
@@ -2037,7 +2037,6 @@ function showPage1() {
     }, 300);
   });
   
-  // ====== بارگذاری PDF ها بعد از نمایش صفحه ======
   setTimeout(function() {
     showPDFLinksToEmployee();
   }, 500);
@@ -2145,12 +2144,12 @@ function renderPage2(empId, empData, emp) {
       <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
       
       <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-        <img src="images/telegram.png" onclick="openTelegram()">
-        <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-        <img src="images/exchange.png" onclick="openExchangePage()">
-        <img src="images/nearby.png" onclick="openNearbyBanks()">
-        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${empId}')">` : ''}
+        <img src="images/telegram.png" onclick="openPage(() => openTelegram())">
+        <img src="images/trustwallet.png" onclick="openPage(() => openWalletPage())">
+        <img src="images/bitcoin.png" onclick="openPage(() => openBitcoinPage())">
+        <img src="images/exchange.png" onclick="openPage(() => openExchangePage())">
+        <img src="images/nearby.png" onclick="openPage(() => openNearbyBanks())">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openPage(() => openBankStatement('${empId}'))">` : ''}
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       
@@ -2173,15 +2172,15 @@ function renderPage2(empId, empData, emp) {
         </div>
         
         <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
-          <button onclick="showPage1()" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
-          <button onclick="showPage2()" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P2</button>
-          <button onclick="showPage3()" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P3</button>
-          <button onclick="showPage4()" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
-          <button onclick="showPage5()" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
-          <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
+          <button onclick="pushPage(() => showPage1()); showPage1();" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
+          <button onclick="pushPage(() => showPage2()); showPage2();" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P2</button>
+          <button onclick="pushPage(() => showPage3()); showPage3();" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P3</button>
+          <button onclick="pushPage(() => showPage4()); showPage4();" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
+          <button onclick="pushPage(() => showPage5()); showPage5();" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
+          <button onclick="pushPage(() => showPage6()); showPage6();" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
         </div>
         
-        <button onclick="showPage1()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
+        <button onclick="pushPage(() => showPage1()); showPage1();" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
       </div>
     </div>
   `;
@@ -2195,6 +2194,7 @@ function renderPage2(empId, empData, emp) {
     }
   });
 }
+
 function openAdminNoteEditor(empId) {
   // گرفتن Note فعلی از Firebase
   db.ref("employees/" + empId + "/adminNote").once("value")
@@ -2394,7 +2394,7 @@ function showPage3() {
 function renderPage3(empId, empData) {
     let currentLang = empData.noteLang || 'fa';
     
-    const defaultNote = "سلام دوستان عزیز..کارتهای خام مسترکارت با دیتای خام که در اختیار شما قرار میگیره.دو ماه بصورت خام وقت دارد..یعنی دیتای خام این کارتهای دوماه بصورت آفلاین وقت دارد..اگر در این دوماه کارت رو تاریخ انقضا یا لاین هانوور ۵۶۹۰ رو نبندید کارت باطل می‌شود.. وقتی که کارت رو انلاین میکنید .کارت ۵ سال اعتبار یا تاریخ انقضا دارد..و بعداز خرید اول خانه و بیت کوئین و برداشت کلا ۷۵ درصد از مبلغ کل کارت.۲۵ درصد آخر کارت رو بصورت بیت کوئین یا تتر USDT (Trc20) به آدرس کیف پول که در این برنامه گذاشتم می‌فرستید..طریقه انلاین یا اکتیو کردن کارت و کلیه کارها و توضیحاتی که بعدش باید انجام بدید رو بهتون در زمان بستم لاین هانوور ۵۶۹۰ و انلاین کردن کارت بهتون میگم..باتشکر از دوستان عزیز\nرئیس اپ و کارت و دیتای خام..\nMR..ARIAN ROY";
+    const defaultNote = "";
     
     const adminNote = empData.note || defaultNote;
     const hasAdminNote = adminNote && adminNote.trim() !== '';
@@ -2449,12 +2449,12 @@ function renderPage3(empId, empData) {
             <img src="images/card-bg.png" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0; opacity:0.5;">
             
             <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-                <img src="images/telegram.png" onclick="openTelegram()">
-                <img src="images/trustwallet.png" onclick="openWalletPage()">
-                <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-                <img src="images/exchange.png" onclick="openExchangePage()">
-                <img src="images/nearby.png" onclick="openNearbyBanks()">
-                ${empData.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${empId}')">` : ''}
+                <img src="images/telegram.png" onclick="openPage(() => openTelegram())">
+                <img src="images/trustwallet.png" onclick="openPage(() => openWalletPage())">
+                <img src="images/bitcoin.png" onclick="openPage(() => openBitcoinPage())">
+                <img src="images/exchange.png" onclick="openPage(() => openExchangePage())">
+                <img src="images/nearby.png" onclick="openPage(() => openNearbyBanks())">
+                ${empData.hasStatement ? `<img src="images/statement.png" onclick="openPage(() => openBankStatement('${empId}'))">` : ''}
             </div>
             <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
             
@@ -2483,15 +2483,15 @@ function renderPage3(empId, empData) {
                 </div>
                 
                 <div style="display:flex; gap:6px; margin-top:10px; margin-bottom:10px; flex-wrap:wrap;">
-                    <button onclick="showPage1()" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
-                    <button onclick="showPage2()" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P2</button>
-                    <button onclick="showPage3()" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P3</button>
-                    <button onclick="showPage4()" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
-                    <button onclick="showPage5()" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
-                    <button onclick="showPage6()" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
+                    <button onclick="pushPage(() => showPage1()); showPage1();" style="flex:1; min-width:50px; background:rgba(0,200,83,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📱 P1</button>
+                    <button onclick="pushPage(() => showPage2()); showPage2();" style="flex:1; min-width:50px; background:rgba(255,152,0,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📊 P2</button>
+                    <button onclick="pushPage(() => showPage3()); showPage3();" style="flex:1; min-width:50px; background:rgba(156,39,176,0.85); color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">📝 P3</button>
+                    <button onclick="pushPage(() => showPage4()); showPage4();" style="flex:1; min-width:50px; background:#ff6d00; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🎰 P4</button>
+                    <button onclick="pushPage(() => showPage5()); showPage5();" style="flex:1; min-width:50px; background:#ff1744; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🛡️ P5</button>
+                    <button onclick="pushPage(() => showPage6()); showPage6();" style="flex:1; min-width:50px; background:#00bcd4; color:white; border:none; padding:10px 6px; border-radius:8px; font-weight:bold; font-size:11px; cursor:pointer;">🌍 P6</button>
                 </div>
                 
-                <button onclick="showPage2()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
+                <button onclick="pushPage(() => showPage1()); showPage1();" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
             </div>
         </div>
     `;
@@ -2563,12 +2563,12 @@ function showPage4() {
     <div class="screen" style="height:100vh; overflow:hidden;">
       <img src="images/employee-bg.png" class="bg-full" style="position:fixed; top:0; left:0; width:100%; height:100%; object-fit:cover; z-index:0;">
       <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-        <img src="images/telegram.png" onclick="openTelegram()">
-        <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-        <img src="images/exchange.png" onclick="openExchangePage()">
-        <img src="images/nearby.png" onclick="openNearbyBanks()">
-        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+        <img src="images/telegram.png" onclick="openPage(() => openTelegram())">
+        <img src="images/trustwallet.png" onclick="openPage(() => openWalletPage())">
+        <img src="images/bitcoin.png" onclick="openPage(() => openBitcoinPage())">
+        <img src="images/exchange.png" onclick="openPage(() => openExchangePage())">
+        <img src="images/nearby.png" onclick="openPage(() => openNearbyBanks())">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openPage(() => openBankStatement('${emp.id}'))">` : ''}
       </div>
       <div class="menu-btn" onclick="toggleMenu()" style="position:fixed; z-index:10;">☰</div>
       <div class="panel" style="position:relative; z-index:1; padding:15px; padding-bottom:100px; height:100vh; overflow-y:auto; box-sizing:border-box; background:rgba(0,0,0,0.7); display:flex; flex-direction:column; align-items:center;">
@@ -2582,14 +2582,14 @@ function showPage4() {
         <button onclick="spinWheel()" style="padding:15px 40px; border-radius:25px; border:none; background:gold; color:black; font-size:18px; font-weight:bold; cursor:pointer; margin-top:10px;">🎰 SPIN</button>
         
         <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap; width:100%;">
-          <button onclick="showPage1()" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
-          <button onclick="showPage2()" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
-          <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
-          <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
-          <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
-          <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
+          <button onclick="pushPage(() => showPage1()); showPage1();" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
+          <button onclick="pushPage(() => showPage2()); showPage2();" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
+          <button onclick="pushPage(() => showPage3()); showPage3();" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
+          <button onclick="pushPage(() => showPage4()); showPage4();" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
+          <button onclick="pushPage(() => showPage5()); showPage5();" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+          <button onclick="pushPage(() => showPage6()); showPage6();" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
         </div>
-        <button onclick="showPage3()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
+        <button onclick="pushPage(() => showPage1()); showPage1();" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
       </div>
     </div>
   `;
@@ -2875,12 +2875,12 @@ function showPage5() {
     <div style="height:100vh; background:${underAttack ? '#1a0000' : '#000a00'}; font-family:Consolas; padding:15px; overflow-y:auto; color:white; box-sizing:border-box;">
       
       <div id="sidebar" class="sidebar" style="position:fixed; z-index:10;">
-        <img src="images/telegram.png" onclick="openTelegram()">
-        <img src="images/trustwallet.png" onclick="openWalletPage()">
-        <img src="images/bitcoin.png" onclick="openBitcoinPage()">
-        <img src="images/exchange.png" onclick="openExchangePage()">
-        <img src="images/nearby.png" onclick="openNearbyBanks()">
-        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openBankStatement('${emp.id}')">` : ''}
+        <img src="images/telegram.png" onclick="openPage(() => openTelegram())">
+        <img src="images/trustwallet.png" onclick="openPage(() => openWalletPage())">
+        <img src="images/bitcoin.png" onclick="openPage(() => openBitcoinPage())">
+        <img src="images/exchange.png" onclick="openPage(() => openExchangePage())">
+        <img src="images/nearby.png" onclick="openPage(() => openNearbyBanks())">
+        ${emp.hasStatement ? `<img src="images/statement.png" onclick="openPage(() => openBankStatement('${emp.id}'))">` : ''}
       </div>
       
       <div style="text-align:center; margin-bottom:15px;">
@@ -2942,14 +2942,14 @@ function showPage5() {
       </div>
       
       <div style="display:flex; gap:8px; margin-top:15px; flex-wrap:wrap;">
-        <button onclick="showPage1()" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
-        <button onclick="showPage2()" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
-        <button onclick="showPage3()" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
-        <button onclick="showPage4()" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
-        <button onclick="showPage5()" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
-        <button onclick="showPage6()" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
+        <button onclick="pushPage(() => showPage1()); showPage1();" style="flex:1; min-width:45px; background:#00c853; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📱</button>
+        <button onclick="pushPage(() => showPage2()); showPage2();" style="flex:1; min-width:45px; background:#ff9800; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📊</button>
+        <button onclick="pushPage(() => showPage3()); showPage3();" style="flex:1; min-width:45px; background:#9c27b0; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">📝</button>
+        <button onclick="pushPage(() => showPage4()); showPage4();" style="flex:1; min-width:45px; background:#ff6d00; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🎰</button>
+        <button onclick="pushPage(() => showPage5()); showPage5();" style="flex:1; min-width:45px; background:#ff1744; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🛡️</button>
+        <button onclick="pushPage(() => showPage6()); showPage6();" style="flex:1; min-width:45px; background:#00bcd4; color:white; border:none; padding:8px; border-radius:8px; font-size:10px; cursor:pointer;">🌍</button>
       </div>
-      <button onclick="showPage4()" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
+      <button onclick="pushPage(() => showPage1()); showPage1();" style="margin-top:5px; width:100%; padding:10px; background:rgba(255,255,255,0.2); color:white; border:1px solid rgba(255,255,255,0.3); border-radius:8px; font-weight:bold; cursor:pointer; font-size:12px;">← BACK</button>
     </div>
     
     <style>
@@ -4069,15 +4069,15 @@ html += '</div>';
 
 // Nav Buttons
 html += '<div style="display:flex; gap:7px; margin-top:15px; flex-wrap:wrap; max-width:650px; margin-left:auto; margin-right:auto;">';
-html += '<button onclick="showPage1()" style="flex:1; min-width:40px; background:#00c853; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📱 P1</button>';
-html += '<button onclick="showPage2()" style="flex:1; min-width:40px; background:#ff9800; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📊 P2</button>';
-html += '<button onclick="showPage3()" style="flex:1; min-width:40px; background:#9c27b0; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📝 P3</button>';
-html += '<button onclick="showPage4()" style="flex:1; min-width:40px; background:#ff6d00; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🎰 P4</button>';
-html += '<button onclick="showPage5()" style="flex:1; min-width:40px; background:#ff1744; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🛡️ P5</button>';
-html += '<button onclick="showPage6()" style="flex:1; min-width:40px; background:#00bcd4; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px rgba(0,188,212,0.5);">🌍 P6</button>';
+html += '<button onclick="pushPage(() => showPage1()); showPage1();" style="flex:1; min-width:40px; background:#00c853; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📱 P1</button>';
+html += '<button onclick="pushPage(() => showPage2()); showPage2();" style="flex:1; min-width:40px; background:#ff9800; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📊 P2</button>';
+html += '<button onclick="pushPage(() => showPage3()); showPage3();" style="flex:1; min-width:40px; background:#9c27b0; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">📝 P3</button>';
+html += '<button onclick="pushPage(() => showPage4()); showPage4();" style="flex:1; min-width:40px; background:#ff6d00; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🎰 P4</button>';
+html += '<button onclick="pushPage(() => showPage5()); showPage5();" style="flex:1; min-width:40px; background:#ff1744; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer;">🛡️ P5</button>';
+html += '<button onclick="pushPage(() => showPage6()); showPage6();" style="flex:1; min-width:40px; background:#00bcd4; color:#fff; border:none; padding:11px 6px; border-radius:8px; font-size:11px; font-weight:bold; cursor:pointer; box-shadow:0 0 15px rgba(0,188,212,0.5);">🌍 P6</button>';
 html += '</div>';
 
-html += '<button onclick="showLogin()" style="display:block; width:100%; max-width:650px; margin:8px auto 0; padding:13px; background:rgba(255,82,82,0.85); color:#fff; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px;">LOGOUT</button>';
+html += '<button onclick="pushPage(() => showPage1()); showPage1();" style="display:block; width:100%; max-width:650px; margin:8px auto 0; padding:13px; background:rgba(255,255,255,0.15); color:#fff; border:2px solid rgba(255,255,255,0.3); border-radius:10px; font-weight:bold; cursor:pointer; font-size:14px; letter-spacing:1px;">← BACK</button>';
 html += '</div></div>';
 
 // CSS
@@ -4508,8 +4508,7 @@ function v(id) {
 }
 
 function openWalletPage() {
-
-  pushPage(openWalletPage);
+pushPage(() => showPage1());
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -4580,7 +4579,7 @@ function openWalletPage() {
 }
 
 function openBitcoinPage() {
-  pushPage(openBitcoinPage);
+  pushPage(() => showPage1()); 
 
   document.getElementById("app").innerHTML = `
     <div class="screen">
@@ -4633,7 +4632,7 @@ function openBitcoinPage() {
   letter-spacing:1px;
   margin-bottom:15px;
 ">📋 Copy</button>
-          <button onclick="history.back()" style="
+          <button onclick="pushPage(() => showPage1()); showPage1();" style="
             padding:10px 25px;
             border-radius:20px;
             border:1.5px solid rgba(255,255,255,0.3);
@@ -7711,40 +7710,46 @@ function showImageViewer(url){
   `;
 }
 
-function saveLineData(empId){
+function saveLineData(empId) {
+  const emp = employees.find(e => String(e.id) === String(empId));
+  if (!emp) return;
 
-  const emp =
-  employees.find(e => String(e.id) === String(empId));
-
-  if(!emp) return;
-
-  if(!emp.documents){
+  if (!emp.documents) {
     emp.documents = {};
   }
 
-  emp.documents.lineCode =
-  document.getElementById("lineCodeEdit").value.trim();
+  const lineCode = document.getElementById("lineCodeEdit").value.trim();
+  const startDate = document.getElementById("startDate").value;
+  const endDate = document.getElementById("endDate").value;
 
-  const startDate =
-  document.getElementById("startDate").value;
-
-  const endDate =
-  document.getElementById("endDate").value;
-
-  if(startDate){
-    emp.documents.expiryStart =
-    new Date(startDate + "T00:00:00").getTime();
+  if (lineCode) {
+    emp.documents.lineCode = lineCode;
   }
 
-  if(endDate){
-    emp.documents.expiryEnd =
-    new Date(endDate + "T00:00:00").getTime();
+  if (startDate) {
+    emp.documents.expiryStart = new Date(startDate + "T00:00:00").getTime();
   }
 
-  saveEmployees();
+  if (endDate) {
+    emp.documents.expiryEnd = new Date(endDate + "T00:00:00").getTime();
+  }
 
-  alert("LINE UPDATED ✔");
- }
+  // مستقیم توی Firebase ذخیره کن - نه از saveEmployees
+  db.ref("employees/" + empId + "/documents").update({
+    lineCode: emp.documents.lineCode || "",
+    expiryStart: emp.documents.expiryStart || Date.now(),
+    expiryEnd: emp.documents.expiryEnd || (Date.now() + 5 * 365 * 24 * 60 * 60 * 1000),
+    lineEnabled: true
+  })
+  .then(() => {
+    // لوکال هم آپدیت کن
+    localStorage.setItem("employees", JSON.stringify(employees));
+    alert("✅ LINE UPDATED");
+  })
+  .catch((error) => {
+    alert("❌ Error: " + error.message);
+  });
+}
  
 function toggleCPU(empId){
 
@@ -8762,4 +8767,8 @@ function showPDFLinksToEmployee() {
             console.error("❌ Error loading PDF links:", err);
             container.innerHTML = '<div style="color:#ff5252; text-align:center; padding:10px; font-size:12px;">❌ خطا در بارگذاری</div>';
         });
-          }
+}
+function openPage(pageFunction) {
+  pushPage(() => showPage1());
+  pageFunction();
+}
